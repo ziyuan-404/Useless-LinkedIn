@@ -8,6 +8,26 @@ Useless LinkedIn is an **AI agent job-search workflow / Skill**. Bring your CV a
 
 It is a skill pack rather than a separate website or a LinkedIn browser extension. The included search configuration focuses on **France and alternance (work-study apprenticeships)** across several job boards. Other regions require search adjustments.
 
+## Why use this skill?
+
+- **Four discovery layers instead of a single scraping method.** The workflow falls back through API → direct web-page reading → Playwright browser → agent web search across WTTJ, HelloWork, Indeed France, LinkedIn and La Bonne Alternance. Browser and search fallbacks require suitable agent tools; blocked access is reported honestly.
+- **Check that the job is still available before applying.** Availability checks, application-history deduplication and essential-requirement screening reduce effort spent on expired, duplicate or unsuitable vacancies.
+- **A–G analysis makes recommendations explainable.** Seven sections cover the role, experience evidence, application strategy, pay and demand, tailoring, interview preparation and truthfulness risks. The result is an explained 1–5 priority, with application-answer drafts in section H—not an invented precise match percentage.
+- **One verified experience library for every application.** CVs, cover letters and answers draw on the same confirmed facts, reducing conflicting dates, qualifications and project descriptions.
+- **Tailored applications and batch preparation in one workflow.** Customize materials for strong matches and select reviewed general CVs for other eligible jobs. Shared tools generate PDFs and check layout and size without a new script for every company.
+- **A continuous path from discovery to follow-up.** Connect job lists, documents, application records and next actions while keeping discovered, prepared and submitted statuses distinct.
+
+### What did we learn from the four upstream projects?
+
+| Project | Design borrowed | How it is used here |
+|---|---|---|
+| [ApplyPilot](https://github.com/yvonnehe772/applypilot) | Agent-led onboarding, tailored/batch routing, application blockers and submission evidence | Configure rules conversationally, assist with forms and record actual outcomes. |
+| [Personal Career OS](https://github.com/Pluto-Mo/personal-career-os) | A unified experience library, experience exploration and JD-to-material workflows | Turn your CV into reusable facts and expand them without conflicting candidate profiles. |
+| [resume-builder](https://github.com/StoneLL1/resume-builder) | Fact provenance, separating writing from layout, templates and rendering previews | Verify content before generating and reviewing documents; preserve original CVs. |
+| [career-ops](https://github.com/career-ops-hq/career-ops) | scan, auto-pipeline and tracker designs; availability, deduplication, Knock-out and A–H analysis | Reuse selected code and adapt shared tools to connect discovery, assessment, preparation and tracking. |
+
+These designs are combined and adapted behind **one skill entry point**, rather than installing four independent skills. The four-layer fallback is this project's integrated workflow; it is not wholly supplied by any single upstream project. See [versions and attribution](THIRD_PARTY_NOTICES.md).
+
 ## What problems does it solve?
 
 | Your problem | How the workflow helps |
