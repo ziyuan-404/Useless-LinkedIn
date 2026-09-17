@@ -1,0 +1,82 @@
+{
+  "candidate": {
+    "legal_name": "Alex Chen",
+    "preferred_name": "Alex",
+    "email": "alex.chen@example.com",
+    "phone": "+1-555-0100",
+    "current_location": "New York, NY, United States",
+    "linkedin_url": "https://www.linkedin.com/in/alex-chen-example",
+    "portfolio_url": "https://alexchen.example.com",
+    "github_url": ""
+  },
+  "current_status": {
+    "current_role_or_framing": "Product analyst transitioning into product management",
+    "employment_status_answer": "Open to new opportunities",
+    "available_start_date": "Two weeks after offer acceptance",
+    "notice_period": "Two weeks"
+  },
+  "work_authorization": {
+    "country": "United States",
+    "current_authorization": "Example only: user must replace with their real status",
+    "requires_sponsorship_now": null,
+    "requires_sponsorship_in_future": null,
+    "answer_exactly_as": "Ask Alex before answering work authorization questions in real applications.",
+    "notes_for_unclear_forms": "This demo intentionally avoids real immigration details."
+  },
+  "targets": {
+    "primary_role_families": ["Product Manager", "Growth PM"],
+    "secondary_role_families": ["Product Analyst", "Data Analyst"],
+    "roles_to_avoid": ["Staff PM", "Principal PM", "Director", "Head of Product"],
+    "target_industries": ["AI tools", "B2B SaaS", "data products", "developer tools"],
+    "industries_to_avoid": ["commission-only sales", "insurance sales"],
+    "target_company_stage": ["Seed to Series D", "public SaaS companies"],
+    "target_locations": ["New York", "Remote US", "San Francisco Bay Area"],
+    "remote_hybrid_onsite_preference": "Remote or hybrid preferred; onsite only for high-fit roles.",
+    "relocation_policy": "Open to relocating for exceptional product roles."
+  },
+  "compensation": {
+    "base_salary_range": "$120,000-$150,000",
+    "total_compensation_range": "Flexible depending on scope and equity",
+    "answer_strategy": "Defer when allowed; otherwise use the range above.",
+    "notes": "Ask before submitting if a form requires a number outside this range."
+  },
+  "resume_files": [
+    {
+      "role_family": "Product Manager",
+      "file_path": "resumes/alex_product_manager_resume.docx",
+      "version": "2026-06-demo",
+      "use_when": "PM, associate PM, platform PM, SaaS PM"
+    },
+    {
+      "role_family": "Growth PM",
+      "file_path": "resumes/alex_growth_pm_resume.docx",
+      "version": "2026-06-demo",
+      "use_when": "Growth PM, lifecycle, activation, monetization, PLG"
+    },
+    {
+      "role_family": "Product Analyst",
+      "file_path": "resumes/alex_product_analyst_resume.pdf",
+      "version": "2026-06-demo",
+      "use_when": "Product analyst or data analyst roles; PDF is for application upload only"
+    }
+  ],
+  "voluntary_self_identification": {
+    "strategy": "prefer_not_to_say",
+    "fill_automatically": false,
+    "gender": "",
+    "race_ethnicity": "",
+    "veteran_status": "",
+    "disability_status": "",
+    "notes": "Default to Prefer not to say / decline / leave blank. This demo does not store exact self-ID answers."
+  },
+  "never_guess": [
+    "work authorization",
+    "sponsorship",
+    "employment status",
+    "salary outside stored range",
+    "relocation commitment",
+    "degree dates",
+    "employment dates",
+    "voluntary self-identification"
+  ]
+}

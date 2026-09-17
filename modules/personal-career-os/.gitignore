@@ -1,0 +1,19 @@
+# 临时目录
+tmp/
+.career-os/
+
+# Starter 模板的渲染产物（可随时重新生成）
+assets/workspace/template/*.pdf
+assets/workspace/template/*.png
+assets/workspace/template/*.docx
+
+# Python helper cache
+__pycache__/
+*.pyc
+
+# Office 锁文件
+~$*
+
+# 系统文件
+Thumbs.db
+.DS_Store

@@ -1,0 +1,72 @@
+{
+  "candidate": {
+    "legal_name": "",
+    "preferred_name": "",
+    "email": "",
+    "phone": "",
+    "current_location": "",
+    "linkedin_url": "",
+    "portfolio_url": "",
+    "github_url": ""
+  },
+  "current_status": {
+    "current_role_or_framing": "",
+    "employment_status_answer": "",
+    "available_start_date": "",
+    "notice_period": ""
+  },
+  "work_authorization": {
+    "country": "",
+    "current_authorization": "",
+    "requires_sponsorship_now": null,
+    "requires_sponsorship_in_future": null,
+    "answer_exactly_as": "",
+    "notes_for_unclear_forms": "Ask the user before answering if the form wording differs from this profile."
+  },
+  "targets": {
+    "primary_role_families": [],
+    "secondary_role_families": [],
+    "roles_to_avoid": [],
+    "target_industries": [],
+    "industries_to_avoid": [],
+    "target_company_stage": [],
+    "target_locations": [],
+    "remote_hybrid_onsite_preference": "",
+    "relocation_policy": ""
+  },
+  "compensation": {
+    "base_salary_range": "",
+    "total_compensation_range": "",
+    "answer_strategy": "Defer when allowed; otherwise use the range above.",
+    "notes": ""
+  },
+  "resume_files": [
+    {
+      "role_family": "",
+      "file_path": "",
+      "version": "",
+      "use_when": ""
+    }
+  ],
+  "voluntary_self_identification": {
+    "strategy": "prefer_not_to_say",
+    "fill_automatically": false,
+    "gender": "",
+    "race_ethnicity": "",
+    "veteran_status": "",
+    "disability_status": "",
+    "notes": "Default to Prefer not to say / decline / leave blank when available unless the user explicitly wants exact answers stored in their private profile."
+  },
+  "never_guess": [
+    "legal name",
+    "work authorization",
+    "sponsorship",
+    "employment status",
+    "salary expectations",
+    "relocation",
+    "degree dates",
+    "employment dates",
+    "voluntary self-identification",
+    "background check or non-compete questions"
+  ]
+}

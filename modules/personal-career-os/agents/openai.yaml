@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personal Career OS"
+  short_description: "从零或导入建立经历库，研究 JD，并生成 Word、PDF 和完整投递材料"
+  default_prompt: "使用 $personal-career-os 安装后仅显示功能指南；不要提问或开始工作，等我说“开始”。"

@@ -1,0 +1,23 @@
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Local output, checks, and upstream caches
+/output/
+.playwright-cli/
+.upstream-cache/
+.preview-build/
+.matrix-*/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+.claude/
+.codex/
+
+# OS files
+.DS_Store
+Thumbs.db

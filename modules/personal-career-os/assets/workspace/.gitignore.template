@@ -1,0 +1,7 @@
+# Personal data is local by default. Remove this only when backing up to a
+# repository that you have confirmed is private.
+*
+!.gitignore
+!archive/
+archive/*
+!archive/.gitkeep

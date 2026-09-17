@@ -1,0 +1,39 @@
+# Local candidate facts, applications and outputs are never published.
+.career-os/profile/
+.career-os/applications/
+.career-os/audits/
+.career-os/archive/
+.career-os/dashboard-backups/
+CV/
+海投简历/
+求职Dashboard.xlsx
+work/
+.publish/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.pem
+*.key
+*.sqlite
+*.db
+*.log
+*.inspect.ndjson
+
+# Only explicitly supplied blank workbooks may be committed.
+*.pdf
+*.docx
+*.xlsx
+!dashboard-template.xlsx
+!assets/dashboard-template.xlsx
+
+# Omitted rendered example media and retired tests.
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.pdf
+!/.career-os/template/portrait.png
+**/tests/
+**/test/

@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "required": ["contextHash", "company", "role", "ko", "sections", "priority", "questions"],
+  "properties": {
+    "contextHash": {"type": "string"},
+    "company": {"type": "string"},
+    "role": {"type": "string"},
+    "ko": {"type": "object", "required": ["status", "items"], "properties": {"status": {"enum": ["PASS", "MARGINAL", "FAIL"]}, "items": {"type": "array", "minItems": 14, "maxItems": 14, "items": {"type": "object", "required": ["key", "result", "reason"], "properties": {"key": {"enum": ["contract", "rhythm", "location", "remote", "start", "education", "experience", "technology", "french", "english", "permit", "salary", "credentials", "duplicate"]}, "result": {"enum": ["PASS", "FAIL", "UNKNOWN", "NA"]}, "reason": {"type": "string"}, "jdQuote": {"type": "string"}}}}}},
+    "sections": {"type": "object", "required": ["A", "B", "C", "D", "E", "F", "G"], "additionalProperties": {"type": "object", "required": ["score", "reason"], "properties": {"score": {"type": ["integer", "null"], "minimum": 1, "maximum": 5}, "reason": {"type": "string"}}}},
+    "priority": {"type": ["integer", "null"], "minimum": 1, "maximum": 5},
+    "questions": {"type": "array"},
+    "payload": {"type": "object"}
+  }
+}

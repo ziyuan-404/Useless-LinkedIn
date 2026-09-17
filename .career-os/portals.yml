@@ -1,0 +1,38 @@
+# Four layers: API -> HTTP -> browser -> Agent WebSearch queue.
+version: 1
+queries: ["alternance développeur", "alternance data analyst", "alternance Python"]
+include_keywords: [alternance, alternant, apprentissage, apprenti, apprentice, stage]
+role_keywords: [développeur, developpeur, developer, développement, developpement, informatique, logiciel, python, java, data, analyst, BI, SQL, automatisation, embarqué, robotique, support IT]
+exclude_keywords: [senior, principal, director, head of]
+max_results_per_portal: 40
+portals:
+  - name: Welcome to the Jungle
+    provider: wttj
+    enabled: true
+    search_url: https://www.welcometothejungle.com/fr/jobs?query={query}&country=FR
+    job_pattern: /companies/[^/]+/jobs/
+    wttj:
+      filters: 'offices.country_code:FR'
+      queries: ["alternance développeur", "alternance data analyst", "alternance Python"]
+      max_hits: 40
+  - name: HelloWork
+    enabled: true
+    search_url: https://www.hellowork.com/fr-fr/emploi/recherche.html?k={query}&l=Paris
+    job_pattern: /fr-fr/emplois/\d+
+  - name: Indeed France
+    enabled: true
+    search_url: https://fr.indeed.com/jobs?q={query}&l=Paris
+    job_pattern: (viewjob|rc/clk).*jk=
+  - name: LinkedIn
+    allowed_hosts: [www.linkedin.com, fr.linkedin.com, linkedin.com]
+    search_domain: linkedin.com
+    enabled: true
+    search_url: https://www.linkedin.com/jobs/search/?keywords={query}&location=Paris%2C%20France
+    job_pattern: /jobs/view/
+  - name: La Bonne Alternance
+    enabled: true
+    queries: ["Développeur / Développeuse logiciel ou d'application"]
+    search_url: https://labonnealternance.apprentissage.beta.gouv.fr/recherche?display=list&job_name={query}&romes=M1861&lat=48.8566&lon=2.3522&radius=30
+    job_pattern: /emploi/offres_emploi_(lba|partenaires)/[0-9a-f]{24}/
+    # An authenticated API may be configured explicitly with api_url and api_token_env.
+    # Predicted recruiters are NOT published vacancies.

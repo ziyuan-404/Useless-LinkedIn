@@ -1,0 +1,4 @@
+attempt_date,company,job_title,job_url,platform,status,submission_evidence,resume_used,answers_used,confirmation_url,confirmation_text,notes
+2026-06-28,Northstar AI,Associate Product Manager,https://example.com/jobs/northstar-apm,LinkedIn,Submitted,Visible Application submitted text,resumes/alex_product_manager_resume.docx,"location,start date,compensation deferral",,Application submitted,Demo record only
+2026-06-28,SignalWorks,Product Analyst,https://example.com/jobs/signalworks-pa,Greenhouse,Blocked,No confirmation; location field invalid,resumes/alex_product_analyst_resume.pdf,"location",,,Retry with visual control
+2026-06-28,BuildLabs,Product Manager,https://example.com/jobs/buildlabs-pm,Lever,Needs user,CAPTCHA appeared,resumes/alex_product_manager_resume.docx,"location,start date",,,User handoff required

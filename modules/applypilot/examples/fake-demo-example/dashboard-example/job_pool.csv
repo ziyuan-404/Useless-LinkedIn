@@ -1,0 +1,6 @@
+date_found,company,job_title,role_family,level,location,remote_policy,source,job_url,posted_date,priority,status,resume_variant,skip_reason,blocker,next_action,notes
+2026-06-28,Northstar AI,Associate Product Manager,Product Manager,Entry,New York NY,Hybrid,LinkedIn,https://example.com/jobs/northstar-apm,2026-06-28,High,Submitted,Product Manager,,,,Confirmation text observed
+2026-06-28,DataForge,Growth Product Manager,Growth PM,Mid,Remote US,Remote,Company site,https://example.com/jobs/dataforge-growth-pm,2026-06-28,High,Pending,Growth PM,,,,Tailored draft needed before applying
+2026-06-28,EnterpriseCloud,Staff Product Manager,Product Manager,Staff,San Francisco CA,Hybrid,LinkedIn,https://example.com/jobs/enterprisecloud-staff-pm,2026-06-27,Low,Skipped,,Overleveled title,,,Skip by default rules
+2026-06-28,SignalWorks,Product Analyst,Product Analyst,Mid,New York NY,Hybrid,Greenhouse,https://example.com/jobs/signalworks-pa,2026-06-28,Medium,Blocked,Product Analyst,,Greenhouse location dropdown invalid,Retry with visual control,Visible value did not clear validation
+2026-06-28,BuildLabs,Product Manager,Product Manager,Mid,Remote US,Remote,Lever,https://example.com/jobs/buildlabs-pm,2026-06-28,High,Needs user,Product Manager,,CAPTCHA / Cloudflare,User must complete verification,Do not bypass

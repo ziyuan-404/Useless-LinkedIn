@@ -1,0 +1,196 @@
+# Useless LinkedIn
+
+**中文** · [English](README.en.md) · [隐私边界](PRIVACY.md) · [第三方归属](THIRD_PARTY_NOTICES.md)
+
+一个面向 AI Agent 的本地求职工作流：建立有来源的经历库，发现公开招聘岗位，核验有效性与硬门槛，生成定制申请材料，维护经过审阅的 Excel 看板。名字虽然叫 Useless LinkedIn，但不是 LinkedIn 插件，也不局限于 LinkedIn。
+
+这是**经过脱敏的公开发行版**，不是某位求职者的私人项目备份。仓库只包含通用工具、规则入口、空白模板和保留许可的第三方资源；不包含个人简历、照片、联系方式、学历/签证事实、真实申请记录、账号凭据或原工作区 Git 历史。
+
+## 项目解决什么问题
+
+| 功能 | 实际行为 |
+|---|---|
+| 单一经历库 | 人物事实只保存在本地 `.career-os/profile/`，材料引用原文，后续确认优先于旧来源。 |
+| 多站岗位扫描 | 读取 portals.yml，按 API → HTTP → 浏览器渲染 → Agent WebSearch 回退，过滤职位关键词并保留有界样本。 |
+| 岗位完整性 | 保存完整 JD、抓取时间与开放证据；检查规范 URL、申请历史和相似 JD。疑似重复不自动合并。 |
+| Knock-out 检查 | 逐项检查14类硬条件；明确不满足为 FAIL，未知必要条件为 MARGINAL。 |
+| A–H 分析 | A–G为岗位与证据分析，H为申请回答草稿；总体给出可解释的1–5优先级，不制造匹配百分比。 |
+| 通用材料生成 | 同一个生成器替换 CV/动机信模板，校验来源引用，输出新版本、PDF QA和最终截图。 |
+| 海投版本选择 | 只使用人工审阅为 verified 且 SHA256一致的版本；不能凭文件名认为合格。 |
+| 线索追踪 | JSON为未提交线索源，Markdown/SQLite为派生索引；Excel仍是申请看板。 |
+| 受控看板修改 | 默认预览；按稳定ID、预期旧值定位，检查占用、锁、公式、备份及导出结果。 |
+| 跟进与复盘 | Agent模块支持跟进队列、漏斗与策略分析；草稿不等于已发消息。 |
+
+**命令行没有内置模型、搜索执行器或定时任务。** 它负责确定性的抓取、校验、归档和生成，并把待完成的评估/搜索交给当前Agent。`awaiting-agent`表示需要Agent接续，不能宣称纯CLI已经无人值守完成。共享CLI不负责真实申请提交。
+
+## 目录结构
+
+```text
+SKILL.md                         根Skill，多模块入口
+agents/                          Agent发现与界面元数据
+modules/                         经历、简历、评估、写作、运营模块
+references/                      架构与详细工作流
+scripts/                         可复用辅助工具
+assets/                          空白看板等通用资源
+dashboard-template.xlsx          空白工作簿，不是真实申请台账
+.career-os/
+  tools/                         scan / pipeline / tracker 等共享工具
+  vendor/                        保留许可证的上游模块与PyYAML
+  portals.yml                    法国公开招聘网站配置
+  skills/alternance-ops/          项目工作流入口
+  operations/                    尚未配置的个人规则模板
+  template/                      通用HTML排版和中性图像占位
+```
+
+`profile/`、`applications/`、`audits/`、`archive/`、`dashboard-backups/`、`CV/`、`work/`和真实看板在使用时本地创建，默认不提交。不要在模块目录里创建第二份人物档案。
+
+## 环境与安装
+
+原执行环境为 Windows + Codex桌面工作区。建议从 **Node.js 24+、Python 3**和能够读取项目、使用网页/浏览器工具的Agent开始。其他平台需要配置可执行文件路径，本发行版未承诺跨平台验证通过。
+
+```powershell
+git clone https://github.com/ziyuan-404/Useless-LinkedIn.git
+cd Useless-LinkedIn
+node --version
+python --version
+$env:CAREER_PYTHON = (Get-Command python).Source
+```
+
+API/HTTP扫描加 `--no-browser` 时不需要Playwright。PyYAML纯Python解析器已随许可证附带。浏览器抓取和PDF生成需要Playwright及可用Chrome；PDF压缩/检查需要以下Python依赖：
+
+```powershell
+npm install --no-save playwright
+python -m pip install pypdf pypdfium2 Pillow
+# Chrome不在默认Windows安装位置时设置：
+$env:CAREER_CHROME = 'C:\path\to\chrome.exe'
+```
+
+**Excel写入还需要运行环境提供 `@oai/artifact-tool`。** 本仓库不附带该运行库，也不保证它能从公开包管理器安装。没有它时仍可扫描和分析，但不能执行看板补丁。`CAREER_NODE_MODULES`可指向已有运行环境的依赖目录；普通模块解析失败时工具会尝试Codex附带路径。
+
+## 首次配置：只在本地填写自己的事实
+
+1. 让Agent导入你自己的原始简历，建立 `.career-os/profile/`。保留母版，记录日期/学历冲突；缺信息不猜。
+2. 建立 `basics.md`、`preferences.md`、`links.md`、`claim-map.md`及 `experiences/`。当前生成器从 basics.md 的 `- 姓名：你的姓名` 字段读取输出文件姓名。
+3. 默认模板包含两段经历、两个项目和一个教育槽位。两段经历的确认日期读取 `experiences/experience-1.md`、`experience-2.md`，字段格式为 `时间: YYYY-MM—YYYY-MM`；项目基线使用 `project-1.md`、`project-2.md`。这些是通用文件别名，不要求编造四段经历。
+4. 填写 `operations/application-rules.md`、`resume-strategy.md`、`answer-bank.md`、`follow-up-rules.md`，确认合同、学校节奏、地点、语言和授权口径。未配置条件保持未知。
+5. 私下填写HTML模板的姓名、联系方式、学历等字段。照片按需替换。公开模板故意为空白，占位文字不能直接投递。
+6. 复制空白工作簿为真实看板：
+
+```powershell
+Copy-Item dashboard-template.xlsx '求职Dashboard.xlsx'
+```
+
+7. 按看板工作流创建日期页与审阅后的记录；空白工作簿不是自动填好的数据库。使用海投选择器前，本地创建 `.career-os/audits/resume-pool.json`，初始可为 `{"files":[]}`。
+
+流水线会检查看板历史，因此pipeline/history命令要求真实看板文件存在。不能为了绕过缺文件错误，把未知学历、合同或身份改成PASS。
+
+## 日常使用
+
+对Agent可以这样说：
+
+> 使用本项目Skill，找新的Python alternance岗位，检查重复项和硬门槛。只对确认PASS的岗位准备材料，不提交申请。
+
+也可以直接粘贴JD链接，要求完成评估和材料工作流。Agent应接续脚本生成的任务，而不是让用户手写assessment.json。
+
+```powershell
+node .career-os/tools/career.mjs tracker --history
+node .career-os/tools/career.mjs scan --no-browser
+node .career-os/tools/career.mjs scan --portal 'LinkedIn' --no-browser
+node .career-os/tools/career.mjs pipeline --url 'https://example.org/job'
+node .career-os/tools/career.mjs tracker --id '记录ID'
+```
+
+默认线索目录为 `.career-os/applications/automation/`：包含 `leads.json`、`list.md`、`search-queue.json`、`scan-agent-task.md`、单岗位capture/context/report文件及 `tracker.sqlite`。可用 `CAREER_STATE_DIR`指定工作区内独立目录。岗位发现不会自动写Excel，也不会标记申请成功。
+
+## 网站支持与抓取回退
+
+| 网站 | 实现与限制 |
+|---|---|
+| WTTJ | 复用上游公共Algolia查询，动态读取公开搜索配置，设置法国过滤与结果上限。 |
+| HelloWork | 提取公开HTML详情链接，已有可用岗位时不额外渲染。 |
+| LinkedIn | 允许明确配置的www/fr/主域名，去除已知岗位跟踪参数；登录墙仍可能影响获取。 |
+| Indeed France | HTTP可能403；识别原生sj_卡片ID，转换viewjob?jk=稳定地址；当前Agent可用IAB读取列表并导入。 |
+| La Bonne Alternance | 使用已核验的软件开发查询参数和ROME M1861，只保留真实LBA/合作方岗位，不把预测招聘企业当职位。其他职业须另行核验参数。 |
+
+在 `portals.yml` 修改搜索词、包含/岗位/排除关键词、单网站查询、确切允许域名、详情路径规则和数量上限。规范化JSON API可配置 `api_url`，认证用 `api_token_env`读取环境变量；如果官方响应结构不同，需要适配器，不能仅换URL声称支持。
+
+脚本失败后，当前Agent读取回退任务，优先用IAB打开公开列表，记录**实际可见**的标题和链接：
+
+```json
+{
+  "kind": "listing",
+  "url": "https://example.org/search?q=Python",
+  "pageUrl": "https://example.org/search?q=Python",
+  "capturedAt": "当前ISO时间",
+  "bodyText": "实际观察到的岗位标题",
+  "links": [{"url": "https://example.org/job/123", "title": "实际观察到的岗位标题"}]
+}
+```
+
+```powershell
+node .career-os/tools/scan.mjs --listing-capture local-listing.json --no-browser
+node .career-os/tools/scan.mjs --import discoveries.json --import-only
+```
+
+记录24小时内有效，标题须存在于观察文本。列表和搜索摘要只是线索，不能当完整JD或开放证据。浏览器仍受阻时，Agent用WebSearch发现详情链接后导入；不绕过验证码或登录保护。有限结果上限不代表全站穷尽；直接请求403也不等于岗位关闭。
+
+## 从JD到评估与申请回答
+
+14项KO键为：`contract`、`rhythm`、`location`、`remote`、`start`、`education`、`experience`、`technology`、`french`、`english`、`permit`、`salary`、`credentials`、`duplicate`。
+
+每项要有结果与理由；FAIL需要真实JD原文证据。关键检查不能随意写NA。未知硬条件汇总为MARGINAL；FAIL/MARGINAL都停止正式材料生成。
+
+A–G依次为岗位概况、经历证据匹配、等级与策略、薪酬/需求、定制方案、面试准备、真实性风险。H为申请回答草稿。总体优先级为可解释1–5或未知，不做机械加权匹配率；当前规则不以工资决定优先级。
+
+回答区分 `common-draft` 和 `observed-form`，状态区分 `draft` 和 `needs-user`。不猜工作许可法律声明、证件、薪资或通勤。JD/人物事实/规则改变后，contextHash变化，旧评估会被拒绝。
+
+## 材料生成与审核
+
+Agent生成含 `cv`、`letter`替换数组的payload。每项包括支持的selector、正文、必要时的index，以及不少于8字符的事实原文引用：
+
+```json
+{
+  "selector": ".profil-text",
+  "text": "由本地事实库支持的表述。",
+  "sources": [{"path": ".career-os/profile/basics.md", "quote": "可定位的完整原文引用"}]
+}
+```
+
+```powershell
+node .career-os/tools/generate-application.mjs --company 'Example Company' --role 'Developer' --claims local-payload.json --validate-only
+```
+
+完整格式见工具README和 `pipeline-schema.json`。PASS分支必须定制四个经历正文、技能、可用性和教育路线。每次输出到全新 `CV/YYYY-MM-DD-.../`，不覆盖母版，包含两份PDF、来源映射、QA和最终页截图。
+
+每份PDF要求单页、严格小于3,000,000字节；压缩前后提取文字必须一致。**引用存在不等于表述真实，机器QA不等于完成视觉检查。** 原型不能写成生产部署，研究不能写成已实现成果，计划毕业不能写成已获学历。
+
+状态 `materials-pending-review`仍需事实语义和最终页审阅，不代表已可投递，更不代表已提交。同一上下文和payload可复用材料；事实或payload变化应输出新版本。
+
+## 看板、海投与跟进
+
+```powershell
+node .career-os/tools/dashboard.mjs --patch local-patch.json
+node .career-os/tools/dashboard.mjs --patch local-patch.json --apply
+node .career-os/tools/select-resume.mjs --file 'CV/private-reviewed-version.pdf'
+```
+
+看板补丁在日期页按现有稳定ID定位，要求旧值与新值，保护公式、拒绝冲突阶段，并要求提交证据。默认预览不写；apply检查锁/占用、保留备份、重算并导出重读核对。新增行/日期页仍走看板工作流和目视检查。
+
+海投选择器只接受注册表中verified且当前哈希一致的文件。本发行版不带任何已验证的候选人CV。跟进默认间隔只是本地可配置建议，不代表发送授权。漏斗分析应说明分母和时间窗；缺历史阶段转移时不制造转化率，未回复不能自动当拒绝。
+
+## 常见问题与边界
+
+- 缺profile/工作簿：先完成私人配置，不绕过申请历史和必要KO。
+- Python/Chrome找不到：配置 `CAREER_PYTHON` / `CAREER_CHROME`；HTTP扫描可加 `--no-browser`。
+- 403、登录墙或不完整JD：保留待核验，接续Agent回退任务，不当作失效。
+- 评估或网页记录过期：重新获取当前证据；网页捕获有效24小时。
+- 工作簿占用或遗留.lock：先关闭Excel/确认没有运行任务，再人工恢复；不自动抢锁。
+- PDF溢出或占位文字：精简有证据的内容、填写私人模板，重渲染并检查最终截图。
+- 模板预览缺失：上游截图、照片和渲染PDF未随发行版发布；源码模板可能仍引用可选预览。
+- 想无人值守：当前未配置模型/搜索worker或调度器，系统是Agent协助的本地工作流。
+
+使用个人资料或发布更改前阅读 [PRIVACY.md](PRIVACY.md)。`.gitignore`不会清洗已经跟踪的文件或旧历史。文件本地保存也不代表Agent/模型服务完全离线处理。
+
+## 开源协议与致谢
+
+项目自有改编内容采用 [MIT](LICENSE)。保留模块、字体、模板和Typst包继续遵守各自许可证及归属。工作流/资源参考ApplyPilot、Personal Career OS、resume-builder和career-ops；选定MIT career-ops代码和PyYAML随许可附带。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，再发行不要丢弃这些归属文件。

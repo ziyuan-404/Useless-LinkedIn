@@ -1,0 +1,336 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Candidate</title><style>
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  body {
+    width: 210mm;
+    height: 297mm;
+    background: #ffffff;
+    color: #333333;
+    font-size: 9.2pt;
+    line-height: 1.4;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  .cv-container {
+    display: flex;
+    width: 210mm;
+    height: 297mm;
+  }
+  
+  /* LEFT SIDEBAR */
+  .sidebar {
+    width: 70mm;
+    height: 297mm;
+    background-color: #283446;
+    color: #ffffff;
+    padding: 9mm 7mm 9mm 8mm;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .profile-photo {
+    width: 42mm;
+    height: auto;
+    max-height: 56mm;
+    object-fit: contain;
+    object-position: center center;
+    display: block;
+    margin: 0 auto 12px auto;
+  }
+  
+  .sidebar h2 {
+    font-size: 13pt;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.8px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.4);
+    padding-bottom: 4px;
+  }
+
+  .sidebar h2:first-of-type {
+    margin-top: 0;
+  }
+  
+  .contact-item {
+    font-size: 10pt;
+    margin-bottom: 8px;
+    word-break: break-word;
+    color: #ffffff;
+  }
+  
+  .contact-item strong {
+    font-weight: 600;
+    display: block;
+    font-size: 10pt;
+    color: #ffffff;
+    margin-bottom: 2px;
+  }
+
+  .contact-item span, .contact-item a {
+    color: #ffffff;
+    text-decoration: underline;
+    font-size: 9.5pt;
+  }
+  
+  .skill-bullets {
+    list-style-type: none;
+    margin-top: 5px;
+  }
+
+  .skill-bullets li {
+    position: relative;
+    padding-left: 12px;
+    font-size: 9.5pt;
+    color: #e2e8f0;
+    line-height: 1.52;
+    margin-bottom: 14px;
+  }
+
+  .skill-bullets li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #ffffff;
+    font-size: 9.5pt;
+  }
+
+  .skill-bullets strong {
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .lang-bullets {
+    list-style-type: none;
+    margin-top: 4px;
+  }
+
+  .lang-bullets li {
+    position: relative;
+    padding-left: 12px;
+    font-size: 9.8pt;
+    color: #ffffff;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+
+  .lang-bullets li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #ffffff;
+    font-size: 9.5pt;
+  }
+  
+  /* MAIN CONTENT */
+  .main {
+    width: 140mm;
+    height: 297mm;
+    padding: 9mm 10mm 9mm 10mm;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .header {
+    margin-bottom: 8px;
+  }
+  
+  .header h1 {
+    font-size: 26pt;
+    font-weight: 800;
+    color: #283446;
+    line-height: 1.05;
+    letter-spacing: -0.4px;
+  }
+
+  .header .subtitle {
+    font-size: 11pt;
+    font-weight: 500;
+    color: #4d4d4f;
+    margin-top: 7px;
+    white-space: nowrap;
+  }
+  
+  /* PROFIL WITH TARGET ON RIGHT ALIGNED */
+  .profil-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 10px;
+    margin-bottom: 4px;
+  }
+  
+  .profil-header-title {
+    font-size: 13.5pt;
+    font-weight: 800;
+    color: #283446;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  .profil-header-target {
+    text-align: right;
+    font-size: 8pt;
+    font-weight: 700;
+    color: #4d4d4f;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .section-line {
+    border-bottom: 2px solid #283446;
+    margin-bottom: 6px;
+  }
+  
+  .section-title {
+    font-size: 13.5pt;
+    font-weight: 800;
+    color: #283446;
+    letter-spacing: 0.8px;
+    margin-top: 12px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    border-bottom: 2px solid #283446;
+    padding-bottom: 3px;
+  }
+  
+  .profil-text {
+    font-size: 8.8pt;
+    color: #4d4d4f;
+    line-height: 1.36;
+    text-align: justify;
+    margin-bottom: 2px;
+  }
+
+  .profil-text strong {
+    font-weight: 700;
+    color: #283446;
+  }
+  
+  .item-block {
+    margin-bottom: 7px;
+  }
+
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 3px;
+  }
+  
+  .item-title {
+    font-size: 9.8pt;
+    font-weight: 700;
+    color: #283446;
+  }
+  
+  .item-date {
+    font-size: 8.7pt;
+    font-weight: 500;
+    color: #4d4d4f;
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 10px;
+  }
+
+  .item-sub-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 3px;
+  }
+  
+  .item-sub {
+    font-size: 8.7pt;
+    color: #4d4d4f;
+  }
+
+  .item-loc {
+    font-size: 8.7pt;
+    color: #4d4d4f;
+    text-align: right;
+    white-space: nowrap;
+  }
+  
+  .item-bullets {
+    list-style-type: none;
+    margin-top: 2px;
+  }
+  
+  .item-bullets li {
+    position: relative;
+    padding-left: 10px;
+    font-size: 8.6pt;
+    color: #4d4d4f;
+    line-height: 1.36;
+    margin-bottom: 2.5px;
+  }
+  
+  .item-bullets li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #283446;
+    font-size: 8.5pt;
+  }
+
+  .item-bullets strong {
+    font-weight: 700;
+    color: #283446;
+  }
+  
+  .course-list {
+    font-size: 8.4pt;
+    color: #4d4d4f;
+    line-height: 1.32;
+    margin-top: 3px;
+  }
+
+  .course-list strong {
+    font-weight: 700;
+    color: #283446;
+  }
+
+  .icon-logo {
+    width: 12px;
+    height: 12px;
+    vertical-align: middle;
+    fill: white;
+    margin-right: 6px;
+  }
+  body, .contact-item span, .contact-item a, .skill-bullets li, .lang-bullets li,
+  .profil-header-target, .profil-text, .item-title, .item-date, .item-sub, .item-loc,
+  .item-bullets li, .course-list { font-size: 10pt; }
+  .header .subtitle { white-space: normal; }
+  .item-header { gap: 2mm; }
+  .item-date { margin-left: 0; }
+  .item-bullets li { line-height: 1.32; }
+  .main { display: block; }
+  .header { margin-bottom: 3mm; }
+  .profil-header-row { margin-top: 0; margin-bottom: 0; }
+  .section-line { margin-bottom: 2px; }
+  .section-title { padding-bottom: 0; margin-top: 4mm; margin-bottom: 3mm; }
+  .contact-item strong.inline-label { display: inline; margin-right: 4px; }
+  .availability { margin-top: 6mm; }
+  .availability strong { margin-bottom: 5px; }
+  .availability span { line-height: 1.7; }
+  .sidebar h2 { padding-bottom: 1px; }
+  .section-line { margin-bottom: 0; }
+  .profil-text { padding-top: 3mm; padding-bottom: 3mm; margin-bottom: 0; }
+  .profil-text + .section-title { margin-top: 0; }
+</style></head><body><div class="page"><aside class="sidebar"><img src="portrait.png" alt="Placeholder" style="width:35mm;height:35mm"><h2>Contact</h2><p>candidate@example.com</p><div class="availability">Availability to confirm</div><ul class="lang-bullets"><li>Languages to confirm</li></ul><ul class="skill-bullets"><li>Skills to confirm</li></ul></aside><main class="main"><header class="header"><h1>Candidate</h1><div class="subtitle">Target role</div></header><div class="profil-header-target">Contract to confirm</div><div class="profil-text">Profile to complete using confirmed facts</div><div class="item"><div class="item-title">Experience 1</div><div class="item-date">Date</div><div class="item-sub">Organization</div><div class="item-loc">Location</div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div><div class="item"><div class="item-title">Experience 2</div><div class="item-date">Date</div><div class="item-sub">Organization</div><div class="item-loc">Location</div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div><div class="item"><div class="item-title">Experience 3</div><div class="item-date">Date</div><div class="item-sub">Organization</div><div class="item-loc">Location</div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div><div class="item"><div class="item-title">Experience 4</div><div class="item-date">Date</div><div class="item-sub">Organization</div><div class="item-loc">Location</div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div><div class="item"><div class="item-title">Education</div><div class="item-date">Date</div><div class="item-sub">School</div><div class="item-loc">Location</div><div class="course-list">Courses to confirm</div></div></main></div></body></html>

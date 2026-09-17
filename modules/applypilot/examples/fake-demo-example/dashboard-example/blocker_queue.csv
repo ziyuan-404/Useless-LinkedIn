@@ -1,0 +1,3 @@
+date,company,job_title,job_url,blocker_category,what_happened,why_blocked,can_retry,next_retry_strategy,user_action_needed,status
+2026-06-28,SignalWorks,Product Analyst,https://example.com/jobs/signalworks-pa,ATS dropdown,Location displayed as selected but validation stayed invalid,Submitting could send incomplete form,yes,Retry with visual/computer use,,open
+2026-06-28,BuildLabs,Product Manager,https://example.com/jobs/buildlabs-pm,CAPTCHA / Cloudflare,CAPTCHA appeared before final submit,Human verification cannot be bypassed,no,User handoff,Complete CAPTCHA manually,open

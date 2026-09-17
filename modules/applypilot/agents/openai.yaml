@@ -1,0 +1,4 @@
+interface:
+  display_name: "ApplyPilot"
+  short_description: "Reusable AI job application workflow"
+  default_prompt: "Use $applypilot to set up my candidate profile, job dashboard, application rules, and resume strategy."

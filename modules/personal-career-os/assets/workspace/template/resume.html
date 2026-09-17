@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!--
+  Personal Career OS 默认简历模板
+  ────────────────────────────────────────────────────────────
+  · 用户没有指定版式时，固定使用本结构和 references/methodology/默认简历版式规范.md 的视觉参数。
+  · 左侧学校标识（优先官方“校徽+校名”组合）与右侧证件照均为选做；不要求同时使用，没有可靠素材时保持空白。
+  · 只替换正文内容、增删实际需要的 section；不要改动 CSS 与结构类名。
+  · PDF/PNG：运行 scripts/render.sh 或 scripts/render.ps1；PNG 必须从最终 PDF 栅格化。
+  · DOCX：运行 scripts/export-docx.py，并将 Word 渲染为图片确认恰好一页。
+  · 示例内容只用于展示结构，绝不能当作用户事实。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>张三 - 简历（结构示例）</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 210mm; background: #fff; }
+  body {
+    color: #111;
+    font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+    font-size: 10pt;
+    line-height: 1.42; /* 密度检查后可在 1.42–1.60 内调整，字号不得低于 10pt */
+  }
+  .page {
+    position: relative;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 9mm 7.5mm 8mm;
+    background: #fff;
+  }
+
+  /* 三栏页眉：学校标识（可选）｜姓名与联系方式｜证件照（可选） */
+  .resume-header {
+    display: grid;
+    grid-template-columns: 42mm 1fr 40mm;
+    align-items: center;
+    min-height: 30mm;
+    column-gap: 0;
+  }
+  .header-side { min-height: 28mm; display: flex; align-items: center; }
+  .header-logo { justify-content: flex-start; }
+  .header-photo { justify-content: flex-end; }
+  .school-logo { display: block; width: auto; height: auto; max-width: 40mm; max-height: 16mm; object-fit: contain; }
+  .portrait { display: block; width: 20mm; height: 27mm; object-fit: contain; }
+  .header-main { text-align: center; align-self: center; }
+  .name { font-size: 18pt; font-weight: 700; letter-spacing: 2px; line-height: 1.2; }
+  .contact { margin-top: 3mm; font-size: 10pt; white-space: nowrap; }
+  .contact span + span::before { content: "｜"; margin: 0 1.5mm; color: #555; }
+  .availability { margin-top: 1mm; font-size: 10pt; white-space: nowrap; }
+
+  /* 区块 */
+  section { margin-top: 2.6mm; }
+  h2 {
+    font-size: 12.5pt;
+    font-weight: 700;
+    line-height: 1.2;
+    padding-bottom: 1mm;
+    margin-bottom: 1.8mm;
+    border-bottom: 1.4px solid #111;
+  }
+
+  /* 经历条目 */
+  .entry { margin-bottom: 1.7mm; break-inside: avoid; }
+  .entry:last-child { margin-bottom: 0; }
+  .entry-head { display: flex; justify-content: space-between; align-items: baseline; gap: 4mm; }
+  .entry-head-main { min-width: 0; }
+  .entry-title { font-weight: 700; }
+  .entry-role { font-weight: 700; }
+  .entry-role::before { content: "｜"; margin: 0 1mm; font-weight: 400; }
+  .entry-date { flex: 0 0 auto; font-size: 10pt; white-space: nowrap; }
+  ul { list-style: none; margin-top: 0.5mm; }
+  li { position: relative; padding-left: 4.8mm; margin-bottom: 0.45mm; text-align: justify; }
+  li::before { content: "●"; position: absolute; left: 0.3mm; top: 0; font-size: 7pt; }
+  li b, .kv b { font-weight: 700; }
+  .kv { margin-bottom: 0.45mm; text-align: justify; }
+
+  /* 一页预览守卫：仅屏幕显示，打印和最终 PNG 不显示 */
+  #overflow-warn {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9;
+    padding: 6px 12px;
+    background: #b3261e;
+    color: #fff;
+    font-family: sans-serif;
+    font-size: 12px;
+    text-align: center;
+  }
+  .page-limit-line {
+    position: absolute;
+    top: 297mm;
+    left: 0;
+    right: 0;
+    z-index: 8;
+    border-top: 1px dashed #b3261e;
+  }
+  .page-limit-line::after {
+    content: "▲ A4 一页边界";
+    position: absolute;
+    right: 2mm;
+    bottom: 1px;
+    color: #b3261e;
+    font: 9px sans-serif;
+  }
+  @media print {
+    #overflow-warn, .page-limit-line { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="overflow-warn"></div>
+<main class="page">
+  <div class="page-limit-line"></div>
+
+  <header class="resume-header">
+    <div class="header-side header-logo">
+      <!-- 仅在确认素材清晰且版面协调后添加：<img class="school-logo" src="school-mark.standard.png" alt="学校标识"> -->
+    </div>
+    <div class="header-main">
+      <div class="name">张三</div>
+      <div class="contact"><span>138-0000-0000</span><span>zhangsan@example.com</span><span>北京</span></div>
+      <!-- JD 有硬性出勤/时长要求时可添加：<div class="availability">每周 5 天｜可实习至少 3 个月｜尽快到岗</div> -->
+    </div>
+    <div class="header-side header-photo">
+      <!-- 仅在用户确认使用后添加：<img class="portrait" src="portrait.standard.png" alt="证件照"> -->
+    </div>
+  </header>
+
+  <section>
+    <h2>教育经历</h2>
+    <div class="entry">
+      <div class="entry-head">
+        <div class="entry-head-main"><span class="entry-title">某某大学</span><span class="entry-role">管理学学士 · 信息管理</span></div>
+        <div class="entry-date">2023.09 - 2027.06</div>
+      </div>
+      <div class="kv"><b>成绩与课程：</b>GPA 86/100（前 15%）；统计学、数据库原理、运营管理</div>
+      <div class="kv"><b>奖项与荣誉：</b>校级奖学金 ×2</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>实习经历</h2>
+    <div class="entry">
+      <div class="entry-head">
+        <div class="entry-head-main"><span class="entry-title">某电商科技公司</span><span class="entry-role">数据分析实习生</span></div>
+        <div class="entry-date">2025.07 - 2025.12</div>
+      </div>
+      <ul>
+        <li><b>业务分析：</b>维护 12 张核心业务报表，覆盖运营、市场 2 个团队的日常数据需求。</li>
+        <li><b>专题研究：</b>处理 3 个月约 200 万条订单数据，定位复购率下滑的 2 个主因并形成策略建议。</li>
+      </ul>
+    </div>
+    <div class="entry">
+      <div class="entry-head">
+        <div class="entry-head-main"><span class="entry-title">某咨询公司</span><span class="entry-role">商业分析实习生</span></div>
+        <div class="entry-date">2025.01 - 2025.04</div>
+      </div>
+      <ul>
+        <li><b>行业研究：</b>完成公开资料检索、访谈纪要整理与竞品信息归纳，支持项目组交付。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>项目经历</h2>
+    <div class="entry">
+      <div class="entry-head">
+        <div class="entry-head-main"><span class="entry-title">某商业数据分析大赛</span><span class="entry-role">队长</span></div>
+        <div class="entry-date">2025.03 - 2025.05</div>
+      </div>
+      <ul>
+        <li><b>项目管理：</b>带领 4 人团队整合人口与商圈数据，建立回归模型并完成选址建议报告与路演。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>学生工作经历</h2>
+    <div class="entry">
+      <div class="entry-head">
+        <div class="entry-head-main"><span class="entry-title">某某大学学生会</span><span class="entry-role">部门负责人</span></div>
+        <div class="entry-date">2024.09 - 2025.06</div>
+      </div>
+      <ul>
+        <li><b>组织协同：</b>协调 20 名成员完成活动策划、物料、宣传与现场执行，覆盖校内 300 余人。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>其他</h2>
+    <div class="kv"><b>技能：</b>SQL（多表 JOIN、窗口函数）、Excel 数据透视表、Python（数据清洗）。</div>
+    <div class="kv"><b>语言：</b>大学英语六级；普通话二级甲等。</div>
+  </section>
+</main>
+<script>
+  window.addEventListener("load", function () {
+    var page = document.querySelector(".page");
+    var pxPerMm = page.offsetWidth / 210;
+    var overflowMm = (page.scrollHeight - 297 * pxPerMm) / pxPerMm;
+    if (overflowMm > 1) {
+      var warning = document.getElementById("overflow-warn");
+      warning.style.display = "block";
+      warning.textContent = "内容超出 A4 一页约 " + overflowMm.toFixed(0) + " mm，请删减后再导出";
+    }
+  });
+</script>
+</body>
+</html>
