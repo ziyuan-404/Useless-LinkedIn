@@ -4,7 +4,7 @@
 
 [中文](README.md) · [Technical guide (Chinese)](docs/技术配置指南.md) · [Privacy](PRIVACY.md)
 
-Useless LinkedIn is an **AI agent job-search workflow / Skill**. Bring your CV and career goals; your agent helps discover vacancies, check requirements, prepare CVs and cover letters, and keep track of applications. Tell it what you need in everyday language—no scripting required.
+Useless LinkedIn is an **agent-native Career OS for job search in France**: one Skill entry point, stateful workflows, domain modules and deterministic tools. Bring your CV and career goals; your agent helps discover vacancies, check requirements, prepare materials, apply within your authorization and track outcomes. Tell it what you need in everyday language—no scripting required.
 
 It is a skill pack rather than a separate website or a LinkedIn browser extension. The included search configuration focuses on **France and alternance (work-study apprenticeships)** across several job boards. Other regions require search adjustments.
 

@@ -4,7 +4,7 @@ import {spawnSync} from 'node:child_process';
 import {root,args,slug} from './runtime.mjs';
 import {fingerprintText,similarity} from '../vendor/career-ops/fingerprint-core.mjs';
 const command=process.argv[2],a=args(process.argv.slice(3));
-if(['scan','pipeline','tracker'].includes(command)){const p=spawnSync(process.execPath,[path.join(root,'.career-os/tools',`${command}.mjs`),...process.argv.slice(3)],{stdio:'inherit'});process.exit(p.status??1);}
+if(['scan','pipeline','tracker','state','authorization'].includes(command)){const p=spawnSync(process.execPath,[path.join(root,'.career-os/tools',`${command}.mjs`),...process.argv.slice(3)],{stdio:'inherit'});process.exit(p.status??1);}
 if(command!=='intake'){console.log('career.mjs intake --company COMPANY --role ROLE --jd FILE --url URL');process.exit(command==='--help'?0:1);}
 for(const k of ['company','role','jd','url'])if(typeof a[k]!=='string')throw Error(`Missing --${k}`);
 if(!['http:','https:'].includes(new URL(a.url).protocol))throw Error('Invalid URL');

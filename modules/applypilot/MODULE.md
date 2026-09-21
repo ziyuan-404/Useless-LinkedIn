@@ -1,6 +1,6 @@
 # ApplyPilot（内部模块）
 
-本文件保留上游 ApplyPilot 的工作流细节，只能由项目根目录 `SKILL.md` 路由。总控模式下跳过 Candidate Profile 初始化和 CSV 权威台账，分别改用 `.career-os` 唯一事实库和 Excel dashboard。
+本文件保留上游 ApplyPilot 的领域规则与参考细节，只能由项目根目录 `SKILL.md` 路由。实际执行顺序以 `workflows/` 为准。总控模式下跳过 Candidate Profile 初始化和 CSV 台账，人物事实只用 `.career-os/profile/`；自动线索状态见 `.career-os/applications/automation/`，历史申请仍与 Excel 核对。
 
 ApplyPilot is a job application operating workflow for AI agents. It helps users turn job searching into a repeatable system: profile, dashboard, screening rules, resume strategy, application execution, blocker triage, and follow-up.
 
@@ -59,7 +59,7 @@ Never fabricate experience, credentials, degrees, employers, dates, work authori
 
 Read `references/application-playbook.md` before operating browser-based applications, LinkedIn Easy Apply, Simplify, Greenhouse, Lever, Ashby, Workday, or other ATS flows.
 
-Stop or hand off for CAPTCHA, Cloudflare, anti-bot checks, login or 2FA, conflicting identity/sponsorship facts, missing files, payment prompts, or permission prompts. Standard terms of service, privacy policy consents, and cookie banners are pre-authorized to be automatically accepted without stopping.
+Stop or hand off for CAPTCHA, Cloudflare, anti-bot checks, login or 2FA, conflicting identity/sponsorship facts, missing files, payment prompts, or permission prompts. Handle terms, privacy consents and cookie banners within the current user's authorization and runtime rules.
 
 ### 5. Record Every Outcome
 

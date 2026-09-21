@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Career OS authorization ledger",
+  "type": "object",
+  "required": ["version", "grants"],
+  "properties": {
+    "version": {"const": 1},
+    "grants": {"type": "array", "items": {"type": "object", "required": ["id", "source", "recordedAt", "scope", "actions"], "properties": {
+      "id": {"type": "string", "minLength": 1},
+      "source": {"type": "string", "minLength": 1},
+      "recordedAt": {"type": "string", "format": "date-time"},
+      "grantedAt": {"type": "string", "format": "date-time"},
+      "expiresAt": {"type": "string", "format": "date-time"},
+      "revokedAt": {"type": "string", "format": "date-time"},
+      "scope": {"type": "object", "required": ["kind"], "properties": {"kind": {"enum": ["workspace", "job"]}, "jobId": {"type": "string", "minLength": 1}}, "additionalProperties": false},
+      "actions": {"type": "object", "properties": {"prepare_materials": {"type": "boolean"}, "prefill_form": {"type": "boolean"}, "upload_files": {"type": "boolean"}, "submit": {"type": "boolean"}, "send_message": {"type": "boolean"}}, "additionalProperties": false}
+    }, "additionalProperties": false}}
+  },
+  "additionalProperties": false
+}

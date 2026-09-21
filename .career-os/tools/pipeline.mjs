@@ -4,6 +4,7 @@ import {spawnSync} from 'node:child_process';
 import {root,args} from './runtime.mjs';
 import {home,hash,capture,read,write,transaction,add,exportList,classifyLiveness} from './lib/core.mjs';
 import {fingerprintText,similarity} from '../vendor/career-ops/fingerprint-core.mjs';
+import {assertTransition} from './lib/state-machine.mjs';
 const a=args();if(a.help){console.log('pipeline.mjs --url URL [--assessment FILE] [--no-browser] | --id ID [--assessment FILE]');process.exit(0);}
 const historyResult=spawnSync(process.execPath,[path.join(root,'.career-os/tools/tracker.mjs'),'--history'],{encoding:'utf8'});if(historyResult.status!==0)throw Error('Cannot check application history: '+historyResult.stderr);
 let store=await read(path.join(home,'leads.json'),{jobs:[]});let job=a.id?store.jobs.find(j=>j.id===a.id):store.jobs.find(j=>j.url===a.url);
@@ -16,7 +17,7 @@ try{
  else captured=await capture(job.url,{browser:!a['no-browser']});
  await write(path.join(dir,'capture.json'),captured);await write(path.join(dir,'jd.txt'),captured.jd||'');
  if(captured.liveness.result==='active'&&captured.jd){await transaction(s=>{const current=s.jobs.find(x=>x.id===job.id);const fp=fingerprintText(captured.jd);current.jd=captured.jd;current.fingerprint=fp;if(!current.duplicateResolution){current.possibleDuplicates=s.jobs.filter(x=>x.id!==job.id&&fp&&x.fingerprint&&similarity(fp,x.fingerprint)>=.92&&Date.now()-Date.parse(x.lastSeenAt)<90*86400000).map(x=>x.id);job.possibleDuplicates=current.possibleDuplicates;}});}
- const set=async values=>{await transaction(s=>{const j=s.jobs.find(j=>j.id===job.id);j.events=[...(j.events||[]),{at:new Date().toISOString(),from:j.state,to:values.state,ko:values.ko||null}];Object.assign(j,values);});await exportList();const p=spawnSync(process.execPath,[path.join(root,'.career-os/tools/tracker.mjs'),'--rebuild'],{encoding:'utf8'});if(p.status!==0)throw Error('Tracker rebuild failed: '+p.stderr);};
+ const set=async values=>{await transaction(s=>{const j=s.jobs.find(j=>j.id===job.id);assertTransition(j.state,values.state,values);j.events=[...(j.events||[]),{at:new Date().toISOString(),from:j.state,to:values.state,ko:values.ko||null}];Object.assign(j,values);});await exportList();const p=spawnSync(process.execPath,[path.join(root,'.career-os/tools/tracker.mjs'),'--rebuild'],{encoding:'utf8'});if(p.status!==0)throw Error('Tracker rebuild failed: '+p.stderr);};
  if(captured.liveness.result!=='active'){await set({state:captured.liveness.result==='expired'?'expired':'needs-verification',liveness:captured.liveness});await write(path.join(dir,'search-request.json'),{url:job.url,reason:captured.liveness,query:`"${job.company||''}" "${job.title||''}" recrutement`,completed:false});console.log(JSON.stringify({id:job.id,state:captured.liveness.result,dir}));process.exitCode=0;
  }else if(job.possibleDuplicates?.length||job.submitted||job.state==='known-application'){await set({state:'duplicate-review'});console.log('Duplicate/application history must be resolved before generating');
  }else{

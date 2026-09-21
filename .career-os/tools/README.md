@@ -5,6 +5,8 @@ Run from the repository/workspace root with Node.js 24+. Keep candidate facts an
 - `career.mjs scan [--portal NAME] [--no-browser]`: bounded public vacancy discovery.
 - `career.mjs pipeline --url URL`: full-JD liveness/history checks and a task for the current Agent; continue with `--id ID --assessment FILE`.
 - `career.mjs tracker --history`: read-only workbook history and derived tracker rebuild.
+- `career.mjs authorization --check ACTION --job-id ID`: inspect the private authorization ledger; missing grants deny the action.
+- `career.mjs state --id ID --to STATE [--evidence TEXT]`: checked state transition; approval and confirmed submission require evidence.
 - `generate-application.mjs --company COMPANY --role ROLE --claims FILE [--validate-only]`: quoted-source replacements; configure your private profile and generic layouts first.
 - `dashboard.mjs --patch FILE`: preview before `--apply`; only reviewed existing records, with before/after values and true submission evidence when required.
 - `select-resume.mjs --file FILE`: requires a verified local registry entry and matching SHA256.

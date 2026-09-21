@@ -1,0 +1,27 @@
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {root,args} from './runtime.mjs';
+import {transaction,exportList} from './lib/core.mjs';
+import {assertTransition,leadStates} from './lib/state-machine.mjs';
+
+const a=args();
+if (a.help) { console.log('state.mjs --id ID --to STATE [--evidence TEXT]'); process.exit(0); }
+if (!a.id || !leadStates.includes(a.to)) throw Error('Valid --id and --to required');
+if (['submitting','submitted'].includes(a.to)) {
+  const action='submit';
+  const check=spawnSync(process.execPath,[path.join(root,'.career-os/tools/authorization.mjs'),'--check',action,'--job-id',a.id],{encoding:'utf8'});
+  if (check.status!==0) throw Error(`Submission authorization missing: ${check.stdout||check.stderr}`);
+}
+const values={state:a.to};
+if (a.to==='approved') values.reviewEvidence=a.evidence;
+if (a.to==='submitted') { values.submitted=true; values.submissionEvidence=a.evidence; }
+await transaction(s=>{
+  const j=s.jobs.find(x=>x.id===a.id);if (!j) throw Error('Unknown job ID');
+  assertTransition(j.state,a.to,values);
+  j.events=[...(j.events||[]),{at:new Date().toISOString(),from:j.state,to:a.to,evidence:a.evidence||null}];
+  Object.assign(j,values);
+});
+await exportList();
+const rebuild=spawnSync(process.execPath,[path.join(root,'.career-os/tools/tracker.mjs'),'--rebuild'],{encoding:'utf8'});
+if (rebuild.status!==0) throw Error('Tracker rebuild failed: '+rebuild.stderr);
+console.log(JSON.stringify({id:a.id,state:a.to}));

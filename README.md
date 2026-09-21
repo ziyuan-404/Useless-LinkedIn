@@ -4,9 +4,11 @@
 
 [English](README.en.md) · [详细技术配置](docs/技术配置指南.md) · [隐私说明](PRIVACY.md)
 
-Useless LinkedIn 是一套 **AI Agent 求职工作流 / Skill（技能包）**。你提供自己的简历和求职目标，Agent 帮你找岗位、筛选要求、准备简历与动机信、整理申请记录。你可以用中文告诉它要做什么，不需要自己写脚本。
+Useless LinkedIn 是面向法国求职与 alternance 的 **Agent Career OS**：一个 Skill 入口，多个有状态工作流，复用领域模块和确定性工具。你提供真实经历与求职目标，Agent 找岗位、筛选要求、准备材料、在授权范围内投递并整理结果。你可以用中文告诉它要做什么，不需要自己写脚本。
 
 它不是一个需要单独登录的网站，也不是 LinkedIn 插件。当前岗位搜索配置主要面向**法国求职与 alternance（学徒制 / 工学交替）**，支持多个招聘网站；其他地区需要调整搜索配置。
+
+系统按四层工作：**Career Memory** 保存可追溯经历，**Job Intelligence** 发现并评估岗位，**Application Engine** 准备材料并在授权范围内投递，**Pipeline** 跟踪结果并把有证据的复盘结论带入下一轮。执行顺序见 `workflows/`，判断规则见 `modules/`。
 
 ## 这个 Skill 的核心优点
 
