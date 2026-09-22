@@ -52,6 +52,7 @@ try{
  if(!result.payload)throw Error('PASS requires material payload');await checkSources(result.payload.cv,[path.join(root,'.useless-linkedin/profile')]);await checkSources(result.payload.letter,[path.join(root,'.useless-linkedin/profile'),path.join(dir,'jd.txt')]);
  for(const selector of ['.subtitle','.profil-text','.skill-bullets','.availability','.course-list'])if(!result.payload.cv.some(x=>x.selector===selector))throw Error(`Full customization requires ${selector}`);
  for(let i=0;i<4;i++)if(!result.payload.cv.some(x=>x.selector==='.item-bullets'&&x.index===i))throw Error(`Missing experience customization ${i}`);
+ for(let i=0;i<2;i++)if(!result.payload.cv.some(x=>x.selector==='.item-date'&&x.index===i))throw Error(`Missing sourced experience date ${i}`);
  for(const selector of ['.item-date','.item-sub'])if(!result.payload.cv.some(x=>x.selector===selector&&x.index===4))throw Error('Education route must be explicitly customized');
  await write(path.join(dir,'payload.json'),result.payload);
  const output=path.join(root,'CV',`${new Date().toISOString().slice(0,10)}-${job.id}-${hash(contextHash+JSON.stringify(result.payload)).slice(0,8)}`);

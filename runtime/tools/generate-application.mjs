@@ -19,9 +19,10 @@ for(const [kind,allowed] of [['cv',['.subtitle','.profil-text','.skill-bullets',
 for(const [kind,selector] of [['cv','.subtitle'],['cv','.profil-text'],['letter','.subject'],['letter','.letter']])if(!payload[kind].some(x=>x.selector===selector))throw Error(`Required ${selector}`);
 if(a['validate-only']){console.log('Sources valid; semantic review still required');process.exit(0);}
 const date=a.date || new Date().toLocaleDateString('en-CA',{timeZone:'Europe/Paris'});if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Invalid date');
-const out=a.output?path.resolve(root,a.output):path.join(root,'CV',`${date}-${slug(a.company)}-${slug(a.role)}`);
-if(!out.startsWith(path.join(root,'CV')+path.sep))throw Error('Output must be a new directory under CV');
-if(await fs.stat(out).then(()=>true,()=>false))throw Error('Application directory already exists');
+const finalOut=a.output?path.resolve(root,a.output):path.join(root,'CV',`${date}-${slug(a.company)}-${slug(a.role)}`);
+if(!finalOut.startsWith(path.join(root,'CV')+path.sep))throw Error('Output must be a new directory under CV');
+if(await fs.stat(finalOut).then(()=>true,()=>false))throw Error('Application directory already exists');
+const out=path.join(root,'CV',`.building-${process.pid}-${Date.now()}`);
 const {chromium}=dependency('playwright');
 const executable=process.env.USELESS_LINKEDIN_CHROME;
 const browser=await chromium.launch({headless:true,...(executable?{executablePath:executable}:{})});
@@ -33,12 +34,19 @@ try{
   await page.route('https://**/*',r=>r.abort());await page.goto(pathToFileURL(html).href);
   await page.evaluate(({items,title})=>{document.title=title;for(const item of items){const nodes=document.querySelectorAll(item.selector);if(nodes.length>1&&!Number.isInteger(item.index))throw Error(`index required for ${item.selector}`);const el=nodes[item.index??0];if(!el)throw Error(`Selector not found ${item.selector}`);if(['.letter','.skill-bullets','.item-bullets'].includes(item.selector)){el.replaceChildren(...item.text.split('\n').filter(Boolean).map(t=>{const n=document.createElement(item.selector==='.letter'?'p':'li');n.textContent=t;return n;}));}else {el.textContent=item.text;if(['.personal-info','.profil-header-target','.course-list','.availability'].includes(item.selector))el.style.whiteSpace='pre-line';}}},{items:payload[kind],title:`${candidateName} - ${a.company} - ${a.role}`});
   if(kind==='cv'){
-   const dates=[];for(const file of ['experience-1.md','experience-2.md']){
-    const source=await fs.readFile(path.join(root,'.useless-linkedin/profile/experiences',file),'utf8');const m=source.match(/^时间:\s*(\d{4})-(\d{2})[—–-](\d{4})-(\d{2})\s*$/m);if(!m)throw Error(`Confirmed dates missing: ${file}`);
-    dates.push(m[1]===m[3]?`${m[2]}-${m[4]}/${m[1]}`:`${m[2]}/${m[1]}-${m[4]}/${m[3]}`);
+   const experienceDir=path.join(root,'.useless-linkedin/profile/experiences');
+   const confirmedDates=new Map();
+   for(const file of (await fs.readdir(experienceDir)).filter(x=>x.endsWith('.md'))){
+    const source=await fs.readFile(path.join(experienceDir,file),'utf8');
+    const m=source.match(/^时间:\s*(\d{4})-(\d{2})[—–-](\d{4})-(\d{2})\s*$/m);
+    if(m)confirmedDates.set(file,m[1]===m[3]?`${m[2]}-${m[4]}/${m[1]}`:`${m[2]}/${m[1]}-${m[4]}/${m[3]}`);
    }
-   for(let i=0;i<dates.length;i++){const override=payload.cv.find(x=>x.selector==='.item-date'&&(x.index??0)===i);if(override&&override.text!==dates[i])throw Error('Internship date override conflicts with current facts');}
-   await page.evaluate(dates=>{const nodes=document.querySelectorAll('.item-date');dates.forEach((text,i)=>{if(!nodes[i])throw Error('Internship date element missing');nodes[i].textContent=text;});},dates);
+   for(let i=0;i<2;i++){
+    const override=payload.cv.find(x=>x.selector==='.item-date'&&x.index===i);
+    if(!override)throw Error(`Experience date ${i} requires an explicit sourced replacement`);
+    const matching=[...confirmedDates].filter(([file,date])=>date===override.text&&override.sources.some(s=>path.basename(s.path)===file));
+    if(!matching.length)throw Error(`Experience date ${i} conflicts with the current profile`);
+   }
   }
   const text=await page.locator('body').innerText();if(/VERSION DE TEST|\{\{/.test(text))throw Error('Stale template content');
   await fs.writeFile(html,await page.content());await page.emulateMedia({media:'print'});await page.evaluate(()=>document.fonts.ready);
@@ -46,9 +54,20 @@ try{
   const pdf=path.join(out,`${slug(candidateName)}-${name}-${slug(a.company)}-${slug(a.role)}.pdf`);
   await page.pdf({path:pdf,format:'A4',printBackground:true,preferCSSPageSize:true});await page.screenshot({path:path.join(out,'work',`${template}.png`),fullPage:true});await page.close();
  }
- const baseline={identityEducationLanguages:'.useless-linkedin/profile/basics.md',links:'.useless-linkedin/profile/links.md',experience1:'.useless-linkedin/profile/experiences/experience-1.md',experience2:'.useless-linkedin/profile/experiences/experience-2.md',project1:'.useless-linkedin/profile/experiences/project-1.md',project2:'.useless-linkedin/profile/experiences/project-2.md'};
+ const baseline={identityEducationLanguages:'.useless-linkedin/profile/basics.md',links:'.useless-linkedin/profile/links.md'};
+ for(const file of (await fs.readdir(path.join(root,'.useless-linkedin/profile/experiences'))).filter(x=>x.endsWith('.md')))baseline[`experience:${file}`]=`.useless-linkedin/profile/experiences/${file}`;
  const snapshots={};for(const [key,file] of Object.entries(baseline))snapshots[key]={path:file,sha256:createHash('sha256').update(await fs.readFile(path.join(root,file))).digest('hex')};
  await fs.writeFile(path.join(out,'work/claim-map.json'),JSON.stringify({replacements:payload,inheritedTemplateSources:snapshots,templateSha256:createHash('sha256').update(await fs.readFile(path.join(root,'.useless-linkedin/template/resume.html'))).digest('hex'),reviewRequired:'Check every inherited statement against these sources; file hashes are provenance, not semantic proof'},null,2));
  const result=spawnSync(pythonCommand(),[path.join(toolsRoot,'pdf-qa.py'),out],{encoding:'utf8'});if(result.status!==0)throw Error(result.stderr||result.stdout);
- console.log(result.stdout);console.log(out);
+ await fs.rename(out,finalOut);
+ console.log(result.stdout);console.log(finalOut);
+}catch(error){
+ if(await fs.stat(out).then(()=>true,()=>false)){
+  const failedDir=path.join(root,'.useless-linkedin/archive/generation-failed');
+  await fs.mkdir(failedDir,{recursive:true});
+  const failedPath=path.join(failedDir,`${path.basename(finalOut)}-${process.pid}-${Date.now()}`);
+  await fs.rename(out,failedPath);
+  console.error(`Partial generation saved for review: ${failedPath}`);
+ }
+ throw error;
 }finally{await browser.close();}

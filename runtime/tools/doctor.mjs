@@ -32,5 +32,11 @@ const basics=await fs.readFile(path.join(root,'.useless-linkedin/profile/basics.
 check('Profile identity',!!basics&&/^-\s*姓名[:：]\s*(?!待填写|你的姓名)\S+/m.test(basics));
 const experiences=await fs.readdir(path.join(root,'.useless-linkedin/profile/experiences')).catch(()=>[]);
 check('Experience records',experiences.some(name=>name.endsWith('.md')&&!name.startsWith('_')),`${experiences.length} files`);
+const rules=await fs.readFile(path.join(root,'.useless-linkedin/operations/application-rules.md'),'utf8').catch(()=>'');
+check('Application rules configured',!!rules&&!/- 目标岗位族：待确认|- 地点与远程偏好：待确认/.test(rules),'Target roles and location preferences must be confirmed');
+const strategy=await fs.readFile(path.join(root,'.useless-linkedin/operations/resume-strategy.md'),'utf8').catch(()=>'');
+check('Resume strategy configured',!!strategy&&!/示例：软件开发|示例：数据方向/.test(strategy),'Replace example routing rows');
+const pool=await fs.readFile(path.join(root,'.useless-linkedin/audits/resume-pool.json'),'utf8').then(JSON.parse,()=>({files:[]}));
+check('Verified bulk resume',Array.isArray(pool.files)&&pool.files.some(x=>x.status==='verified'),'Audit and verify a current PDF before bulk routing');
 console.log(JSON.stringify({workspace:root,checks},null,2));
 if(checks.some(x=>!x.ok))process.exitCode=2;

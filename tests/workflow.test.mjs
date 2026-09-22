@@ -155,3 +155,10 @@ test('public URL guard refuses private and non-HTTP destinations',async()=>{
   assert.equal(result.status,0,result.stderr);
   assert.match(result.stdout,/https:\/\/example\.org\/job/);
 });
+test('posting capture includes qualifications and refuses consent-page false positives',async()=>{
+  const workspace=await setup();
+  const moduleUrl=new URL('../runtime/tools/lib/core.mjs',import.meta.url).href;
+  const code=`import {extract} from ${JSON.stringify(moduleUrl)};const url='https://example.org/job';const job={"@type":"JobPosting",title:'Developer',description:'<p>Build software applications with the team and write tested code for customers.</p>',qualifications:'<p>Master degree is mandatory for this role.</p>'};const html='<html><body><script type="application/ld+json">'+JSON.stringify(job)+'</script><a href="/apply">Apply</a></body></html>';const good=extract({status:200,finalUrl:url,body:html,visibleText:'Developer Apply',visibleControls:['Apply']},url,'test');if(!good.jd.includes('Master degree is mandatory'))process.exit(2);const bad=extract({status:202,finalUrl:url,body:'<html><body>Consent Management Platform Apply</body></html>',visibleText:'Consent Management Platform Apply',visibleControls:['Apply']},url,'test');if(bad.liveness.result==='active')process.exit(3);`;
+  const result=spawnSync(process.execPath,['--input-type=module','-e',code],{cwd:workspace,env:{...process.env,USELESS_LINKEDIN_WORKSPACE:workspace},encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+});
