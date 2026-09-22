@@ -14,11 +14,15 @@
     "createdAt": {"type": "string", "format": "date-time"},
     "lastSeenAt": {"type": "string", "format": "date-time"},
     "possibleDuplicates": {"type": "array", "items": {"type": "string"}},
+    "historyMatch": {"type": "boolean"},
+    "historyEvidence": {"type": ["object", "null"], "required": ["source", "sheet", "row", "url"], "properties": {"source": {"const": "dashboard"}, "sheet": {"type": "string"}, "row": {"type": "integer", "minimum": 1}, "url": {"type": "string"}}},
+    "applicationMode": {"enum": ["precision", "bulk"]},
+    "output": {"type": "string"},
     "dashboardSynced": {"type": "boolean"},
     "submitted": {"type": "boolean"},
     "reason": {"type": "string"},
     "reviewEvidence": {"type": "string"},
     "submissionEvidence": {"type": "string"},
-    "events": {"type": "array", "items": {"type": "object", "required": ["at", "from", "to"], "properties": {"at": {"type": "string", "format": "date-time"}, "from": {"$ref": "state.schema.json"}, "to": {"$ref": "state.schema.json"}}}}
+    "events": {"type": "array", "items": {"type": "object", "required": ["at", "from", "to"], "properties": {"at": {"type": "string", "format": "date-time"}, "from": {"$ref": "state.schema.json"}, "to": {"$ref": "state.schema.json"}, "authorizationGrantIds": {"type": "array", "items": {"type": "string"}}}}}
   }
 }

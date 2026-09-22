@@ -3,7 +3,7 @@ import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {root,args,slug,dependency} from './runtime.mjs';
+import {root,toolsRoot,args,slug,dependency,pythonCommand} from './runtime.mjs';
 const a=args();
 if(a.help){console.log('generate-application.mjs --company COMPANY --role ROLE --claims payload.json [--date YYYY-MM-DD] [--validate-only]');process.exit(0);}
 for(const k of ['company','role','claims'])if(typeof a[k]!=='string')throw Error(`Missing --${k}`);
@@ -23,8 +23,7 @@ const out=a.output?path.resolve(root,a.output):path.join(root,'CV',`${date}-${sl
 if(!out.startsWith(path.join(root,'CV')+path.sep))throw Error('Output must be a new directory under CV');
 if(await fs.stat(out).then(()=>true,()=>false))throw Error('Application directory already exists');
 const {chromium}=dependency('playwright');
-const installedChrome=path.join(process.env.PROGRAMFILES || 'C:/Program Files','Google/Chrome/Application/chrome.exe');
-const executable=process.env.CAREER_CHROME || (await fs.stat(installedChrome).then(()=>installedChrome,()=>null));
+const executable=process.env.CAREER_CHROME;
 const browser=await chromium.launch({headless:true,...(executable?{executablePath:executable}:{})});
 try{
  await fs.mkdir(out);await fs.mkdir(path.join(out,'work'));await fs.copyFile(path.join(root,'.career-os/template/portrait.png'),path.join(out,'portrait.png'));
@@ -50,7 +49,6 @@ try{
  const baseline={identityEducationLanguages:'.career-os/profile/basics.md',links:'.career-os/profile/links.md',experience1:'.career-os/profile/experiences/experience-1.md',experience2:'.career-os/profile/experiences/experience-2.md',project1:'.career-os/profile/experiences/project-1.md',project2:'.career-os/profile/experiences/project-2.md'};
  const snapshots={};for(const [key,file] of Object.entries(baseline))snapshots[key]={path:file,sha256:createHash('sha256').update(await fs.readFile(path.join(root,file))).digest('hex')};
  await fs.writeFile(path.join(out,'work/claim-map.json'),JSON.stringify({replacements:payload,inheritedTemplateSources:snapshots,templateSha256:createHash('sha256').update(await fs.readFile(path.join(root,'.career-os/template/resume.html'))).digest('hex'),reviewRequired:'Check every inherited statement against these sources; file hashes are provenance, not semantic proof'},null,2));
- const python=process.env.CAREER_PYTHON || path.join(process.env.USERPROFILE,'.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe');
- const result=spawnSync(python,[path.join(root,'.career-os/tools/pdf-qa.py'),out],{encoding:'utf8'});if(result.status!==0)throw Error(result.stderr||result.stdout);
+ const result=spawnSync(pythonCommand(),[path.join(toolsRoot,'pdf-qa.py'),out],{encoding:'utf8'});if(result.status!==0)throw Error(result.stderr||result.stdout);
  console.log(result.stdout);console.log(out);
 }finally{await browser.close();}

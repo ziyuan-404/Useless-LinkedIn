@@ -1,8 +1,8 @@
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
-import {root} from './runtime.mjs';
+import {toolsRoot} from './runtime.mjs';
 
-const commands=['scan','pipeline','tracker','state','authorization'];
+const commands=['init','scan','pipeline','tracker','state','authorization','resume'];
 const command=process.argv[2];
 if (command==='--help' || command==='-h' || !command) {
   console.log(`career.mjs <${commands.join('|')}> [options]`);
@@ -13,6 +13,6 @@ if (!commands.includes(command)) {
   process.exit(1);
 }
 
-const result=spawnSync(process.execPath,[path.join(root,'.career-os/tools',`${command}.mjs`),...process.argv.slice(3)],{stdio:'inherit'});
+const result=spawnSync(process.execPath,[path.join(toolsRoot,`${command}.mjs`),...process.argv.slice(3)],{stdio:'inherit'});
 if (result.error) throw result.error;
 process.exit(result.status??1);

@@ -2,7 +2,7 @@
 const allowed = {
   discovered: ['awaiting-agent','needs-verification','expired','duplicate-review','possible-duplicate'],
   'possible-duplicate': ['duplicate-review','awaiting-agent','needs-verification','expired'],
-  'known-application': ['duplicate-review'],
+  'known-application': ['duplicate-review','awaiting-agent'],
   'needs-verification': ['awaiting-agent','expired','duplicate-review'],
   'duplicate-review': ['awaiting-agent','needs-verification','expired'],
   'awaiting-agent': ['awaiting-agent','needs-decision','rejected','generation-failed','materials-pending-review','needs-verification','expired','duplicate-review'],

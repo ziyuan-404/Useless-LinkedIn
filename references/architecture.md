@@ -2,7 +2,7 @@
 
 ## 一个 Skill、工作流与内部模块
 
-根目录 `SKILL.md` 是唯一入口。`workflows/` 定义何时执行哪些步骤，内部 `MODULE.md` 定义判断规则；确定性动作由 `.career-os/tools/` 执行。
+根目录 `SKILL.md` 是唯一入口。`workflows/` 定义何时执行哪些步骤，内部 `MODULE.md` 定义判断规则；确定性动作由 `SKILL_ROOT/.career-os/tools/` 执行。`career init --workspace PATH` 从 `workspace-template/` 建立独立工作区；工具和 schema 从 Skill 目录读取，个人数据从工作区读取。
 
 `schemas/assessment.schema.json` 是流水线交给 Agent 的评估格式；`lead.schema.json` 描述现有机器线索；`state.schema.json` 从状态机的 `leadStates` 同步并在 CI 校验。`application.schema.json` 是未来迁移历史申请的目标格式，目前不代表已完成迁移。候选人事实仍为 `.career-os/profile/` 的可追溯文档，不另建 JSON 人物库。
 

@@ -29,10 +29,9 @@ __pycache__/
 !assets/dashboard-template.xlsx
 
 # Omitted rendered example media and retired tests.
+modules/resume-builder/tests/
 *.png
 *.jpg
 *.jpeg
 *.webp
-!/.career-os/template/portrait.png
-**/tests/
-**/test/
+!/workspace-template/.career-os/template/portrait.png

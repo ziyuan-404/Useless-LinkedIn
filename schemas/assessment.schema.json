@@ -2,15 +2,42 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Career OS job assessment",
   "type": "object",
-  "required": ["contextHash", "company", "role", "ko", "sections", "priority", "questions"],
+  "required": ["contextHash", "company", "role", "ko", "sections", "priority", "decision", "questions"],
   "properties": {
-    "contextHash": {"type": "string"},
-    "company": {"type": "string"},
-    "role": {"type": "string"},
-    "ko": {"type": "object", "required": ["status", "items"], "properties": {"status": {"enum": ["PASS", "MARGINAL", "FAIL"]}, "items": {"type": "array", "minItems": 14, "maxItems": 14, "items": {"type": "object", "required": ["key", "result", "reason"], "properties": {"key": {"enum": ["contract", "rhythm", "location", "remote", "start", "education", "experience", "technology", "french", "english", "permit", "salary", "credentials", "duplicate"]}, "result": {"enum": ["PASS", "FAIL", "UNKNOWN", "NA"]}, "reason": {"type": "string"}, "jdQuote": {"type": "string"}}}}}},
-    "sections": {"type": "object", "required": ["A", "B", "C", "D", "E", "F", "G"], "additionalProperties": {"type": "object", "required": ["score", "reason"], "properties": {"score": {"type": ["integer", "null"], "minimum": 1, "maximum": 5}, "reason": {"type": "string"}}}},
+    "contextHash": {"type": "string", "minLength": 1},
+    "company": {"type": "string", "minLength": 1},
+    "role": {"type": "string", "minLength": 1},
+    "ko": {"type": "object", "required": ["status", "items"], "properties": {
+      "status": {"enum": ["PASS", "MARGINAL", "FAIL"]},
+      "items": {"type": "array", "minItems": 14, "maxItems": 14, "items": {"type": "object", "required": ["key", "result", "reason"], "properties": {
+        "key": {"enum": ["contract", "rhythm", "location", "remote", "start", "education", "experience", "technology", "french", "english", "permit", "salary", "credentials", "duplicate"]},
+        "result": {"enum": ["PASS", "FAIL", "UNKNOWN", "NA"]},
+        "reason": {"type": "string", "minLength": 1}, "jdQuote": {"type": "string"}
+      }}}
+    }},
+    "sections": {"type": "object", "required": ["A", "B", "C", "D", "E", "F", "G"], "additionalProperties": {"type": "object", "required": ["score", "reason"], "properties": {"score": {"type": ["integer", "null"], "minimum": 1, "maximum": 5}, "reason": {"type": "string", "minLength": 1}}}},
     "priority": {"type": ["integer", "null"], "minimum": 1, "maximum": 5},
-    "questions": {"type": "array"},
-    "payload": {"type": "object"}
-  }
+    "decision": {"type": "object", "required": ["route", "strongestEvidence", "gaps", "nextAction", "owner"], "properties": {
+      "route": {"enum": ["precision", "bulk", "skip", "needs-user"]},
+      "resumeFamily": {"type": "string"},
+      "strongestEvidence": {"type": "array", "items": {"type": "string"}},
+      "gaps": {"type": "array", "items": {"type": "string"}},
+      "nextAction": {"type": "string", "minLength": 1},
+      "owner": {"enum": ["agent", "user"]}
+    }},
+    "questions": {"type": "array", "items": {"type": "object", "required": ["question", "answer", "status", "source", "sources"], "properties": {
+      "question": {"type": "string", "minLength": 1}, "answer": {"type": "string"},
+      "status": {"enum": ["draft", "needs-user"]}, "source": {"enum": ["common-draft", "observed-form"]},
+      "sources": {"type": "array", "items": {"type": "object", "required": ["path", "quote"], "properties": {"path": {"type": "string"}, "quote": {"type": "string", "minLength": 8}}}}
+    }}},
+    "payload": {"type": "object", "required": ["cv", "letter"], "properties": {
+      "cv": {"type": "array", "items": {"$ref": "#/$defs/replacement"}},
+      "letter": {"type": "array", "items": {"$ref": "#/$defs/replacement"}}
+    }}
+  },
+  "$defs": {"replacement": {"type": "object", "required": ["selector", "text", "sources"], "properties": {
+    "selector": {"type": "string", "minLength": 1}, "text": {"type": "string", "minLength": 1},
+    "index": {"type": "integer", "minimum": 0},
+    "sources": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["path", "quote"], "properties": {"path": {"type": "string"}, "quote": {"type": "string", "minLength": 8}}}}
+  }}}
 }

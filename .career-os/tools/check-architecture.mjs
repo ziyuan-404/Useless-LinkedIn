@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {root} from './runtime.mjs';
+import {skillRoot as root} from './runtime.mjs';
 import {leadStates} from './lib/state-machine.mjs';
 
 const schema=JSON.parse(await fs.readFile(path.join(root,'schemas/state.schema.json'),'utf8'));
@@ -9,11 +9,11 @@ for (const name of (await fs.readdir(path.join(root,'schemas'))).filter(x=>x.end
   const parsed=JSON.parse(await fs.readFile(path.join(root,'schemas',name),'utf8'));
   if (!parsed.$schema || !parsed.type) throw Error(`Incomplete schema: ${name}`);
   const refs=JSON.stringify(parsed).matchAll(/"\$ref":"([^"]+)"/g);
-  for (const [,ref] of refs) if (!await fs.stat(path.join(root,'schemas',ref)).then(()=>true,()=>false)) throw Error(`Missing schema reference: ${name} -> ${ref}`);
+  for (const [,ref] of refs) if (!ref.startsWith('#/')&&!await fs.stat(path.join(root,'schemas',ref)).then(()=>true,()=>false)) throw Error(`Missing schema reference: ${name} -> ${ref}`);
 }
 
 const pipelineSource=await fs.readFile(path.join(root,'.career-os/tools/pipeline.mjs'),'utf8');
-if (!pipelineSource.includes("path.join(root,'schemas/assessment.schema.json')")) throw Error('Pipeline must load schemas/assessment.schema.json');
+if (!pipelineSource.includes('validateAssessment(result)')) throw Error('Pipeline must validate the assessment schema');
 for (const [,schemaPath] of pipelineSource.matchAll(/['"]((?:schemas\/)[a-z-]+\.schema\.json)['"]/g)) {
   await fs.access(path.join(root,schemaPath)).catch(()=>{throw Error(`Pipeline references missing schema: ${schemaPath}`);});
 }

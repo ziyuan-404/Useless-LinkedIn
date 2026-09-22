@@ -12,10 +12,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install openpyxl pypdf reportlab
       - run: node .career-os/tools/check-architecture.mjs
-      - run: node --check .career-os/tools/pipeline.mjs
-      - run: node --check .career-os/tools/state.mjs
-      - run: node --check .career-os/tools/career.mjs
-      - run: node --check .career-os/tools/authorization.mjs
-      - run: node --check .career-os/tools/tracker.mjs
+      - run: for f in .career-os/tools/*.mjs .career-os/tools/lib/*.mjs; do node --check "$f"; done
       - run: node .career-os/tools/career.mjs --help
+      - run: node --test tests/*.test.mjs

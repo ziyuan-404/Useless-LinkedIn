@@ -110,8 +110,8 @@ Contract type: [internship / alternance / permanent employment].
 Earliest start date: [date].
 Languages, commute limits, school schedule and other constraints: [your details].
 
-Check the environment and available capabilities. Copy the skill's public tools,
-rule templates and blank dashboard into this workspace without overwriting
+Check the environment and available capabilities. Run `career init --workspace`
+to copy the blank rules, templates, and dashboard into this workspace without overwriting
 existing files or my original CV. Store personal facts only in this workspace,
 never in the skill installation folder.
 Check dependencies, install what you can, and guide me through any manual steps.

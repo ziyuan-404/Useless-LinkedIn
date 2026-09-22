@@ -5,7 +5,7 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 
 # Useless LinkedIn
 
-这是本项目唯一可发现的 Skill。`workflows/` 定义执行顺序，`modules/` 的 `MODULE.md` 定义领域判断；模块不得作为独立 Skill 安装或调用。确定性工具在工作区 `.career-os/tools/`，持久线索状态在 `.career-os/applications/automation/`。
+这是本项目唯一可发现的 Skill。`workflows/` 定义执行顺序，`modules/` 的 `MODULE.md` 定义领域判断；模块不得作为独立 Skill 安装或调用。确定性工具在 `SKILL_ROOT/.career-os/tools/`，持久线索状态在 `WORKSPACE_ROOT/.career-os/applications/automation/`。
 
 面向用户的完整功能、目录、命令示例和隐私说明见 [README.md](README.md)。
 
@@ -13,9 +13,10 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 
 将包含本文件的目录记为 `SKILL_ROOT`。按以下顺序确定 `WORKSPACE_ROOT`：
 
-1. 用户本次明确指定的工作区；
-2. 当前目录或其父目录中已存在 `.career-os/` 的目录；
-3. 当前工作目录。
+1. `CAREER_WORKSPACE` 指定的独立工作区；
+2. 当前目录或其父目录中已存在 `.career-os/` 的独立工作区。
+
+首次运行 `node SKILL_ROOT/.career-os/tools/career.mjs init --workspace PATH`。此命令只复制 `workspace-template/` 的空白配置和看板；不会覆盖现有文件。不可把 Skill 安装目录作为工作区。
 
 统一使用：
 
