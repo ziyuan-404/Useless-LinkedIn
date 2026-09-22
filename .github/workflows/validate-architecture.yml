@@ -15,8 +15,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install openpyxl pypdf reportlab
-      - run: node .career-os/tools/check-architecture.mjs
-      - run: for f in .career-os/tools/*.mjs .career-os/tools/lib/*.mjs; do node --check "$f"; done
-      - run: node .career-os/tools/career.mjs --help
+      - run: python -m pip install -r requirements.txt
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node runtime/tools/check-architecture.mjs
+      - run: for f in runtime/tools/*.mjs runtime/tools/lib/*.mjs; do node --check "$f"; done
+      - run: node runtime/tools/useless-linkedin.mjs --help
       - run: node --test tests/*.test.mjs

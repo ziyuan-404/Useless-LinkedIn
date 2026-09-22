@@ -13,4 +13,4 @@ career-ops is licensed under the MIT License, Copyright (c) 2026 Santiago Ferná
 
 未调用的 resume-builder 模板、字体、Typst 包、网页编辑器及运行脚本已从本发行版移除。现行 HTML 模板来自本项目的 `workspace-template/`，简历写作方法参考保留于 `modules/resume-builder/references/`，原项目许可证保留于模块目录。
 
-The sanitized distribution also vendors selected MIT-licensed career-ops modules in `.career-os/vendor/career-ops` (WTTJ, liveness, URL normalization, fingerprint and tracker parsing). Their original LICENSE is retained. `.career-os/vendor/yaml` contains PyYAML 6.0.3 with its MIT license. No private upstream/local Git history is distributed.
+The sanitized distribution also vendors selected MIT-licensed career-ops modules in `runtime/vendor/career-ops` (WTTJ, liveness, URL normalization, fingerprint and tracker parsing). Their original LICENSE is retained. `runtime/vendor/yaml` contains PyYAML 6.0.3 with its MIT license. No private upstream/local Git history is distributed.

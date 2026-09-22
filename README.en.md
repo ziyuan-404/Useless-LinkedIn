@@ -4,7 +4,7 @@
 
 [中文](README.md) · [Technical guide (Chinese)](docs/技术配置指南.md) · [Privacy](PRIVACY.md)
 
-Useless LinkedIn is an **agent-native Career OS for job search in France**: one Skill entry point, stateful workflows, domain modules and deterministic tools. Bring your CV and career goals; your agent helps discover vacancies, check requirements, prepare materials, apply within your authorization and track outcomes. Tell it what you need in everyday language—no scripting required.
+Useless LinkedIn is a skill for job search in France: one entry point, stateful workflows, domain modules and deterministic tools. Bring your CV and career goals; your agent helps discover vacancies, check requirements, prepare materials, apply within your authorization and track outcomes. Tell it what you need in everyday language—no scripting required.
 
 It is a skill pack rather than a separate website or a LinkedIn browser extension. The included search configuration focuses on **France and alternance (work-study apprenticeships)** across several job boards. Other regions require search adjustments.
 
@@ -110,7 +110,7 @@ Contract type: [internship / alternance / permanent employment].
 Earliest start date: [date].
 Languages, commute limits, school schedule and other constraints: [your details].
 
-Check the environment and available capabilities. Run `career init --workspace`
+Check the environment and available capabilities. Run `useless-linkedin init --workspace`
 to copy the blank rules, templates, and dashboard into this workspace without overwriting
 existing files or my original CV. Store personal facts only in this workspace,
 never in the skill installation folder.

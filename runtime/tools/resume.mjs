@@ -6,7 +6,7 @@ import {root,args,pythonCommand} from './runtime.mjs';
 
 const [command,...rest]=process.argv.slice(2);
 const a=args(rest);
-const registry=path.join(root,'.career-os/audits/resume-pool.json');
+const registry=path.join(root,'.useless-linkedin/audits/resume-pool.json');
 const pool=JSON.parse(await fs.readFile(registry,'utf8').catch(e=>{if(e.code==='ENOENT')return '{"version":1,"files":[]}';throw e;}));
 if(pool.version!==1||!Array.isArray(pool.files))throw Error('Invalid resume pool');
 const sha=async file=>createHash('sha256').update(await fs.readFile(file)).digest('hex');
@@ -35,5 +35,17 @@ else if(command==='add'){
     console.log(JSON.stringify({id:entry.id,...entry.audit,status:entry.status,reviewRequired:'Check facts, layout, and role-family suitability'}));
   }else{if(!a.evidence||current!==entry.sha256||entry.status!=='audited'||entry.audit?.issues.length)throw Error('Clean PDF audit, review evidence, and unchanged file required');entry.status='verified';entry.reviewEvidence=a.evidence;entry.verifiedAt=new Date().toISOString();await save();console.log(JSON.stringify({id:entry.id,status:entry.status}));}
 }else if(command==='select'){
-  const entry=pool.files.find(x=>x.id===a.id&&x.status==='verified');if(!entry||await sha(path.resolve(root,entry.path))!==entry.sha256)throw Error('Verified unchanged resume required');console.log(path.resolve(root,entry.path));
-}else throw Error('Use resume list | add --file PDF --family FAMILY | audit --id ID | verify --id ID --evidence TEXT | select --id ID');
+  if([a.id,a.family,a.file].filter(Boolean).length!==1)throw Error('Select exactly one of --id, --family, or --file');
+  let candidates=pool.files.filter(x=>x.status==='verified'&&(a.id?x.id===a.id:a.family?x.family===a.family:path.resolve(root,x.path)===path.resolve(root,a.file)));
+  if(a.family&&candidates.length>1){
+    const active=candidates.filter(x=>x.active===true);
+    if(active.length!==1)throw Error('Ambiguous resume family: mark exactly one verified resume active');
+    candidates=active;
+  }
+  if(candidates.length!==1)throw Error('Exactly one verified resume required');
+  const entry=candidates[0];if(await sha(path.resolve(root,entry.path))!==entry.sha256)throw Error('Verified unchanged resume required');console.log(path.resolve(root,entry.path));
+}else if(command==='activate'){
+  const entry=pool.files.find(x=>x.id===a.id&&x.status==='verified');if(!entry)throw Error('Verified resume ID required');
+  for(const other of pool.files)if(other.family===entry.family)other.active=other.id===entry.id;
+  await save();console.log(JSON.stringify({id:entry.id,family:entry.family,active:true}));
+}else throw Error('Use resume list | add --file PDF --family FAMILY | audit --id ID | verify --id ID --evidence TEXT | activate --id ID | select --id ID/--family FAMILY/--file PDF');

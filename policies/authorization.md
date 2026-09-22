@@ -1,7 +1,7 @@
 # 授权账本
 
-授权是带来源、记录时间、范围和动作的持久数据，格式见 [`authorization.schema.json`](../schemas/authorization.schema.json)。原始授权时间未知时只填 `recordedAt`，不得编造 `grantedAt`。实际工作区保存在 `.career-os/operations/authorizations.json`，不得提交到公开仓库。用户撤销时写入 `revokedAt` 或移除该授权，随后再执行相关动作前重新检查。
+授权是带来源、记录时间、范围和动作的持久数据，格式见 [`authorization.schema.json`](../schemas/authorization.schema.json)。原始授权时间未知时只填 `recordedAt`，不得编造 `grantedAt`。实际工作区保存在 `.useless-linkedin/operations/authorizations.json`，不得提交到公开仓库。用户撤销时写入 `revokedAt` 或移除该授权，随后再执行相关动作前重新检查。
 
-使用 `node SKILL_ROOT/.career-os/tools/career.mjs authorization --check ACTION --job-id ID` 检查。可用 `authorization --grant --job-id ID --actions submit,upload_files --source "用户明确授权的证据"` 添加，`--list` 查看，`--revoke GRANT_ID` 撤销；关键状态事件保存命中的 `authorizationGrantIds`。允许的动作是 `prepare_materials`、`prefill_form`、`upload_files`、`submit`、`send_message`。缺失、过期、范围不匹配或撤销都视为未授权；不从岗位适合度或模型上下文推断。授权记录必须引用可核查的用户原话或有日期的用户确认文件；工具不会自造授权。
+使用 `node SKILL_ROOT/runtime/tools/useless-linkedin.mjs authorization --check ACTION --job-id ID` 检查。提交授权须在材料进入 `approved` 后，读取该岗位的 `approvalSnapshot.id`，再用 `authorization --grant --job-id ID --actions submit --approval-snapshot-id SNAPSHOT_ID --source "用户明确授权的证据"` 添加；提交检查也带同一 ID。`--list` 查看，`--revoke GRANT_ID` 撤销；关键状态事件保存命中的 `authorizationGrantIds`。允许的动作是 `prepare_materials`、`prefill_form`、`upload_files`、`submit`、`send_message`。缺失、过期、范围不匹配、快照不匹配或撤销都视为未授权；不从岗位适合度或模型上下文推断。授权记录必须引用可核查的用户原话或有日期的用户确认文件；工具不会自造授权。
 
 此公开 Skill 不携带个人授权账本。只有当前用户明确授予的动作才写入其私有账本；新的用户指令优先于旧记录。私人邮件及 LinkedIn 消息默认保持草稿。授权检查不代替事实、登录、验证码和成功证据核验。

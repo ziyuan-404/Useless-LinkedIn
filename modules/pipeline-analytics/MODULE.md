@@ -4,7 +4,7 @@
 
 ## 运营记录边界
 
-历史真实申请以 `WORKSPACE_ROOT/求职Dashboard.xlsx` 及原始成功凭证核对；自动发现线索的机器状态在 `.career-os/applications/automation/leads.json`。两者尚未完成逐行迁移，详情见 `references/architecture.md`。每条岗位记录保留稳定 ID；重复岗位可指向主记录，但不删除历史。日期工作表记录当天新增和变更，`总览` 汇总全局指标。
+历史真实申请以 `WORKSPACE_ROOT/求职Dashboard.xlsx` 及原始成功凭证核对；自动发现线索的机器状态在 `.useless-linkedin/applications/automation/leads.json`。两者尚未完成逐行迁移，详情见 `references/architecture.md`。每条岗位记录保留稳定 ID；重复岗位可指向主记录，但不删除历史。日期工作表记录当天新增和变更，`总览` 汇总全局指标。
 
 ## 状态模型
 
@@ -14,7 +14,7 @@
 
 ## 跟进规则
 
-规则保存在 `.career-os/operations/follow-up-rules.md`，用户规则优先。缺省建议：
+规则保存在 `.useless-linkedin/operations/follow-up-rules.md`，用户规则优先。缺省建议：
 
 - 已投递且无回复：约 7 天后首次跟进；最多 2 次未回复跟进，之后转冷；
 - 招聘方已回复：需要用户行动时 1 个工作日内提醒；后续间隔通常不少于 3 天；

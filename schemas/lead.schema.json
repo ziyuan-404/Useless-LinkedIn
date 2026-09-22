@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Career OS discovered lead",
+  "title": "Useless LinkedIn discovered lead",
   "type": "object",
   "required": ["id", "key", "url", "state", "createdAt", "lastSeenAt"],
   "properties": {
@@ -22,6 +22,7 @@
     "submitted": {"type": "boolean"},
     "reason": {"type": "string"},
     "reviewEvidence": {"type": "string"},
+    "approvalSnapshot": {"type": "object", "required": ["id", "contextHash", "assessmentHash", "materials", "answersHash", "reviewedAt", "reviewEvidence"], "properties": {"id": {"type": "string"}, "contextHash": {"type": "string"}, "assessmentHash": {"type": "string"}, "materials": {"type": "array", "items": {"type": "object", "required": ["path", "sha256"], "properties": {"path": {"type": "string"}, "sha256": {"type": "string"}}}}, "answersHash": {"type": "string"}, "reviewedAt": {"type": "string", "format": "date-time"}, "reviewEvidence": {"type": "string"}}},
     "submissionEvidence": {"type": "string"},
     "events": {"type": "array", "items": {"type": "object", "required": ["at", "from", "to"], "properties": {"at": {"type": "string", "format": "date-time"}, "from": {"$ref": "state.schema.json"}, "to": {"$ref": "state.schema.json"}, "authorizationGrantIds": {"type": "array", "items": {"type": "string"}}}}}
   }

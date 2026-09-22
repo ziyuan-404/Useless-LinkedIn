@@ -1,0 +1,12 @@
+{
+  "name": "useless-linkedin-skill",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "engines": {"node": ">=24"},
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node runtime/tools/check-architecture.mjs"
+  },
+  "dependencies": {"playwright": "1.63.0"}
+}

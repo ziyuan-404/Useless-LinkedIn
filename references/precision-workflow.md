@@ -10,7 +10,7 @@
 2. `modules/personal-career-os/references/methodology/简历方法论.md`
 3. `modules/resume-builder/references/Resume-Writing-Guide-LLM.md`
 4. `modules/application-writing/MODULE.md`
-5. 排版与渲染依 `.career-os/tools/generate-application.mjs` 和工作区模板执行。
+5. 排版与渲染依 `runtime/tools/generate-application.mjs` 和工作区模板执行。
 
 使用 Personal Career OS 的档案与产物能力，叠加 resume-builder 的 claim-map、批量追问、模板无关内容稿、JD—证据映射和最终真实性审计。
 

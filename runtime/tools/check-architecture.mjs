@@ -12,7 +12,7 @@ for (const name of (await fs.readdir(path.join(root,'schemas'))).filter(x=>x.end
   for (const [,ref] of refs) if (!ref.startsWith('#/')&&!await fs.stat(path.join(root,'schemas',ref)).then(()=>true,()=>false)) throw Error(`Missing schema reference: ${name} -> ${ref}`);
 }
 
-const pipelineSource=await fs.readFile(path.join(root,'.career-os/tools/pipeline.mjs'),'utf8');
+const pipelineSource=await fs.readFile(path.join(root,'runtime/tools/pipeline.mjs'),'utf8');
 if (!pipelineSource.includes('validateAssessment(result)')) throw Error('Pipeline must validate the assessment schema');
 for (const [,schemaPath] of pipelineSource.matchAll(/['"]((?:schemas\/)[a-z-]+\.schema\.json)['"]/g)) {
   await fs.access(path.join(root,schemaPath)).catch(()=>{throw Error(`Pipeline references missing schema: ${schemaPath}`);});
@@ -34,7 +34,7 @@ const errors=[];
 for (const file of files) {
   const content=await fs.readFile(file,'utf8');
   for (const [,span] of content.matchAll(/`([^`]+)`/g)) {
-    if (/^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(span) && !span.startsWith('CAREER_')) errors.push(`${path.relative(root,file)}: uppercase state-like token ${span}`);
+    if (/^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(span) && !span.startsWith('USELESS_LINKEDIN_')) errors.push(`${path.relative(root,file)}: uppercase state-like token ${span}`);
     if (/^[a-z]+(?:-[a-z]+)+$/.test(span) && !known.has(span)) errors.push(`${path.relative(root,file)}: unknown state-like token ${span}`);
     const target=span.match(/\b--to\s+([a-z][a-z-]*)\b/);
     if (target && !known.has(target[1])) errors.push(`${path.relative(root,file)}: unknown --to state ${target[1]}`);

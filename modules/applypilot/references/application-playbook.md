@@ -125,7 +125,7 @@ CAPTCHA, hCaptcha, reCAPTCHA, Cloudflare, and anti-bot checks must be treated as
 
 If a login page appears, stop and record `Login required` or `Session expired`.
 
-Do not attempt automatic login unless the user explicitly instructs it and the flow is safe. If multiple LinkedIn or email accounts exist, use the account confirmed in `.career-os/profile/` or the user's rules.
+Do not attempt automatic login unless the user explicitly instructs it and the flow is safe. If multiple LinkedIn or email accounts exist, use the account confirmed in `.useless-linkedin/profile/` or the user's rules.
 
 ### 9. Resume Upload Verification
 

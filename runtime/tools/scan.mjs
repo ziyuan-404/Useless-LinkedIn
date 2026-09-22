@@ -4,7 +4,7 @@ import {args} from './runtime.mjs';
 import {listing,posting} from './lib/listings.mjs';
 import wttj from '../vendor/career-ops/wttj.mjs';
 import {home,config,request,capture,transaction,add,write,exportList,read} from './lib/core.mjs';
-const a=args();if(a.help){console.log('scan.mjs [--config .career-os/portals.yml] [--portal NAME] [--no-browser] [--import FILE] [--listing-capture FILE]');process.exit(0);}
+const a=args();if(a.help){console.log('scan.mjs [--config .useless-linkedin/portals.yml] [--portal NAME] [--no-browser] [--import FILE] [--listing-capture FILE]');process.exit(0);}
 const c=await config(a.config);const report={startedAt:new Date().toISOString(),portals:[],added:[],duplicates:[],searchRequests:[],bounded:true};
 const norm=s=>String(s||'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
 const match=j=>{const t=norm(j.title);return (c.include_keywords||[]).some(k=>t.includes(norm(k)))&&(c.role_keywords||[]).some(k=>t.includes(norm(k)))&&!(c.exclude_keywords||[]).some(k=>t.includes(norm(k)));};

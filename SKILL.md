@@ -5,7 +5,7 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 
 # Useless LinkedIn
 
-这是本项目唯一可发现的 Skill。`workflows/` 定义执行顺序，`modules/` 的 `MODULE.md` 定义领域判断；模块不得作为独立 Skill 安装或调用。确定性工具在 `SKILL_ROOT/.career-os/tools/`，持久线索状态在 `WORKSPACE_ROOT/.career-os/applications/automation/`。
+这是本项目唯一可发现的 Skill。`workflows/` 定义执行顺序，`modules/` 的 `MODULE.md` 定义领域判断；模块不得作为独立 Skill 安装或调用。确定性工具在 `SKILL_ROOT/runtime/tools/`，持久线索状态在 `WORKSPACE_ROOT/.useless-linkedin/applications/automation/`。
 
 面向用户的完整功能、目录、命令示例和隐私说明见 [README.md](README.md)。
 
@@ -13,20 +13,20 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 
 将包含本文件的目录记为 `SKILL_ROOT`。按以下顺序确定 `WORKSPACE_ROOT`：
 
-1. `CAREER_WORKSPACE` 指定的独立工作区；
-2. 当前目录或其父目录中已存在 `.career-os/` 的独立工作区。
+1. `USELESS_LINKEDIN_WORKSPACE` 指定的独立工作区；
+2. 当前目录或其父目录中已存在 `.useless-linkedin/` 的独立工作区。
 
-首次运行 `node SKILL_ROOT/.career-os/tools/career.mjs init --workspace PATH`。此命令只复制 `workspace-template/` 的空白配置和看板；不会覆盖现有文件。不可把 Skill 安装目录作为工作区。
+首次运行 `node SKILL_ROOT/runtime/tools/useless-linkedin.mjs init --workspace PATH`。此命令只复制 `workspace-template/` 的空白配置和看板；不会覆盖现有文件。不可把 Skill 安装目录作为工作区。
 
 统一使用：
 
-- 唯一候选人事实库：`WORKSPACE_ROOT/.career-os/`
-- 精投产物：`WORKSPACE_ROOT/CV/YYYY-MM-DD-公司-岗位/`
+- 唯一候选人事实库：`WORKSPACE_ROOT/.useless-linkedin/`
+- 精投产物：`WORKSPACE_ROOT/CV/YYYY-MM-DD-jobId-contextHash/`
 - 海投简历池：`WORKSPACE_ROOT/海投简历/`
 - 投递 dashboard：`WORKSPACE_ROOT/求职Dashboard.xlsx`
-- 运营规则：`WORKSPACE_ROOT/.career-os/operations/`
+- 运营规则：`WORKSPACE_ROOT/.useless-linkedin/operations/`
 
-不得建立 ApplyPilot candidate profile 或 resume-builder 的第二套人物素材库。所有候选人事实只写入 `.career-os/profile/`；岗位级 claim-map 只索引已存在来源和用户明确确认的事实。不得把真实个人资料写入 `SKILL_ROOT`。
+不得建立 ApplyPilot candidate profile 或 resume-builder 的第二套人物素材库。所有候选人事实只写入 `.useless-linkedin/profile/`；岗位级 claim-map 只索引已存在来源和用户明确确认的事实。不得把真实个人资料写入 `SKILL_ROOT`。
 
 ## 模块路由
 

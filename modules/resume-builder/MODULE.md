@@ -1,6 +1,6 @@
 # Resume Builder（内部模块规则）
 
-本模块提供 CV 的事实核验、内容取舍和版面检查规则。执行顺序见根目录 `workflows/prepare-application.md`；候选人事实只来自 `.career-os/profile/`，岗位目录中的 `claim-map` 只保存表述与来源的对应关系。
+本模块提供 CV 的事实核验、内容取舍和版面检查规则。执行顺序见根目录 `workflows/prepare-application.md`；候选人事实只来自 `.useless-linkedin/profile/`，岗位目录中的 `claim-map` 只保存表述与来源的对应关系。
 
 ## 内容规则
 
@@ -11,6 +11,6 @@
 
 ## 交付检查
 
-共享生成器 `.career-os/tools/generate-application.mjs` 负责岗位级 HTML/PDF 产物。生成后核对最终 PDF 文本、来源语义、页面截图、文件名和体积；机器通过不等于人工审阅完成。不得覆盖来源简历或既有岗位版本。
+共享生成器 `runtime/tools/generate-application.mjs` 负责岗位级 HTML/PDF 产物。生成后核对最终 PDF 文本、来源语义、页面截图、文件名和体积；机器通过不等于人工审阅完成。不得覆盖来源简历或既有岗位版本。
 
 本模块不创建独立 `resume.json` 人物库、编辑器阶段机、安装流程或申请台账。只保留写作方法参考；当前材料排版使用工作区 HTML 模板。
