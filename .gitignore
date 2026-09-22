@@ -22,11 +22,10 @@ __pycache__/
 *.log
 *.inspect.ndjson
 
-# Only explicitly supplied blank workbooks may be committed.
+# Only the supplied blank workbook may be committed.
 *.pdf
 *.docx
 *.xlsx
-!dashboard-template.xlsx
 !assets/dashboard-template.xlsx
 
 # Omitted rendered example media and retired tests.
@@ -34,7 +33,6 @@ __pycache__/
 *.jpg
 *.jpeg
 *.webp
-*.pdf
 !/.career-os/template/portrait.png
 **/tests/
 **/test/

@@ -1,10 +1,10 @@
 # resume.json 数据契约（v2，schema_version = 1）
 
-本文档是 resume-builder v2 数据层的唯一权威描述。Agent（对话侧）与网页编辑器
+本文档仅描述上游独立编辑器的 `resume.json` 数据契约，不是当前 Career OS 的人物事实源或申请状态。只有明确使用该编辑器时才适用。上游 Agent（对话侧）与网页编辑器
 共同读写同一份 `resume.json`，双方都必须遵守本契约。实现见
 `scripts/resume_model.py`，校验 CLI 见 `scripts/validate_project.py`。
 
-- 单一事实源：`<项目目录>/resume.json`。
+- 上游编辑器内容源：`<项目目录>/resume.json`；当前项目人物事实仍只在 `.career-os/profile/`。
 - 保存语义：校验通过才写盘；原子写入；后保存者生效（不实现冲突合并）。
 - 所有用户文本**只能**携带两种行内格式（见 §5），其余按纯文本处理。
 

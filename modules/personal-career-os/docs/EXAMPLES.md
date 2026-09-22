@@ -285,4 +285,4 @@
 
 ---
 
-有疑问？[查看完整工作流文档](../references/workflows/) 或 [在 Discussions 提问](../../discussions)。
+有疑问？[查看当前项目工作流](../../../workflows/)；此处示例来自上游，只用于理解访谈方法，实际资料与步骤以根 Skill 为准。

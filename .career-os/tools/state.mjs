@@ -5,7 +5,8 @@ import {transaction,exportList} from './lib/core.mjs';
 import {assertTransition,leadStates} from './lib/state-machine.mjs';
 
 const a=args();
-if (a.help) { console.log('state.mjs --id ID --to STATE [--evidence TEXT]'); process.exit(0); }
+if (a.help) { console.log('state.mjs --id ID --to STATE [--evidence TEXT] [--reason TEXT] | --list-states'); process.exit(0); }
+if (a['list-states']) { console.log(JSON.stringify(leadStates)); process.exit(0); }
 if (!a.id || !leadStates.includes(a.to)) throw Error('Valid --id and --to required');
 if (['submitting','submitted'].includes(a.to)) {
   const action='submit';
@@ -13,6 +14,7 @@ if (['submitting','submitted'].includes(a.to)) {
   if (check.status!==0) throw Error(`Submission authorization missing: ${check.stdout||check.stderr}`);
 }
 const values={state:a.to};
+if (a.to==='needs-decision') values.reason=a.reason;
 if (a.to==='approved') values.reviewEvidence=a.evidence;
 if (a.to==='submitted') { values.submitted=true; values.submissionEvidence=a.evidence; }
 await transaction(s=>{

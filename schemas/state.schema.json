@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Career OS lead state",
+  "type": "string",
+  "enum": [
+    "discovered",
+    "possible-duplicate",
+    "known-application",
+    "needs-verification",
+    "duplicate-review",
+    "awaiting-agent",
+    "needs-decision",
+    "generation-failed",
+    "materials-pending-review",
+    "review-required",
+    "approved",
+    "submitting",
+    "submission-unconfirmed",
+    "submitted",
+    "followup-due",
+    "expired",
+    "rejected",
+    "blocked-login",
+    "blocked-captcha"
+  ]
+}

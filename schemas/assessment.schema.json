@@ -1,4 +1,6 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Career OS job assessment",
   "type": "object",
   "required": ["contextHash", "company", "role", "ko", "sections", "priority", "questions"],
   "properties": {

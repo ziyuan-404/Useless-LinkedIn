@@ -4,6 +4,8 @@
 
 根目录 `SKILL.md` 是唯一入口。`workflows/` 定义何时执行哪些步骤，内部 `MODULE.md` 定义判断规则；确定性动作由 `.career-os/tools/` 执行。
 
+`schemas/assessment.schema.json` 是流水线交给 Agent 的评估格式；`lead.schema.json` 描述现有机器线索；`state.schema.json` 从状态机的 `leadStates` 同步并在 CI 校验。`application.schema.json` 是未来迁移历史申请的目标格式，目前不代表已完成迁移。候选人事实仍为 `.career-os/profile/` 的可追溯文档，不另建 JSON 人物库。
+
 | 模块 | 职责 | 权威数据 |
 |---|---|---|
 | Personal Career OS | 经历导入、访谈补全、唯一事实库 | `.career-os/profile/` |
@@ -56,6 +58,6 @@ claim-map 不是第二套事实库，只保存“表述—来源—状态”的�
 
 ## 运营数据与迁移边界
 
-`.career-os/applications/automation/leads.json` 是自动发现线索及其工作阶段的机器状态；`tracker.sqlite`、`list.md` 是派生索引。授权位于本地 `authorizations.json`。历史真实申请目前仍以 Excel 行和对应成功凭证核对，尚未逐行迁入统一 DB；`求职Dashboard.xlsx` 继续是这些申请的人用台账。新状态机不能凭空把历史行升级为已提交，Excel 同步标志也不能代替成功凭证。待完成历史数据迁移和双向核验后，才能将 Excel 全面改成只读投影。公开仓库只保存空模板和规则，不保存真实台账、简历或档案。
+机器状态：`.career-os/applications/automation/leads.json` 保存自动发现线索及其流程阶段；`tracker.sqlite`、`list.md` 是派生索引。历史台账：尚未迁移的真实申请以 Excel 行及对应提交成功凭证核对。人用视图：`求职Dashboard.xlsx` 是当前运营界面，仍承载上述历史行；`dashboardSynced` 只表示同步状态，不是投递证据。授权位于本地 `authorizations.json`。待完成历史数据迁移和双向核验后，才能将 Excel 全面改成只读投影。公开仓库只保存空模板和规则，不保存真实台账、简历或档案。
 
 迁移顺序：只读导入 Excel 每行并保留原表与行号；按稳定 ID、URL、招聘编号和成功凭证逐条对账；冲突保留人工复核队列；从核验后的记录生成新 Excel 副本并比较总览公式、日期页和样式；核验一致后才切换写入路径。不得直接从空 JSON 重建现有真实看板。

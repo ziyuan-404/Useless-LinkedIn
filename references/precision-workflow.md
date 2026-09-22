@@ -6,12 +6,11 @@
 
 按顺序完整读取：
 
-1. `modules/personal-career-os/references/workflows/apply.md`
+1. `modules/personal-career-os/MODULE.md`
 2. `modules/personal-career-os/references/methodology/简历方法论.md`
 3. `modules/resume-builder/references/Resume-Writing-Guide-LLM.md`
-4. `modules/resume-builder/references/writing-stage.md`
-5. `modules/application-writing/MODULE.md`
-6. 需要排版/渲染时，再读两个内容模块相应的 export/rendering/data-contract reference。
+4. `modules/application-writing/MODULE.md`
+5. 排版与渲染依 `.career-os/tools/generate-application.mjs` 和工作区模板执行。
 
 使用 Personal Career OS 的档案与产物能力，叠加 resume-builder 的 claim-map、批量追问、模板无关内容稿、JD—证据映射和最终真实性审计。
 
@@ -24,7 +23,7 @@
 5. 先决定保留、压缩和舍弃的经历，再写 CV；禁止只做关键词替换。
 6. 按 Application Writing 生成动机信，从同一批确认事实生成 PDF。
 7. 逐页目视检查 CV 和动机信 PDF；同时核对文本、日期、数字、公司名、岗位名和文件名。
-8. 运行 Personal Career OS 的隐私检查。通过后在 dashboard 记录实际文件路径和 `材料已准备`。
+8. 检查输出文件是否含未授权披露的个人信息。通过后在 dashboard 记录实际文件路径和 `材料已准备`。
 
 ## CV 规则
 

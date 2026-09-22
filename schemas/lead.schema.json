@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Career OS discovered lead",
+  "type": "object",
+  "required": ["id", "key", "url", "state", "createdAt", "lastSeenAt"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "key": {"type": "string", "minLength": 1},
+    "url": {"type": "string", "format": "uri"},
+    "title": {"type": "string"},
+    "company": {"type": "string"},
+    "portal": {"type": "string"},
+    "state": {"$ref": "state.schema.json"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "lastSeenAt": {"type": "string", "format": "date-time"},
+    "possibleDuplicates": {"type": "array", "items": {"type": "string"}},
+    "dashboardSynced": {"type": "boolean"},
+    "submitted": {"type": "boolean"},
+    "reason": {"type": "string"},
+    "reviewEvidence": {"type": "string"},
+    "submissionEvidence": {"type": "string"},
+    "events": {"type": "array", "items": {"type": "object", "required": ["at", "from", "to"], "properties": {"at": {"type": "string", "format": "date-time"}, "from": {"$ref": "state.schema.json"}, "to": {"$ref": "state.schema.json"}}}}
+  }
+}

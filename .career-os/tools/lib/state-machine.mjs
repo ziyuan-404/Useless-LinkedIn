@@ -8,8 +8,8 @@ const allowed = {
   'awaiting-agent': ['awaiting-agent','needs-decision','rejected','generation-failed','materials-pending-review','needs-verification','expired','duplicate-review'],
   'needs-decision': ['awaiting-agent','rejected','materials-pending-review','needs-verification','expired'],
   'generation-failed': ['awaiting-agent','materials-pending-review','needs-verification','expired'],
-  'materials-pending-review': ['awaiting-agent','review-required','needs-verification','expired'],
-  'review-required': ['approved','needs-verification','expired'],
+  'materials-pending-review': ['awaiting-agent','review-required','needs-decision','needs-verification','expired'],
+  'review-required': ['approved','needs-decision','needs-verification','expired'],
   approved: ['submitting','needs-verification','expired'],
   submitting: ['submission-unconfirmed','submitted','blocked-login','blocked-captcha'],
   'submission-unconfirmed': ['submitted','submitting','needs-verification'],
@@ -23,6 +23,7 @@ const allowed = {
 
 export function assertTransition(from, to, values = {}) {
   if (from !== to && !allowed[from]?.includes(to)) throw Error(`Illegal lead state transition: ${from} -> ${to}`);
+  if (to === 'needs-decision' && (!values.reason || typeof values.reason !== 'string' || !values.reason.trim())) throw Error('Needs-decision requires a reason');
   if (to === 'approved' && (!values.reviewEvidence || typeof values.reviewEvidence !== 'string' || !values.reviewEvidence.trim())) throw Error('Approval requires review evidence');
   if (to === 'submitted' && (!values.submissionEvidence || typeof values.submissionEvidence !== 'string' || !values.submissionEvidence.trim())) throw Error('Submitted requires explicit success evidence');
   if (to === 'submitted' && values.submitted !== true) throw Error('Submitted requires submitted=true');

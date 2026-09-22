@@ -5,11 +5,11 @@
 按当前任务读取：
 
 - 岗位有效性、去重、Knock-out 和 A–H：`modules/job-intelligence/MODULE.md`
-- 初始化规则、简历策略或回答库：`modules/applypilot/references/setup-workflow.md`
+- 初始化规则、简历策略或回答库：根目录 `workflows/onboarding.md` 与 `.career-os/operations/` 中的工作区规则
 - 操作招聘网站或 ATS：`modules/applypilot/references/application-playbook.md`
 - 隐私、登录、验证码或自动化边界：`modules/applypilot/references/safety-and-boundaries.md`
 
-忽略其中建立 Candidate Profile 和 CSV dashboard 的步骤；分别由唯一事实库和 Excel dashboard 替代。其余筛选、简历策略、回答库、执行、卡点复盘和跟进规则继续适用。
+人物事实只用 `.career-os/profile/`；申请状态与授权遵守根目录工作流和政策，不建立 Candidate Profile 或 CSV 台账。
 
 ## 精投分流
 
@@ -26,8 +26,8 @@
 1. 确认授权、登录状态、岗位仍开放且未重复投递、实际文件和必需回答存在。
 2. 填写低风险字段并上传已选文件，验证页面确实显示正确文件名。
 3. 新的开放题先生成草稿；首次出现的回答模式让用户确认后才复用。
-4. 遇到验证码、未知登录/2FA、与事实库冲突的高影响事实或网站异常时，记录 `待用户` 或 `受阻`。平台服务条款、Cookie及隐私协议默认自动同意，不作为阻塞项。
-5. 最终提交前显示简短审阅摘要并等待批准。
+4. 遇到验证码、未知登录/2FA、与事实库冲突的高影响事实或网站异常时，记录卡点。平台条款、Cookie 及隐私协议按当前用户授权和运行环境规则处理。
+5. 最终提交前核对本岗位的材料与授权记录；已有覆盖该动作的有效批准时执行，缺少提交授权时展示审阅摘要并等待用户决定。
 6. 看到明确成功证据后更新 dashboard，关闭已完成或跳过的标签页。
 
 ## 卡点复盘和后续跟进
