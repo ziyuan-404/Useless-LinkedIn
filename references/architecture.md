@@ -11,7 +11,7 @@
 | Personal Career OS | 经历导入、访谈补全、唯一事实库 | `.career-os/profile/` |
 | Resume Builder | claim-map、写作、模板、渲染和视觉 QA | 岗位目录下的内容与 QA 文件 |
 | ApplyPilot | 筛选规则、简历路由、申请执行和卡点 | `.career-os/operations/` + 授权账本 |
-| Job Intelligence | 有效性、去重、Knock-out、A–H、公司/联系人研究 | 岗位研究快照 |
+| Job Intelligence | 有效性、去重、Knock-out、A–G 分析、H 申请回答、公司/联系人研究 | 岗位研究快照 |
 | Application Writing | 动机信、申请邮件和联系人消息 | 经确认事实 + 已核实研究 |
 | Pipeline Analytics | Excel 展示、跟进、漏斗、复盘 | `求职Dashboard.xlsx` + 核验过的运营记录 |
 

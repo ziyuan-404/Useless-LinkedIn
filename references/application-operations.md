@@ -4,7 +4,7 @@
 
 按当前任务读取：
 
-- 岗位有效性、去重、Knock-out 和 A–H：`modules/job-intelligence/MODULE.md`
+- 岗位有效性、去重、Knock-out、A–G 分析与 H 申请回答：`modules/job-intelligence/MODULE.md`
 - 初始化规则、简历策略或回答库：根目录 `workflows/onboarding.md` 与 `.career-os/operations/` 中的工作区规则
 - 操作招聘网站或 ATS：`modules/applypilot/references/application-playbook.md`
 - 隐私、登录、验证码或自动化边界：`modules/applypilot/references/safety-and-boundaries.md`

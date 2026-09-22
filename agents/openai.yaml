@@ -1,6 +1,6 @@
 interface:
   display_name: "Useless LinkedIn"
-  short_description: "经历库、A–H 岗位评估、定制材料、投递与漏斗复盘"
-  default_prompt: "Use $useless-linkedin to check this job, run Knock-out and A–H evaluation, then route it to the appropriate application workflow."
+  short_description: "经历库、A–G 岗位分析、H 申请回答、定制材料、投递与漏斗复盘"
+  default_prompt: "Use $useless-linkedin to check this job, run Knock-out and A–G analysis, prepare H application-answer drafts when needed, then route it to the appropriate application workflow."
 policy:
   allow_implicit_invocation: true

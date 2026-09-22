@@ -1,6 +1,6 @@
 ---
 name: useless-linkedin
-description: "单入口、多模块的个人求职工作流：导入简历并建立可追溯经历库，检查岗位有效性与重复项，执行 Knock-out 和 A–H 评估，研究公司与联系人，按精投或海投策略生成/选择 CV、动机信和申请邮件，维护 Excel dashboard，并在人工确认边界内完成半自动投递、跟进和漏斗复盘。"
+description: "单入口、多模块的个人求职工作流：导入简历并建立可追溯经历库，检查岗位有效性与重复项，执行 Knock-out、A–G 分析并准备 H 申请回答，研究公司与联系人，按精投或海投策略生成/选择 CV、动机信和申请邮件，维护 Excel dashboard，并在人工确认边界内完成半自动投递、跟进和漏斗复盘。"
 ---
 
 # Useless LinkedIn
@@ -36,7 +36,7 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 | 建档、导入母版、补充/深挖经历 | `modules/personal-career-os/MODULE.md` |
 | 事实核对、CV 写作、排版和导出 | `modules/resume-builder/MODULE.md` |
 | 筛选规则、精投/海投路由、投递执行和卡点 | `modules/applypilot/MODULE.md` |
-| 岗位去重/失效、Knock-out、A–H、公司和联系人研究 | `modules/job-intelligence/MODULE.md` |
+| 岗位去重/失效、Knock-out、A–G 分析、H 申请回答、公司和联系人研究 | `modules/job-intelligence/MODULE.md` |
 | 动机信、申请邮件、联系人消息 | `modules/application-writing/MODULE.md` |
 | Dashboard、跟进、漏斗和策略复盘 | `modules/pipeline-analytics/MODULE.md` |
 
@@ -62,7 +62,7 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 
 ## 评估与真实性
 
-- A–H 是结构化报告，不是八个机械加权分数。最终可给 `1–5` 的整体优先级和 `精投/海投/跳过` 建议；信息不足时写 `无法评分`，不得制造精确百分比。
+- A–G 是岗位分析，H 是申请回答草稿；整体优先级不是八项机械加权分数。最终可给 `1–5` 的整体优先级和 `精投/海投/跳过` 建议；信息不足时写 `无法评分`，不得制造精确百分比。
 - JD 要求先按 JD 本身判断重要性，再读取候选人证据，避免为了匹配而降低门槛。
 - 要求的候选人证据分为 `已明确 / 结构性支持 / 合理推断 / 无证据`；推断不得满足 Knock-out 或关键要求。
 - 数字、日期、头衔、技能等级、身份、签证、薪资和 ownership 强词必须有可定位来源。

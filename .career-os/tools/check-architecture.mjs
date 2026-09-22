@@ -12,9 +12,23 @@ for (const name of (await fs.readdir(path.join(root,'schemas'))).filter(x=>x.end
   for (const [,ref] of refs) if (!await fs.stat(path.join(root,'schemas',ref)).then(()=>true,()=>false)) throw Error(`Missing schema reference: ${name} -> ${ref}`);
 }
 
+const pipelineSource=await fs.readFile(path.join(root,'.career-os/tools/pipeline.mjs'),'utf8');
+if (!pipelineSource.includes("path.join(root,'schemas/assessment.schema.json')")) throw Error('Pipeline must load schemas/assessment.schema.json');
+for (const [,schemaPath] of pipelineSource.matchAll(/['"]((?:schemas\/)[a-z-]+\.schema\.json)['"]/g)) {
+  await fs.access(path.join(root,schemaPath)).catch(()=>{throw Error(`Pipeline references missing schema: ${schemaPath}`);});
+}
+
 const files=(await fs.readdir(path.join(root,'workflows'))).filter(x=>x.endsWith('.md')).map(x=>path.join(root,'workflows',x));
 files.push(path.join(root,'references/state-machine.md'));
 files.push(...(await fs.readdir(path.join(root,'docs'))).filter(x=>x.endsWith('.md')).map(x=>path.join(root,'docs',x)));
+const terminologyFiles=[
+  path.join(root,'SKILL.md'),
+  path.join(root,'agents/openai.yaml'),
+  path.join(root,'README.md'),
+  path.join(root,'README.en.md'),
+  ...(await fs.readdir(path.join(root,'references'))).filter(x=>x.endsWith('.md')).map(x=>path.join(root,'references',x)),
+  ...(await fs.readdir(path.join(root,'modules'))).map(x=>path.join(root,'modules',x,'MODULE.md'))
+];
 const known=new Set(leadStates);
 const errors=[];
 for (const file of files) {
@@ -26,5 +40,9 @@ for (const file of files) {
     if (target && !known.has(target[1])) errors.push(`${path.relative(root,file)}: unknown --to state ${target[1]}`);
   }
 }
+for (const file of [...new Set([...files,...terminologyFiles])]) {
+  const content=await fs.readFile(file,'utf8');
+  if (/A[–-]H/.test(content)) errors.push(`${path.relative(root,file)}: use A–G analysis + H answer drafts`);
+}
 if (errors.length) throw Error(errors.join('\n'));
-console.log(`Architecture check passed: ${leadStates.length} states, ${files.length} documentation files`);
+console.log(`Architecture check passed: ${leadStates.length} states, ${new Set([...files,...terminologyFiles]).size} documentation files`);

@@ -26,7 +26,7 @@ Useless LinkedIn 是面向法国求职与 alternance 的 **Agent Career OS**：�
 | [ApplyPilot](https://github.com/yvonnehe772/applypilot) | Agent 带着用户完成配置、精投/海投分流、申请卡点与提交证据 | 用自然语言配置规则，协助填写申请，记录真实结果。 |
 | [Personal Career OS](https://github.com/Pluto-Mo/personal-career-os) | 统一经历库、经历深挖、从 JD 到材料的工作流 | 把简历整理成可复用事实，持续补充经历，不建立多份互相冲突的档案。 |
 | [resume-builder](https://github.com/StoneLL1/resume-builder) | 简历事实追溯、写作与排版分离、模板和渲染预览 | 先核对内容，再生成和审阅材料，保留原始简历。 |
-| [career-ops](https://github.com/career-ops-hq/career-ops) | scan、auto-pipeline、tracker，岗位存活、查重、Knock-out 与 A–H 分析 | 复用选定代码并整合为共享工具，串起岗位发现、评估、材料准备和追踪。 |
+| [career-ops](https://github.com/career-ops-hq/career-ops) | scan、auto-pipeline、tracker，岗位存活、查重、Knock-out、A–G 分析与 H 申请回答 | 复用选定代码并整合为共享工具，串起岗位发现、评估、材料准备和追踪。 |
 
 这是把这些设计组合、适配成**一个 Skill 入口**，并非安装四个独立技能。四层抓取是本项目整合后的回退流程；不是所有功能都由某一个上游项目直接提供。版本与许可见 [第三方归属](THIRD_PARTY_NOTICES.md)。
 

@@ -24,7 +24,7 @@ It is a skill pack rather than a separate website or a LinkedIn browser extensio
 | [ApplyPilot](https://github.com/yvonnehe772/applypilot) | Agent-led onboarding, tailored/batch routing, application blockers and submission evidence | Configure rules conversationally, assist with forms and record actual outcomes. |
 | [Personal Career OS](https://github.com/Pluto-Mo/personal-career-os) | A unified experience library, experience exploration and JD-to-material workflows | Turn your CV into reusable facts and expand them without conflicting candidate profiles. |
 | [resume-builder](https://github.com/StoneLL1/resume-builder) | Fact provenance, separating writing from layout, templates and rendering previews | Verify content before generating and reviewing documents; preserve original CVs. |
-| [career-ops](https://github.com/career-ops-hq/career-ops) | scan, auto-pipeline and tracker designs; availability, deduplication, Knock-out and A–H analysis | Reuse selected code and adapt shared tools to connect discovery, assessment, preparation and tracking. |
+| [career-ops](https://github.com/career-ops-hq/career-ops) | scan, auto-pipeline and tracker designs; availability, deduplication, Knock-out, A–G analysis and H answer drafts | Reuse selected code and adapt shared tools to connect discovery, assessment, preparation and tracking. |
 
 These designs are combined and adapted behind **one skill entry point**, rather than installing four independent skills. The four-layer fallback is this project's integrated workflow; it is not wholly supplied by any single upstream project. See [versions and attribution](THIRD_PARTY_NOTICES.md).
 
