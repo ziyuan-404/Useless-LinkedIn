@@ -18,3 +18,5 @@ Full-JD web captures use `{kind:"full-page",url,finalUrl,jd,bodyText,applyContro
 Generator payload: `cv` and `letter` replacement arrays, each `{selector,text,index?,sources:[{path,quote}]}`. Full quotes must exist in allowed local facts. Source existence does not prove semantic truth. Customize all four experience bullet slots and the fifth education slot, then review final PDF text and screenshots. No successful application submission is inferred from generation.
 
 No unattended model/search execution, credentials or personal audit code is distributed. Dependencies and local setup are described in the root README.
+
+The retired `career.mjs intake` command no longer creates records. Older local `.career-os/applications/intake/` files are left untouched; `tracker --history` reads the Excel history only, since an intake record with `pending-assessment` is not evidence of an application.

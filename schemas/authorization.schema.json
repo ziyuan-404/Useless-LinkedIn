@@ -12,7 +12,7 @@
       "grantedAt": {"type": "string", "format": "date-time"},
       "expiresAt": {"type": "string", "format": "date-time"},
       "revokedAt": {"type": "string", "format": "date-time"},
-      "scope": {"type": "object", "required": ["kind"], "properties": {"kind": {"enum": ["workspace", "job"]}, "jobId": {"type": "string", "minLength": 1}}, "additionalProperties": false},
+      "scope": {"type": "object", "required": ["kind"], "properties": {"kind": {"enum": ["workspace", "job"]}, "jobId": {"type": "string", "minLength": 1}}, "if": {"properties": {"kind": {"const": "job"}}}, "then": {"required": ["jobId"]}, "additionalProperties": false},
       "actions": {"type": "object", "properties": {"prepare_materials": {"type": "boolean"}, "prefill_form": {"type": "boolean"}, "upload_files": {"type": "boolean"}, "submit": {"type": "boolean"}, "send_message": {"type": "boolean"}}, "additionalProperties": false}
     }, "additionalProperties": false}}
   },
