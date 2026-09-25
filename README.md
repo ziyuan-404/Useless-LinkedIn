@@ -26,7 +26,7 @@ Useless LinkedIn 是面向法国求职与 alternance 的 Skill：一个入口、
 | [ApplyPilot](https://github.com/yvonnehe772/applypilot) | Agent 带着用户完成配置、精投/海投分流、申请卡点与提交证据 | 用自然语言配置规则，协助填写申请，记录真实结果。 |
 | [Personal Career OS](https://github.com/Pluto-Mo/personal-career-os) | 统一经历库、经历深挖、从 JD 到材料的工作流 | 把简历整理成可复用事实，持续补充经历，不建立多份互相冲突的档案。 |
 | [resume-builder](https://github.com/StoneLL1/resume-builder) | 简历事实追溯、写作与排版分离、模板和渲染预览 | 先核对内容，再生成和审阅材料，保留原始简历。 |
-| [career-ops](https://github.com/career-ops-hq/career-ops) | scan、auto-pipeline、tracker，岗位存活、查重、Knock-out、A–G 分析与 H 申请回答 | 复用选定代码并整合为共享工具，串起岗位发现、评估、材料准备和追踪。 |
+| [career-ops](https://github.com/career-ops-hq/career-ops) | scan、auto-pipeline、tracker，岗位存活、查重、Knock-out、A–G 分析与 H 申请回答 | 参考工作流并以本项目共享工具重新实现，串起岗位发现、评估、材料准备和追踪。 |
 
 这是把这些设计组合、适配成**一个 Skill 入口**，并非安装四个独立技能。四层抓取是本项目整合后的回退流程；不是所有功能都由某一个上游项目直接提供。版本与许可见 [第三方归属](THIRD_PARTY_NOTICES.md)。
 
@@ -126,7 +126,7 @@ flowchart TD
 
 Agent 可能会问你几轮问题，这是在补齐求职条件和核对经历。你不需要自己创建资料文件或修改配置格式。
 
-看板功能取决于平台提供的表格工具；无法更新 Excel 时，先让 Agent 维护岗位列表和申请摘要，并说明当前限制。完整技术要求见 [技术配置指南](docs/技术配置指南.md)。
+初始化后双击工作区的 `打开Dashboard.cmd` 即可在浏览器中使用本地申请看板。历史 Excel 可通过一次性导入命令迁移，原件应另存保留；完整技术要求见 [技术配置指南](docs/技术配置指南.md)。
 
 ### 4. 先跑一个小任务
 

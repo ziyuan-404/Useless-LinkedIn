@@ -6,7 +6,7 @@ import {root,args,pythonCommand} from './runtime.mjs';
 
 const [command,...rest]=process.argv.slice(2);
 const a=args(rest);
-const registry=path.join(root,'.useless-linkedin/audits/resume-pool.json');
+const registry=path.join(root,'00-个人资料/audits/resume-pool.json');
 const pool=JSON.parse(await fs.readFile(registry,'utf8').catch(e=>{if(e.code==='ENOENT')return '{"version":1,"files":[]}';throw e;}));
 if(pool.version!==1||!Array.isArray(pool.files))throw Error('Invalid resume pool');
 const sha=async file=>createHash('sha256').update(await fs.readFile(file)).digest('hex');
@@ -14,7 +14,7 @@ const save=async()=>{await fs.mkdir(path.dirname(registry),{recursive:true});awa
 if(command==='list')console.log(JSON.stringify(pool.files,null,2));
 else if(command==='add'){
   const file=path.resolve(root,a.file||'');
-  if(!file.startsWith(path.join(root,'海投简历')+path.sep)||path.extname(file).toLowerCase()!=='.pdf')throw Error('PDF must be in workspace 海投简历/');
+  if(!file.startsWith(path.join(root,'00-个人资料/海投简历')+path.sep)||path.extname(file).toLowerCase()!=='.pdf')throw Error('PDF must be in workspace 海投简历/');
   if(!a.family)throw Error('Use --family FAMILY');
   const id=createHash('sha256').update(path.relative(root,file)).digest('hex').slice(0,12);
   if(pool.files.some(x=>x.id===id))throw Error('Resume already registered');

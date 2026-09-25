@@ -1,15 +1,10 @@
-# Local candidate facts, applications and outputs are never published.
-.useless-linkedin/profile/
-.useless-linkedin/applications/
-.useless-linkedin/audits/
-.useless-linkedin/archive/
-.useless-linkedin/operations/authorizations.json
-.useless-linkedin/dashboard-backups/
-CV/
-海投简历/
-求职Dashboard.xlsx
-work/
-.publish/
+# Public skill source only. Personal workspaces belong outside this repository.
+/00-个人资料/
+/CV/
+/海投简历/
+/求职Dashboard.xlsx
+/work/
+/.publish/
 node_modules/
 __pycache__/
 *.pyc
@@ -21,17 +16,11 @@ __pycache__/
 *.db
 *.log
 *.inspect.ndjson
-
-# Only the supplied blank workbook may be committed.
 *.pdf
 *.docx
 *.xlsx
-!assets/dashboard-template.xlsx
-
-# Omitted rendered example media and retired tests.
-modules/resume-builder/tests/
 *.png
 *.jpg
 *.jpeg
 *.webp
-!/workspace-template/.useless-linkedin/template/portrait.png
+!/workspace-template/00-个人资料/template/portrait.png

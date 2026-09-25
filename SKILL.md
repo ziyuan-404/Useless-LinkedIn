@@ -1,11 +1,11 @@
 ---
 name: useless-linkedin
-description: "单入口、多模块的个人求职工作流：导入简历并建立可追溯经历库，检查岗位有效性与重复项，执行 Knock-out、A–G 分析并准备 H 申请回答，研究公司与联系人，按精投或海投策略生成/选择 CV、动机信和申请邮件，维护 Excel dashboard，并在人工确认边界内完成半自动投递、跟进和漏斗复盘。"
+description: "单入口、多模块的个人求职工作流：导入简历并建立可追溯经历库，检查岗位有效性与重复项，执行 Knock-out、A–G 分析并准备 H 申请回答，研究公司与联系人，按精投或海投策略生成/选择 CV、动机信和申请邮件，维护本地网页 Dashboard，并在人工确认边界内完成半自动投递、跟进和漏斗复盘。"
 ---
 
 # Useless LinkedIn
 
-这是本项目唯一可发现的 Skill。`workflows/` 定义执行顺序，`modules/` 的 `MODULE.md` 定义领域判断；模块不得作为独立 Skill 安装或调用。确定性工具在 `SKILL_ROOT/runtime/tools/`，持久线索状态在 `WORKSPACE_ROOT/.useless-linkedin/applications/automation/`。
+这是本项目唯一可发现的 Skill。`workflows/` 定义执行顺序，`modules/` 的 `MODULE.md` 定义领域判断；模块不得作为独立 Skill 安装或调用。确定性工具在 `SKILL_ROOT/runtime/tools/`，持久线索状态在 `WORKSPACE_ROOT/00-个人资料/applications/automation/`。
 
 面向用户的完整功能、目录、命令示例和隐私说明见 [README.md](README.md)。
 
@@ -14,19 +14,19 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 将包含本文件的目录记为 `SKILL_ROOT`。按以下顺序确定 `WORKSPACE_ROOT`：
 
 1. `USELESS_LINKEDIN_WORKSPACE` 指定的独立工作区；
-2. 当前目录或其父目录中已存在 `.useless-linkedin/` 的独立工作区。
+2. 当前目录或其父目录中已存在 `00-个人资料/` 的独立工作区。
 
 首次运行 `node SKILL_ROOT/runtime/tools/useless-linkedin.mjs init --workspace PATH`。此命令只复制 `workspace-template/` 的空白配置和看板；不会覆盖现有文件。不可把 Skill 安装目录作为工作区。
 
 统一使用：
 
-- 唯一候选人事实库：`WORKSPACE_ROOT/.useless-linkedin/`
-- 精投产物：`WORKSPACE_ROOT/CV/YYYY-MM-DD-jobId-contextHash/`
-- 海投简历池：`WORKSPACE_ROOT/海投简历/`
-- 投递 dashboard：`WORKSPACE_ROOT/求职Dashboard.xlsx`
-- 运营规则：`WORKSPACE_ROOT/.useless-linkedin/operations/`
+- 唯一候选人事实库：`WORKSPACE_ROOT/00-个人资料/profile/`
+- 精投产物：`WORKSPACE_ROOT/00-个人资料/CV/YYYY-MM-DD-jobId-contextHash/`
+- 海投简历池：`WORKSPACE_ROOT/00-个人资料/海投简历/`
+- 投递 dashboard：`WORKSPACE_ROOT/打开Dashboard.cmd` 启动网页；权威台账为 `00-个人资料/dashboard/applications.sqlite`
+- 运营规则：`WORKSPACE_ROOT/00-个人资料/operations/`
 
-不得建立 ApplyPilot candidate profile 或 resume-builder 的第二套人物素材库。所有候选人事实只写入 `.useless-linkedin/profile/`；岗位级 claim-map 只索引已存在来源和用户明确确认的事实。不得把真实个人资料写入 `SKILL_ROOT`。
+不得建立 ApplyPilot candidate profile 或 resume-builder 的第二套人物素材库。所有候选人事实只写入 `00-个人资料/profile/`；岗位级 claim-map 只索引已存在来源和用户明确确认的事实。不得把真实个人资料写入 `SKILL_ROOT`。
 
 ## 模块路由
 
@@ -55,7 +55,7 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 | 跟进 | [跟进](workflows/follow-up.md) |
 | 漏斗复盘和策略调整 | [结果复盘](workflows/review-pipeline.md) |
 
-初始化或修改数据关系时读 [架构约定](references/architecture.md)。详细材料、投递及 Excel 规范分别在 [精投参考](references/precision-workflow.md)、[投递参考](references/application-operations.md)、[Dashboard 参考](references/dashboard-workflow.md)。
+初始化或修改数据关系时读 [架构约定](references/architecture.md)。详细材料、投递及网页 Dashboard 规范分别在 [精投参考](references/precision-workflow.md)、[投递参考](references/application-operations.md)、[Dashboard 参考](references/dashboard-workflow.md)。
 
 ## 状态与授权
 

@@ -15,7 +15,7 @@
     "lastSeenAt": {"type": "string", "format": "date-time"},
     "possibleDuplicates": {"type": "array", "items": {"type": "string"}},
     "historyMatch": {"type": "boolean"},
-    "historyEvidence": {"type": ["object", "null"], "required": ["source", "sheet", "row", "url"], "properties": {"source": {"const": "dashboard"}, "sheet": {"type": "string"}, "row": {"type": "integer", "minimum": 1}, "url": {"type": "string"}}},
+    "historyEvidence": {"type": ["object", "null"], "required": ["source", "url"], "properties": {"source": {"enum": ["dashboard", "dashboard-db"]}, "recordId": {"type": "string"}, "sheet": {"type": ["string", "null"]}, "row": {"type": ["integer", "null"], "minimum": 1}, "url": {"type": "string"}}},
     "applicationMode": {"enum": ["precision", "bulk"]},
     "output": {"type": "string"},
     "dashboardSynced": {"type": "boolean"},

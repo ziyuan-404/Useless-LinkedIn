@@ -5,18 +5,16 @@ import {spawnSync} from 'node:child_process';
 import {lookup} from 'node:dns/promises';
 import {isIP} from 'node:net';
 import {root,skillRoot,toolsRoot,dependency,pythonCommand} from '../runtime.mjs';
-import {normalizeUrl} from '../../vendor/career-ops/url-key.mjs';
-import {fingerprintText,similarity} from '../../vendor/career-ops/fingerprint-core.mjs';
-import {classifyLiveness as upstreamLiveness} from '../../vendor/career-ops/liveness-core.mjs';
+import {normalizeUrl,fingerprintText,similarity,classifyLiveness} from './job-signals.mjs';
 import {validateLead} from './schema.mjs';
-export function classifyLiveness(input){if(/les candidatures ne sont plus accept[ée]es|n.accept[eé] plus de candidatures|offre (?:n.est plus|plus) disponible/i.test(input.bodyText||''))return {result:'expired',code:'fr_closed',reason:'French closed application banner'};return upstreamLiveness(input);}
-export const home=path.resolve(root,process.env.USELESS_LINKEDIN_STATE_DIR||'.useless-linkedin/applications/automation');
+export {classifyLiveness};
+export const home=path.resolve(root,process.env.USELESS_LINKEDIN_STATE_DIR||'00-个人资料/applications/automation');
 if(!home.startsWith(root+path.sep))throw Error('State directory must remain within workspace');
 export const hash=x=>createHash('sha256').update(x).digest('hex');
 export async function write(file,obj){await fs.mkdir(path.dirname(file),{recursive:true});const tmp=file+`.${process.pid}.tmp`;await fs.writeFile(tmp,typeof obj==='string'?obj:JSON.stringify(obj,null,2));await fs.rename(tmp,file);}
 export async function read(file,fallback){try{return JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT')return fallback;throw e;}}
 export function parse(text,mode='html'){const p=spawnSync(pythonCommand(),[path.join(toolsRoot,'lib/parse.py'),mode],{input:text,encoding:'utf8',maxBuffer:16*1024*1024});if(p.status!==0)throw Error(p.stderr);return JSON.parse(p.stdout);}
-export async function config(file='.useless-linkedin/portals.yml'){const c=parse(await fs.readFile(path.resolve(root,file),'utf8'),'yaml');if(c.version!==1||!Array.isArray(c.portals))throw Error('Invalid portals.yml');return c;}
+export async function config(file='00-个人资料/portals.yml'){const c=parse(await fs.readFile(path.resolve(root,file),'utf8'),'yaml');if(c.version!==1||!Array.isArray(c.portals))throw Error('Invalid portals.yml');return c;}
 function privateAddress(address){
  const ip=address.replace(/^\[|\]$/g,'').toLowerCase();
  if(isIP(ip)===4){
@@ -70,5 +68,5 @@ export async function transaction(fn){await fs.mkdir(home,{recursive:true});cons
 export function add(store,job){const key=normalizeUrl(job.url);if(!key)throw Error('Invalid posting URL');const old=store.jobs.find(x=>x.key===key);if(old){old.lastSeenAt=new Date().toISOString();old.sources=[...new Set([...old.sources,job.portal||job.url])];return {duplicate:true,id:old.id};}
  const id=hash(key).slice(0,16),fp=fingerprintText(job.jd||'');const possible=store.jobs.filter(x=>(fp&&x.fingerprint&&similarity(fp,x.fingerprint)>=.92)||(job.company&&x.company===job.company&&x.title===job.title&&x.location===job.location)).map(x=>x.id);
  store.jobs.push({...job,id,key,fingerprint:fp,possibleDuplicates:possible,sources:[job.portal||job.url],createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString(),state:possible.length?'possible-duplicate':'discovered',dashboardSynced:false,submitted:false});return {id,possibleDuplicates:possible};}
-export async function exportList(){const store=await read(path.join(home,'leads.json'),{jobs:[]});const escape=s=>String(s||'').replace(/\|/g,'/').replace(/\n/g,' ');await write(path.join(home,'list.md'),'# 自动发现岗位与流程阶段（机器状态；历史申请仍与 Excel 及成功凭证核对）\n\n| ID | 公司 | 岗位 | 来源 | 状态 | 优先级 | URL |\n|---|---|---|---|---|---|---|\n'+store.jobs.map(x=>`| ${x.id} | ${escape(x.company)} | ${escape(x.title)} | ${escape(x.portal)} | ${x.state} | ${x.priority||''} | ${x.url} |`).join('\n')+'\n');}
+export async function exportList(){const store=await read(path.join(home,'leads.json'),{jobs:[]});const escape=s=>String(s||'').replace(/\|/g,'/').replace(/\n/g,' ');await write(path.join(home,'list.md'),'# 自动发现岗位与流程阶段（机器状态；历史申请以 Dashboard 数据库及成功凭证核对）\n\n| ID | 公司 | 岗位 | 来源 | 状态 | 优先级 | URL |\n|---|---|---|---|---|---|---|\n'+store.jobs.map(x=>`| ${x.id} | ${escape(x.company)} | ${escape(x.title)} | ${escape(x.portal)} | ${x.state} | ${x.priority||''} | ${x.url} |`).join('\n')+'\n');}
 export {normalizeUrl};

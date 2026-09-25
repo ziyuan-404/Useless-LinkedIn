@@ -4,11 +4,11 @@
 
 - 通过岗位有效性和 Knock-out 预检查，且属于高匹配、高价值或用户点名的职位。
 - 每个 JD 生成独立 CV 与动机信 PDF。
-- 文件保存到 `WORKSPACE_ROOT/CV/YYYY-MM-DD-公司-岗位/`。
+- 文件保存到 `WORKSPACE_ROOT/00-个人资料/CV/YYYY-MM-DD-公司-岗位/`。
 
 ## 海投分流
 
-| 岗位族 | 简历文件（相对 `WORKSPACE_ROOT/海投简历/`） | 允许职位关键词 | 排除关键词 | 状态 |
+| 岗位族 | 简历文件（相对 `WORKSPACE_ROOT/00-个人资料/海投简历/`） | 允许职位关键词 | 排除关键词 | 状态 |
 |---|---|---|---|---|
 | 示例：软件开发 | `cv-software.pdf` | developer, software engineer | 待确认 | 待确认 |
 | 示例：数据方向 | `cv-data.pdf` | data, SQL, analytics | 待确认 | 待确认 |

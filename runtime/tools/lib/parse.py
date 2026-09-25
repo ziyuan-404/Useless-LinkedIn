@@ -3,7 +3,6 @@ import sys, json, re
 sys.stdin.reconfigure(encoding='utf-8')
 sys.stdout.reconfigure(encoding='utf-8')
 from html.parser import HTMLParser
-from pathlib import Path
 class Extract(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True); self.skip=0; self.script=None; self.text=[]; self.links=[]; self.schemas=[]; self.link=None; self.title=False; self.titles=[]
@@ -40,7 +39,6 @@ def walk(x):
         for k,v in x.items():
             if isinstance(v,(list,dict)): yield from walk(v)
 if sys.argv[1]=='yaml':
-    sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'vendor'))
     import yaml
     print(json.dumps(yaml.safe_load(sys.stdin.read()),ensure_ascii=False))
 else:

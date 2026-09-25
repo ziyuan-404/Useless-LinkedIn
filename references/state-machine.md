@@ -10,6 +10,6 @@
 
 新材料必须从 `materials-pending-review` 经 `review-required` 到 `approved`；批准时保存审阅依据及 `approvalSnapshot`，绑定 context、assessment、申请回答和 PDF 的 SHA256。进入 `submitting` 或 `submitted` 前重新计算；任一内容变化会退回 `review-required`。提交授权须绑定快照 ID。
 
-共享命令 `node SKILL_ROOT/runtime/tools/useless-linkedin.mjs state --id ID --to STATE [--evidence TEXT] [--reason TEXT]` 负责人工操作后的状态更新；进入 `submitting` 或 `submitted` 会检查该岗位的提交授权。`submitted` 的 evidence 应指向可核验的成功页、确认邮件或平台状态，不得填“已点击”。
+共享命令 `node SKILL_ROOT/runtime/tools/useless-linkedin.mjs state --id ID --to STATE [--evidence TEXT] [--reason TEXT]` 负责人工操作后的状态更新；进入 `submitting` 或 `submitted` 会检查该岗位的提交授权。`submitted` 必须改用 `--receipt FILE`，其中有成功页、确认邮件或平台状态原件的本地路径及观察时间；自由文字被拒绝。
 
-Excel 仍包含历史真实申请，尚未完成逐行核对迁移。当前 JSON 是自动线索与其工作阶段的 machine state；未迁移的申请以 Excel 行和提交成功凭证核对；Excel Dashboard 是当前面向人的运营视图。`dashboardSynced` 只说明视图同步状态，不是成功证据。禁止将两边记录简单合并或以空 JSON 覆盖 Excel。
+Dashboard 数据库保留历史 Excel 每行及其来源；旧表的“已提交”标签尚未逐条核对成功凭证。当前 JSON 是自动线索与其工作阶段的 machine state；网页 Dashboard 是面向人的运营视图。`dashboardSynced` 只说明视图同步状态，不是成功证据。禁止将两边记录简单合并或以空 JSON 覆盖台账。

@@ -1,6 +1,6 @@
 # Resume Builder（内部模块规则）
 
-本模块提供 CV 的事实核验、内容取舍和版面检查规则。执行顺序见根目录 `workflows/prepare-application.md`；候选人事实只来自 `.useless-linkedin/profile/`，岗位目录中的 `claim-map` 只保存表述与来源的对应关系。
+本模块提供 CV 的事实核验、内容取舍和版面检查规则。执行顺序见根目录 `workflows/prepare-application.md`；候选人事实只来自 `00-个人资料/profile/`，岗位目录中的 `claim-map` 只保存表述与来源的对应关系。
 
 ## 内容规则
 

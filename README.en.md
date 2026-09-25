@@ -126,7 +126,7 @@ Do not submit applications or send messages yet.
 
 Your agent may ask several questions to clarify your criteria and verify your experience. You do not have to create profile files or edit configuration formats yourself.
 
-Excel updates depend on spreadsheet tooling provided by the platform. If unavailable, ask your agent to maintain the job list and an application summary, and explain that limitation. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
+After initialization, double-click `打开Dashboard.cmd` in the workspace to open the local application dashboard. Existing Excel history can be imported once and its original preserved. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
 
 ### 4. Try one job first
 

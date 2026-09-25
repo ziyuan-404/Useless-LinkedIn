@@ -10,7 +10,7 @@ export function findWorkspace(start=process.cwd()){
   let dir=path.resolve(start);
   if(dir===skillRoot||dir.startsWith(skillRoot+path.sep))throw Error('Set USELESS_LINKEDIN_WORKSPACE or run useless-linkedin init --workspace PATH; the Skill directory is not a workspace');
   while(dir!==path.dirname(dir)){
-    if(dir!==skillRoot && fs.existsSync(path.join(dir,'.useless-linkedin')))return dir;
+    if(dir!==skillRoot && fs.existsSync(path.join(dir,'00-个人资料')))return dir;
     dir=path.dirname(dir);
   }
   throw Error('No career workspace found. Run useless-linkedin init --workspace PATH or set USELESS_LINKEDIN_WORKSPACE');

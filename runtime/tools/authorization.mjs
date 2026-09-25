@@ -7,7 +7,7 @@ import {validateAuthorization} from './lib/schema.mjs';
 const a=args();
 const actions=new Set(['prepare_materials','prefill_form','upload_files','submit','send_message']);
 if (a.help) { console.log('authorization.mjs --check ACTION [--job-id ID] | --grant --job-id ID --actions ACTIONS --source TEXT [--expires-at ISO] | --revoke ID | --list'); process.exit(0); }
-const file=path.join(root,'.useless-linkedin/operations/authorizations.json');
+const file=path.join(root,'00-个人资料/operations/authorizations.json');
 const ledger=JSON.parse(await fs.readFile(file,'utf8').catch(e=>{if(e.code==='ENOENT') return '{"version":1,"grants":[]}'; throw e;}));
 if (ledger.version!==1 || !Array.isArray(ledger.grants)) throw Error('Invalid authorization ledger');
 await validateAuthorization(ledger);

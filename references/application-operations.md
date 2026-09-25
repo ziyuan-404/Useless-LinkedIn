@@ -5,11 +5,11 @@
 按当前任务读取：
 
 - 岗位有效性、去重、Knock-out、A–G 分析与 H 申请回答：`modules/job-intelligence/MODULE.md`
-- 初始化规则、简历策略或回答库：根目录 `workflows/onboarding.md` 与 `.useless-linkedin/operations/` 中的工作区规则
+- 初始化规则、简历策略或回答库：根目录 `workflows/onboarding.md` 与 `00-个人资料/operations/` 中的工作区规则
 - 操作招聘网站或 ATS：`modules/applypilot/references/application-playbook.md`
 - 隐私、登录、验证码或自动化边界：`modules/applypilot/references/safety-and-boundaries.md`
 
-人物事实只用 `.useless-linkedin/profile/`；申请状态与授权遵守根目录工作流和政策，不建立 Candidate Profile 或 CSV 台账。
+人物事实只用 `00-个人资料/profile/`；申请状态与授权遵守根目录工作流和政策，不建立 Candidate Profile 或 CSV 台账。
 
 ## 精投分流
 
