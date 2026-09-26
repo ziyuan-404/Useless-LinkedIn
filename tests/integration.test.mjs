@@ -60,7 +60,7 @@ test('discovery import to reviewed materials and unconfirmed submission',async()
   const sections=Object.fromEntries('ABCDEFG'.split('').map(x=>[x,{score:3,reason:'Controlled fixture only'}]));
   const assessment={contextHash:context.contextHash,company:'Fixture Employer',role:'Développeur logiciel',ko:{status:'PASS',items:keys.map(key=>({key,result:'PASS',reason:'Controlled fixture only'}))},sections,priority:3,decision:{route:'bulk',resumeFamily:'software',strongestEvidence:['Controlled fixture'],gaps:[],nextAction:'Review material',owner:'agent'},questions:[]};
   const assessmentFile=path.join(workspace,'assessment-fixture.json');await fs.writeFile(assessmentFile,JSON.stringify(assessment));
-  const second=run(workspace,'pipeline','--id',id,'--web-capture',capture,'--assessment',assessmentFile);assert.equal(second.status,0,second.stderr);
+  const second=run(workspace,'pipeline','--id',id,'--assessment',assessmentFile);assert.equal(second.status,0,second.stderr);
   const leads=path.join(workspace,'00-个人资料/applications/automation/leads.json');
   assert.equal(JSON.parse(await fs.readFile(leads)).jobs[0].state,'materials-pending-review');
   assert.equal(run(workspace,'state','--id',id,'--to','review-required').status,0);

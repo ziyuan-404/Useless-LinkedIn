@@ -15,7 +15,9 @@ if(['materials-pending-review','review-required','approved','submitting','submis
 const dir=path.join(home,'jobs',job.id);await fs.mkdir(dir,{recursive:true});const lock=await fs.open(path.join(dir,'.lock'),'wx');
 try{
  let captured;
- if(a['web-capture']){const x=await read(path.resolve(root,a['web-capture']));if(x.url!==job.url||x.kind!=='full-page'||typeof x.jd!=='string'||x.jd.length<300||typeof x.bodyText!=='string'||!Array.isArray(x.applyControls)||x.applyControls.some(t=>!x.bodyText.includes(t))||!x.bodyText.includes(x.jd)||!x.capturedAt||!Number.isFinite(Date.parse(x.capturedAt))||Math.abs(Date.now()-Date.parse(x.capturedAt))>86400000)throw Error('Web capture requires a recent full page and observed controls, not search snippets');captured={...x,layer:'AgentWebFetch',liveness:classifyLiveness({status:0,requestedUrl:x.url,finalUrl:x.finalUrl||x.url,bodyText:x.bodyText,applyControls:x.applyControls})};}
+ const savedContext=a.assessment?await read(path.join(dir,'context.json'),null):null;
+ if(savedContext?.url===job.url&&savedContext?.captured?.liveness?.result==='active'&&typeof savedContext.captured.jd==='string'&&savedContext.captured.jd.length>=300)captured=savedContext.captured;
+ else if(a['web-capture']){const x=await read(path.resolve(root,a['web-capture']));if(x.url!==job.url||x.kind!=='full-page'||typeof x.jd!=='string'||x.jd.length<300||typeof x.bodyText!=='string'||!Array.isArray(x.applyControls)||x.applyControls.some(t=>!x.bodyText.includes(t))||!x.bodyText.includes(x.jd)||!x.capturedAt||!Number.isFinite(Date.parse(x.capturedAt))||Math.abs(Date.now()-Date.parse(x.capturedAt))>86400000)throw Error('Web capture requires a recent full page and observed controls, not search snippets');captured={...x,layer:'AgentWebFetch',liveness:classifyLiveness({status:0,requestedUrl:x.url,finalUrl:x.finalUrl||x.url,bodyText:x.bodyText,applyControls:x.applyControls})};}
  else captured=await capture(job.url,{browser:!a['no-browser']});
  await write(path.join(dir,'capture.json'),captured);await write(path.join(dir,'jd.txt'),captured.jd||'');
  if(postingIdentityMismatch(job,captured)){
