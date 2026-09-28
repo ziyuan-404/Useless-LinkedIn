@@ -51,7 +51,17 @@ async function renderAndSave(id,kind,html){
  try{
   const {chromium}=dependency('playwright');browser=await chromium.launch({headless:true,...(process.env.USELESS_LINKEDIN_CHROME?{executablePath:process.env.USELESS_LINKEDIN_CHROME}:{})});
   const page=await browser.newPage({viewport:{width:794,height:1123},deviceScaleFactor:1.5});
-  await page.route('**/*',route=>{const u=route.request().url();if(u.startsWith('data:')||u.startsWith('file:')&&decodeURIComponent(new URL(u).pathname).replace(/^\//,'').toLowerCase().startsWith(dir.replaceAll('\\','/').toLowerCase()))return route.continue();return route.abort();});
+  await page.route('**/*',route=>{
+   const url=route.request().url();
+   if(url.startsWith('data:'))return route.continue();
+   if(url.startsWith('file:')){
+    try{
+     const relative=path.relative(dir,fileURLToPath(url));
+     if(relative!==''&&relative!=='..'&&!relative.startsWith(`..${path.sep}`)&&!path.isAbsolute(relative))return route.continue();
+    }catch{}
+   }
+   return route.abort();
+  });
   await page.goto(pathToFileURL(preview).href,{waitUntil:'load'});await page.evaluate(()=>document.fonts.ready);
   const overflow=await page.evaluate(()=>[...document.querySelectorAll('.page,.main,.sidebar')].some(el=>el.scrollHeight>el.clientHeight+2));
   if(overflow)throw Error('Page content overflows; adjust the layout before saving');
