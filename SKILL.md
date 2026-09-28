@@ -23,7 +23,7 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 - 唯一候选人事实库：`WORKSPACE_ROOT/个人资料/profile/`
 - 精投产物：`WORKSPACE_ROOT/个人资料/CV/YYYY-MM-DD-jobId-contextHash/`
 - 海投简历池：`WORKSPACE_ROOT/个人资料/海投简历/`
-- 投递 Dashboard 与材料编辑器：`WORKSPACE_ROOT/打开Dashboard.cmd` 在同一常驻窗口启动两个本机服务；权威台账为 `个人资料/dashboard/applications.sqlite`
+- 投递 Dashboard 与材料编辑器：Windows 用 `WORKSPACE_ROOT/打开Dashboard.cmd`，macOS 用 `WORKSPACE_ROOT/打开Dashboard.command`，在同一常驻窗口启动两个本机服务；权威台账为 `个人资料/dashboard/applications.sqlite`
 - 运营规则：`WORKSPACE_ROOT/个人资料/operations/`
 
 不得建立 ApplyPilot candidate profile 或 resume-builder 的第二套人物素材库。所有候选人事实只写入 `个人资料/profile/`；岗位级 claim-map 只索引已存在来源和用户明确确认的事实。不得把真实个人资料写入 `SKILL_ROOT`。

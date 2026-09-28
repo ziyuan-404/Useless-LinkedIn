@@ -126,9 +126,9 @@ Do not submit applications or send messages yet.
 
 Your agent may ask several questions to clarify your criteria and verify your experience. You do not have to create profile files or edit configuration formats yourself.
 
-After initialization, double-click `打开Dashboard.cmd` in the workspace to start and monitor both the local application dashboard and material editor. The dashboard opens automatically in the system default browser; the editor is available from the dashboard. Existing Excel history can be imported once and its original preserved. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
+After initialization, double-click `打开Dashboard.cmd` on Windows or `打开Dashboard.command` on macOS in the workspace. Both start and monitor the local dashboard and material editor in one window; the dashboard opens automatically in the default browser. On macOS, `init --workspace PATH` creates the executable `.command` file. Rerun `init` in an existing workspace to add it without overwriting personal data. Existing Excel history can be imported once and its original preserved. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
 
-The same `打开Dashboard.cmd` also starts the offline CV and cover-letter editor. It can edit text, move and resize text boxes, images and other HTML blocks, and change type size and colors. Saving rebuilds the PDF and keeps the previous version. See the [editor workflow](references/editor-workflow.md).
+The same platform-specific launcher also starts the offline CV and cover-letter editor. It can edit text, move and resize text boxes, images and other HTML blocks, and change type size and colors. Saving rebuilds the PDF and keeps the previous version. See the [editor workflow](references/editor-workflow.md).
 
 ### 4. Try one job first
 

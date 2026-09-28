@@ -27,7 +27,7 @@ try{
 for(const [name,file] of [
   ['Portals config','个人资料/portals.yml'],
   ['Profile basics','个人资料/profile/basics.md'],
-  ['Dashboard launcher','打开Dashboard.cmd'],
+  ['Dashboard launcher',process.platform==='darwin'?'打开Dashboard.command':'打开Dashboard.cmd'],
   ['Private gitignore','.gitignore']
 ])check(name,await fs.stat(path.join(root,file)).then(()=>true,()=>false));
 const basics=await fs.readFile(path.join(root,'个人资料/profile/basics.md'),'utf8').catch(()=>null);

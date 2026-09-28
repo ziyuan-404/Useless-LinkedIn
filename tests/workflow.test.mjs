@@ -22,6 +22,11 @@ test('workspace init is separate and idempotent',async()=>{
   assert.ok((await fs.stat(path.join(workspace,'个人资料/profile/basics.md'))).isFile());
   const launcher=await fs.readFile(path.join(workspace,'打开Dashboard.cmd'),'utf8');
   assert.match(launcher,/launch-local\.mjs/);
+  if(process.platform==='darwin'){
+   const macLauncher=path.join(workspace,'打开Dashboard.command');
+   assert.match(await fs.readFile(macLauncher,'utf8'),/launch-local\.mjs/);
+   assert.ok((await fs.stat(macLauncher)).mode&0o111,'macOS launcher must be executable');
+  }
   assert.equal(await fs.stat(path.join(workspace,'打开材料编辑器.bat')).catch(()=>null),null);
   await fs.writeFile(path.join(workspace,'个人资料/profile/basics.md'),'private fact');
   assert.equal(run(workspace,'init','--workspace',workspace).status,0);

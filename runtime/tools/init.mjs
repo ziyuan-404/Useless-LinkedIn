@@ -48,6 +48,37 @@ const dashboardDb=openDashboard(workspace);dashboardDb.close();
 const launcher=path.join(workspace,'打开Dashboard.cmd');
 const launcherText=`@echo off\r\nsetlocal\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\nset "USELESS_LINKEDIN_WORKSPACE=%~dp0"\r\nwhere node >nul 2>nul\r\nif errorlevel 1 (\r\n  echo Node.js was not found. Install Node.js 24 or newer, then retry.\r\n  pause\r\n  exit /b 1\r\n)\r\nnode "${path.join(skillRoot,'runtime','tools','launch-local.mjs')}"\r\necho.\r\necho Local services stopped. Press any key to close this window.\r\npause >nul\r\n`;
 try{await fs.writeFile(launcher,launcherText,{flag:'wx'});created.push('打开Dashboard.cmd');}catch(e){if(e.code!=='EEXIST')throw e;}
+if(process.platform==='darwin'){
+ const macLauncher=path.join(workspace,'打开Dashboard.command');
+ const shellQuote=value=>`'${value.replaceAll("'","'\\''")}'`;
+ const macLauncherText=[
+  '#!/bin/bash',
+  'cd "$(dirname "$0")" || exit 1',
+  'export USELESS_LINKEDIN_WORKSPACE="$PWD"',
+  'export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"',
+  'if ! command -v node >/dev/null 2>&1; then',
+  '  echo "Node.js was not found. Install Node.js 24 or newer, then retry."',
+  '  read -r -p "Press Return to close this window..." _',
+  '  exit 1',
+  'fi',
+  "if ! node -e 'process.exit(Number(process.versions.node.split(\".\")[0]) >= 24 ? 0 : 1)' >/dev/null 2>&1; then",
+  '  echo "Node.js 24 or newer is required."',
+  '  read -r -p "Press Return to close this window..." _',
+  '  exit 1',
+  'fi',
+  `node ${shellQuote(path.join(skillRoot,'runtime','tools','launch-local.mjs'))}`,
+  'status=$?',
+  'echo',
+  'echo "Local services stopped. Press Return to close this window."',
+  'read -r _',
+  'exit "$status"'
+ ].join('\n')+'\n';
+ try{
+  await fs.writeFile(macLauncher,macLauncherText,{flag:'wx',mode:0o755});
+  await fs.chmod(macLauncher,0o755);
+  created.push('打开Dashboard.command');
+ }catch(e){if(e.code!=='EEXIST')throw e;}
+}
 const manifestFile=path.join(workspace,dataDirectory,'workspace.json');
 try{
   await fs.writeFile(manifestFile,JSON.stringify({workspaceSchemaVersion:1,initializedBy:'0.3.0',createdAt:new Date().toISOString()},null,2)+'\n',{flag:'wx'});
