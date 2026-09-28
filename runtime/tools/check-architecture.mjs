@@ -13,7 +13,8 @@ for (const name of (await fs.readdir(path.join(root,'schemas'))).filter(x=>x.end
 }
 
 const pipelineSource=await fs.readFile(path.join(root,'runtime/tools/pipeline.mjs'),'utf8');
-if (!pipelineSource.includes('validateAssessment(result)')) throw Error('Pipeline must validate the assessment schema');
+const assessmentSource=await fs.readFile(path.join(root,'runtime/tools/lib/assessment-validation.mjs'),'utf8');
+if (!pipelineSource.includes('validateDecision(result')||!assessmentSource.includes('validateAssessment(result)')) throw Error('Pipeline must validate the assessment schema');
 for (const [,schemaPath] of pipelineSource.matchAll(/['"]((?:schemas\/)[a-z-]+\.schema\.json)['"]/g)) {
   await fs.access(path.join(root,schemaPath)).catch(()=>{throw Error(`Pipeline references missing schema: ${schemaPath}`);});
 }

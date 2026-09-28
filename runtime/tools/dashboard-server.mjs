@@ -15,6 +15,16 @@ db.function('company_initial',value=>{const first=companyKey(value).charAt(0);re
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8'};
 function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));}
 function fail(res,error){const message=error instanceof Error?error.message:String(error);send(res,/not found/i.test(message)?404:/changed/i.test(message)?409:400,{error:message});}
+function dailySubmissions(){
+ const end=new Date(`${localDate()}T12:00:00Z`);
+ const days=Array.from({length:21},(_,index)=>{
+  const day=new Date(end);day.setUTCDate(end.getUTCDate()-20+index);
+  return day.toISOString().slice(0,10);
+ });
+ const counts=db.prepare("SELECT date, count(*) AS total FROM applications WHERE status='已提交' AND date BETWEEN ? AND ? GROUP BY date").all(days[0],days.at(-1));
+ const byDate=new Map(counts.map(row=>[row.date,row.total]));
+ return days.map(date=>({date,count:byDate.get(date)||0}));
+}
 async function body(req){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>250000)throw Error('Request too large');chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString('utf8'));}
 function openBrowser(){const url=`http://127.0.0.1:${port}/`;const command=process.platform==='win32'?'explorer.exe':process.platform==='darwin'?'open':'xdg-open';const child=spawn(command,[url],{detached:true,stdio:'ignore'});child.on('error',e=>console.error('Could not open browser:',e.message));child.unref();}
 const server=http.createServer(async(req,res)=>{
@@ -23,10 +33,11 @@ const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,`http://127.0.0.1:${port}`);
   if(req.method==='GET'&&url.pathname==='/api/health'){send(res,200,{ok:true,workspace:root});return;}
   if(req.method==='GET'&&url.pathname==='/api/summary'){send(res,200,summary(db));return;}
+  if(req.method==='GET'&&url.pathname==='/api/trend'){send(res,200,dailySubmissions());return;}
   if(req.method==='GET'&&url.pathname==='/api/applications'){
    const query=(url.searchParams.get('q')||'').slice(0,200),status=(url.searchParams.get('status')||'').slice(0,100),initial=url.searchParams.get('initial')||'',sort=url.searchParams.get('sort')||'date-desc',focus=url.searchParams.get('focus')||'';
    const order={'date-desc':'date DESC, company_key(company) ASC, id ASC','date-asc':'date ASC, company_key(company) ASC, id ASC','company-asc':'company_key(company) ASC, date DESC, id ASC','company-desc':'company_key(company) DESC, date DESC, id ASC'}[sort];
-   if(!order||initial&&!/^[A-Z#]$/.test(initial)||!['','due','waiting','verify','missing-jd','conflicts'].includes(focus))throw Error('Invalid filter or sort');
+   if(!order||initial&&!/^[A-Z#]$/.test(initial)||!['','due','waiting','verify','verified','missing-jd','conflicts'].includes(focus))throw Error('Invalid filter or sort');
    let sql='SELECT * FROM applications WHERE 1=1',params=[];
    if(query){sql+=' AND (id LIKE ? OR company LIKE ? OR role LIKE ? OR job_url LIKE ?)';params.push(...Array(4).fill(`%${query}%`));}
    if(status){sql+=' AND status=?';params.push(status);}
@@ -34,8 +45,18 @@ const server=http.createServer(async(req,res)=>{
    if(focus==='due'){sql+=" AND followup_date<>'' AND followup_date<=? AND status NOT IN ('跳过','拒绝','撤回','失效')";params.push(localDate());}
    if(focus==='waiting')sql+=" AND status='待用户'";
    if(focus==='verify')sql+=" AND status='已提交' AND submission_verified=0";
+   if(focus==='verified')sql+=' AND submission_verified=1';
    if(focus==='missing-jd')sql+=' AND length(trim(jd))<300';
    if(focus==='conflicts')sql+=" AND (CASE WHEN applied='☑' THEN 1 ELSE 0 END)+(CASE WHEN awaiting_interview='☑' THEN 1 ELSE 0 END)+(CASE WHEN awaiting_result='☑' THEN 1 ELSE 0 END)>1";
+   const pageSizeRaw=url.searchParams.get('pageSize');
+   if(pageSizeRaw!==null){
+    const pageSize=Number(pageSizeRaw),requestedPage=Number(url.searchParams.get('page')||'1');
+    if(![10,20,50].includes(pageSize)||!Number.isSafeInteger(requestedPage)||requestedPage<1)throw Error('Invalid page or page size');
+    const total=db.prepare(`SELECT count(*) AS total FROM (${sql})`).get(...params).total;
+    const pages=Math.max(1,Math.ceil(total/pageSize)),page=Math.min(requestedPage,pages);
+    const items=db.prepare(`${sql} ORDER BY ${order} LIMIT ? OFFSET ?`).all(...params,pageSize,(page-1)*pageSize);
+    send(res,200,{items,total,page,pageSize,pages});return;
+   }
    sql+=` ORDER BY ${order} LIMIT 1000`;send(res,200,db.prepare(sql).all(...params));return;
   }
   const item=url.pathname.match(/^\/api\/applications\/([^/]+)$/);

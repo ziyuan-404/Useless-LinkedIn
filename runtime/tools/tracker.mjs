@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {spawnSync} from 'node:child_process';
 import {DatabaseSync} from 'node:sqlite';
 import {root,args} from './runtime.mjs';
 import {home,read,write,normalizeUrl,transaction,exportList} from './lib/core.mjs';

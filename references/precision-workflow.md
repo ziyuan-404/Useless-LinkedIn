@@ -1,6 +1,6 @@
 # 精投材料工作流
 
-只在用户明确要求精投、定制或生成材料时执行。
+当岗位按已配置规则路由为精投，或用户明确要求定制材料时执行。
 
 ## 必读模块规则
 
@@ -9,8 +9,9 @@
 1. `modules/personal-career-os/MODULE.md`
 2. `modules/personal-career-os/references/methodology/简历方法论.md`
 3. `modules/resume-builder/references/Resume-Writing-Guide-LLM.md`
-4. `modules/application-writing/MODULE.md`
-5. 排版与渲染依 `runtime/tools/generate-application.mjs` 和工作区模板执行。
+4. `modules/resume-builder/cv.md`
+5. `modules/application-writing/MODULE.md`
+6. 排版与渲染依 `runtime/tools/generate-application.mjs` 和工作区模板执行。
 
 使用 Personal Career OS 的档案与产物能力，叠加 resume-builder 的 claim-map、批量追问、模板无关内容稿、JD—证据映射和最终真实性审计。
 
@@ -26,6 +27,8 @@
 8. 检查输出文件是否含未授权披露的个人信息。通过后在 dashboard 记录实际文件路径和 `材料已准备`。
 
 ## CV 规则
+
+页面尺寸、区域比例、字体、照片、内容容量、铺满一页的调整顺序和视觉验收以 `modules/resume-builder/cv.md` 为准。以下只保留内容层面的总原则：
 
 - 默认一页；经历确实丰富且用户同意时可以两页。
 - 真实性优先于岗位匹配，岗位匹配优先于措辞和版面。
@@ -48,7 +51,7 @@
 
 ## 输出位置
 
-输出到 `WORKSPACE_ROOT/00-个人资料/CV/YYYY-MM-DD-jobId-contextHash/`。优先遵守 JD 的文件命名要求；否则使用：
+输出到 `WORKSPACE_ROOT/个人资料/CV/YYYY-MM-DD-jobId-contextHash/`。优先遵守 JD 的文件命名要求；否则使用：
 
 - `姓名-CV-公司-岗位.pdf`
 - `姓名-Motivation-Letter-公司-岗位.pdf`

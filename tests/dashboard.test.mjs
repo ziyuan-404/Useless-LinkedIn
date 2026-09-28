@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
 import {spawn} from 'node:child_process';
-import {openDashboard,insertRecord,updateRecord,syncSubmittedLead,summary} from '../runtime/tools/lib/dashboard-db.mjs';
+import {openDashboard,insertRecord,updateRecord,syncSubmittedLead,summary,localDate} from '../runtime/tools/lib/dashboard-db.mjs';
 
 async function freePort(){const server=net.createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;await new Promise(resolve=>server.close(resolve));return port;}
 test('local Dashboard serves records and guards edits',async()=>{
@@ -33,21 +33,49 @@ test('local Dashboard serves records and guards edits',async()=>{
   assert.deepEqual(await ids('sort=company-desc'),['test-2','test-1','test-3','test-4']);
   assert.deepEqual(await ids('initial=E&sort=company-asc'),['test-3','test-1']);
   assert.deepEqual(await ids('initial=E&status=待处理'),['test-3']);
+  const firstPage=await (await fetch(base+'/api/applications?page=1&pageSize=10&sort=company-asc')).json();
+  assert.equal(firstPage.total,4);assert.equal(firstPage.pages,1);assert.deepEqual(firstPage.items.map(x=>x.id),['test-4','test-3','test-1','test-2']);
+  const filteredPage=await (await fetch(base+'/api/applications?page=2&pageSize=20&initial=E')).json();
+  assert.equal(filteredPage.page,1);assert.equal(filteredPage.total,2);assert.deepEqual(filteredPage.items.map(x=>x.id),['test-1','test-3']);
+  for(let i=0;i<8;i++)assert.equal((await write('POST','/api/applications',{id:`extra-${i}`,date:'2026-09-18',company:`Extra ${i}`,role:'Developer'})).status,201);
+  const lastPage=await (await fetch(base+'/api/applications?page=2&pageSize=10&sort=date-desc')).json();
+  assert.equal(lastPage.total,12);assert.equal(lastPage.pages,2);assert.equal(lastPage.items.length,2);
+  assert.equal((await fetch(base+'/api/applications?pageSize=11')).status,400);
   assert.equal((await fetch(base+'/api/applications?sort=unsafe')).status,400);
   assert.equal((await fetch(base+'/dashboard-layout.css')).status,200);
   const summary=await (await fetch(base+'/api/summary')).json();
   assert.equal(summary.pendingVerification,0);
+  assert.equal((await write('POST','/api/applications',{id:'today-submitted',date:localDate(),company:'Today',role:'Analyst',status:'已提交',applied:'☑',submission_evidence:'Test receipt'})).status,201);
+  const trend=await (await fetch(base+'/api/trend')).json();
+  assert.equal(trend.length,21);assert.deepEqual(trend.at(-1),{date:localDate(),count:1});
+  assert.equal(trend.reduce((total,day)=>total+day.count,0),1);
+  assert.equal((await (await fetch(base+'/api/applications?focus=verified&pageSize=10')).json()).total,0);
+  const dbForVerification=openDashboard(workspace);
+  try{dbForVerification.prepare('UPDATE applications SET submission_verified=1 WHERE id=?').run('today-submitted');}finally{dbForVerification.close();}
+  const verified=await (await fetch(base+'/api/applications?focus=verified&pageSize=10')).json();
+  assert.equal(verified.total,1);assert.deepEqual(verified.items.map(item=>item.id),['today-submitted']);
  }finally{child.kill();}
 });
 test('confirmed lead synchronization creates one verified Dashboard record',async()=>{
  const workspace=await fs.mkdtemp(path.join(os.tmpdir(),'ul-dashboard-sync-'));const db=openDashboard(workspace);
  try{
-  const lead={id:'lead-1',url:'https://example.org/posting',company:'Example',title:'Developer',state:'submitted',submitted:true,submissionEvidence:JSON.stringify({kind:'success-page',artifactSha256:'a'.repeat(64)})};
+  const lead={id:'lead-1',url:'https://example.org/posting',company:'Example',title:'Developer',matchLevel:'中',state:'submitted',submitted:true,submissionEvidence:JSON.stringify({kind:'success-page',observedAt:'2026-09-26T23:00:00+02:00',artifactSha256:'a'.repeat(64)})};
   assert.throws(()=>syncSubmittedLead(db,{...lead,state:'submission-unconfirmed'}));
-  const record=syncSubmittedLead(db,lead);assert.equal(record.submission_verified,1);assert.equal(record.status,'已提交');assert.equal(summary(db).verifiedSubmitted,1);
+  const record=syncSubmittedLead(db,lead);assert.equal(record.submission_verified,1);assert.equal(record.status,'已提交');assert.equal(record.match_level,'中');assert.equal(record.followup_date,'2026-10-03');assert.match(record.next_action,/2026-10-03/);assert.equal(summary(db).verifiedSubmitted,1);
   assert.equal(syncSubmittedLead(db,lead).id,record.id);assert.equal(summary(db).total,1);
   assert.equal(db.prepare("SELECT count(*) n FROM application_events WHERE action='submission-receipt-verified'").get().n,1);
  }finally{db.close();}
+});
+test('submitted lead synchronization repairs blanks without replacing existing follow-up choices',async()=>{
+ const workspace=await fs.mkdtemp(path.join(os.tmpdir(),'ul-dashboard-repair-'));
+ const db=openDashboard(workspace);
+  try{
+   const lead={id:'lead-2',url:'https://example.org/another',company:'Example',title:'Analyst',matchLevel:'高',state:'submitted',submitted:true,submissionEvidence:JSON.stringify({kind:'success-page',observedAt:'2026-09-26T23:58:00+02:00',artifactSha256:'b'.repeat(64)})};
+   const original=insertRecord(db,{id:lead.id,date:'2026-09-26',company:'Example',role:'Analyst',status:'已提交',applied:'☑',job_url:lead.url,submission_evidence:lead.submissionEvidence,followup_date:'2026-10-05'});
+   db.prepare('UPDATE applications SET submission_verified=1 WHERE id=?').run(original.id);
+   const repaired=syncSubmittedLead(db,lead);
+   assert.equal(repaired.match_level,'高');assert.equal(repaired.followup_date,'2026-10-05');assert.match(repaired.next_action,/2026-10-05/);
+  }finally{db.close();}
 });
 test('editing a historical row preserves untouched JD whitespace',async()=>{
  const workspace=await fs.mkdtemp(path.join(os.tmpdir(),'ul-dashboard-history-'));const db=openDashboard(workspace);

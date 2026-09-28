@@ -8,12 +8,12 @@ if(a.help){console.log('useless-linkedin init --workspace PATH');process.exit(0)
 if(typeof a.workspace!=='string')throw Error('Use init --workspace PATH');
 const workspace=path.resolve(a.workspace);
 if(workspace===skillRoot||workspace.startsWith(skillRoot+path.sep))throw Error('Workspace must be separate from the Skill');
-const dataDirectory='00-个人资料';
-const ignoreBlock=`# BEGIN Useless LinkedIn private workspace\n${dataDirectory}/profile/\n${dataDirectory}/applications/\n${dataDirectory}/audits/\n${dataDirectory}/archive/\n${dataDirectory}/dashboard/\n${dataDirectory}/operations/authorizations.json\n00-个人资料/CV/\n00-个人资料/海投简历/\n# END Useless LinkedIn private workspace\n`;
+const dataDirectory='个人资料';
+const ignoreBlock=`# BEGIN Useless LinkedIn private workspace\n${dataDirectory}/profile/\n${dataDirectory}/applications/\n${dataDirectory}/audits/\n${dataDirectory}/archive/\n${dataDirectory}/dashboard/\n${dataDirectory}/operations/authorizations.json\n个人资料/CV/\n个人资料/海投简历/\n# END Useless LinkedIn private workspace\n`;
 const seeds=[
-  ['workspace-template/00-个人资料/operations','00-个人资料/operations'],
-  ['workspace-template/00-个人资料/template','00-个人资料/template'],
-  ['workspace-template/00-个人资料/portals.yml','00-个人资料/portals.yml']
+  ['workspace-template/个人资料/operations','个人资料/operations'],
+  ['workspace-template/个人资料/template','个人资料/template'],
+  ['workspace-template/个人资料/portals.yml','个人资料/portals.yml']
 ];
 const created=[];
 async function copyMissing(source,destination){
@@ -28,9 +28,9 @@ async function copyMissing(source,destination){
   }
 }
 for(const [source,destination] of seeds)await copyMissing(path.join(skillRoot,source),path.join(workspace,destination));
-for(const dir of ['00-个人资料/profile/experiences','00-个人资料/applications/automation','00-个人资料/audits','00-个人资料/archive','00-个人资料/CV','00-个人资料/海投简历'])await fs.mkdir(path.join(workspace,dir),{recursive:true});
+for(const dir of ['个人资料/profile/experiences','个人资料/applications/automation','个人资料/audits','个人资料/archive','个人资料/CV','个人资料/海投简历'])await fs.mkdir(path.join(workspace,dir),{recursive:true});
 for(const name of ['basics.md','preferences.md','links.md','claim-map.md']){
-  const file=path.join(workspace,'00-个人资料/profile',name);
+  const file=path.join(workspace,'个人资料/profile',name);
   try{await fs.writeFile(file,`# ${name.replace('.md','')}\n\n待填写。\n`,{flag:'wx'});created.push(path.relative(workspace,file));}
   catch(e){if(e.code!=='EEXIST')throw e;}
 }
@@ -46,7 +46,7 @@ else if(!ignore.includes(`${dataDirectory}/dashboard/`)){
 }
 const dashboardDb=openDashboard(workspace);dashboardDb.close();
 const launcher=path.join(workspace,'打开Dashboard.cmd');
-const launcherText=`@echo off\r\nset "USELESS_LINKEDIN_WORKSPACE=%~dp0"\r\nnode "${path.join(skillRoot,'runtime','tools','dashboard.mjs')}" --serve --open\r\nif errorlevel 1 pause\r\n`;
+const launcherText=`@echo off\r\nsetlocal\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\nset "USELESS_LINKEDIN_WORKSPACE=%~dp0"\r\nwhere node >nul 2>nul\r\nif errorlevel 1 (\r\n  echo Node.js was not found. Install Node.js 24 or newer, then retry.\r\n  pause\r\n  exit /b 1\r\n)\r\nnode "${path.join(skillRoot,'runtime','tools','launch-local.mjs')}"\r\necho.\r\necho Local services stopped. Press any key to close this window.\r\npause >nul\r\n`;
 try{await fs.writeFile(launcher,launcherText,{flag:'wx'});created.push('打开Dashboard.cmd');}catch(e){if(e.code!=='EEXIST')throw e;}
 const manifestFile=path.join(workspace,dataDirectory,'workspace.json');
 try{

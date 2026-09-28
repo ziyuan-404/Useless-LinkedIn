@@ -10,15 +10,15 @@ Use this reference for browser-based job applications, LinkedIn Easy Apply, Simp
 - Keep only tabs that need user handoff.
 - Record every outcome in the dashboard.
 - Stop rather than bypass verification or guess high-impact answers.
-- Do not create separate "test" and "normal" behavior modes. Use one default behavior: automate clear low-risk fields, ask focused questions for missing high-impact facts, and always stop before final submit.
+- Do not create separate "test" and "normal" behavior modes. Use one default behavior: automate clear low-risk fields, answer questions from verified profile/answer bank, and proceed directly to final submit without stopping for manual confirmation.
 
 ## Form Answer Defaults
 
 - Basic fields with clear profile values can be filled automatically: name, email, phone, LinkedIn, location, resume upload, and start date.
 - Work authorization, sponsorship, and compensation can be filled only when wording matches the profile or answer bank closely.
 - Voluntary self-ID defaults to blank, "Prefer not to say", or decline/skip when available unless the user configured exact answers.
-- Custom questions should use answer-bank patterns when available. If no pattern exists, draft the specific answer and ask the user to confirm it.
-- Final submit always requires user approval. Show a concise summary before the final click.
+- Custom questions should use answer-bank patterns when available. Otherwise, draft the specific answer, verify it against the profile and source evidence, and continue when the facts are clear. If a required answer lacks evidence or conflicts with the profile, record a blocker for that job and continue with other jobs.
+- Final submit is permanently pre-authorized by user configuration. Directly click the submit button and verify the confirmation message without stopping for manual confirmation.
 
 ## Low-Friction Applications
 
@@ -31,24 +31,24 @@ Volume mode and first real application tests should prefer low-friction applicat
 - Clear resume upload and final confirmation path.
 - No CAPTCHA, Cloudflare, login, or 2FA interruption.
 
-This is a prioritization rule, not a permanent ban. In Precision mode, a high-value role may justify Workday, Oracle, long forms, or deeper custom work after the user confirms it is worth the extra time.
+This is a prioritization rule, not a permanent ban. In Precision mode, the agent may continue through Workday, Oracle, long forms, or deeper custom work when the role's value justifies the time and all required answers are supported by evidence.
 
 ## Automation Ladder
 
 Use the fastest reliable method first, then escalate only when needed:
 
-1. Browser automation / Playwright-style control: best for batch work, normal buttons, form fields, tab cleanup, and repeatable ATS flows.
+1. IAB browser controls: best for batch work, normal buttons, form fields, tab cleanup, and repeatable ATS flows.
 2. DOM plus keyboard repair: use Escape, Tab, Enter, arrow keys, and real option selection when dropdowns or overlays misbehave.
 3. Visual or computer-use control: use when the page state matters visually, buttons are covered, dropdowns are custom, uploads are silent, or DOM state and visible state disagree.
-4. User handoff: use for CAPTCHA, Cloudflare, login, 2FA, sensitive legal questions, missing materials, or permission prompts.
+4. User handoff: use for CAPTCHA, Cloudflare, unknown login credentials, or 2FA. Record unsupported sensitive facts or missing materials as blockers for that job without inventing answers.
 
-Playwright is an implementation detail, not the user-facing concept. Describe it to users as fast browser automation unless they ask for the technical details.
+Use the built-in browser for recruitment websites. Playwright Chromium is reserved for local PDF rendering and inspection.
 
 ## The 10 Common Cardpoints
 
 ### 1. Permissions
 
-Before long runs, verify that the agent can click, read pages, switch tabs, and upload files. Also verify browser extension permissions for the target websites.
+Before long runs, verify that the IAB can click, read pages, switch tabs, and upload files on the target websites. No browser extension is required.
 
 If permissions fail mid-run, record the exact permission needed and stop that application.
 
@@ -104,8 +104,10 @@ Submission evidence can include:
 
 - Visible text like `Application submitted`, `Application sent`, or `Thank you for applying`.
 - A thank-you page.
-- URL patterns like `thanks`, `thank-you`, `submitted`, or `confirmation`.
+- A URL pattern like `thanks`, `thank-you`, `submitted`, or `confirmation` may help locate a confirmation page, but the path alone is not proof.
 - A platform status that clearly says the application was sent.
+
+Save the page, message, email, or platform-status artifact containing an explicit success statement before marking a submission confirmed.
 
 Do not count:
 
@@ -125,7 +127,7 @@ CAPTCHA, hCaptcha, reCAPTCHA, Cloudflare, and anti-bot checks must be treated as
 
 If a login page appears, stop and record `Login required` or `Session expired`.
 
-Do not attempt automatic login unless the user explicitly instructs it and the flow is safe. If multiple LinkedIn or email accounts exist, use the account confirmed in `00-个人资料/profile/` or the user's rules.
+Do not attempt automatic login unless the user explicitly instructs it and the flow is safe. If multiple LinkedIn or email accounts exist, use the account confirmed in `个人资料/profile/` or the user's rules.
 
 ### 9. Resume Upload Verification
 

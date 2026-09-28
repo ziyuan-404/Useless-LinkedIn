@@ -10,7 +10,7 @@ It is a skill pack rather than a separate website or a LinkedIn browser extensio
 
 ## Why use this skill?
 
-- **Four discovery layers instead of a single scraping method.** The workflow falls back through API → direct web-page reading → Playwright browser → agent web search across WTTJ, HelloWork, Indeed France, LinkedIn and La Bonne Alternance. Browser and search fallbacks require suitable agent tools; blocked access is reported honestly.
+- **Four discovery layers instead of a single scraping method.** The workflow falls back through API → direct web-page reading → Codex In-App Browser (IAB) → agent web search across WTTJ, HelloWork, Indeed France, LinkedIn and La Bonne Alternance. Browser and search fallbacks require suitable agent tools; blocked access is reported honestly.
 - **Check that the job is still available before applying.** Availability checks, application-history deduplication and essential-requirement screening reduce effort spent on expired, duplicate or unsuitable vacancies.
 - **A–G analysis makes recommendations explainable.** Seven sections cover the role, experience evidence, application strategy, pay and demand, tailoring, interview preparation and truthfulness risks. The result is an explained 1–5 priority, with application-answer drafts in section H—not an invented precise match percentage.
 - **One verified experience library for every application.** CVs, cover letters and answers draw on the same confirmed facts, reducing conflicting dates, qualifications and project descriptions.
@@ -38,7 +38,7 @@ These designs are combined and adapted behind **one skill entry point**, rather 
 | Preparing many applications without losing control | Screens batches of jobs, selects reviewed CVs and assists with application forms. |
 | Forgetting where you applied or when to follow up | Organizes statuses, next actions and follow-up suggestions, and helps review results. |
 
-**The goal is scheduled job-search and application automation after setup.** Configure your facts, documents, screening rules, account access and submission authorization first. An agent platform such as Codex can then run discovery → screening → preparation → submission within your explicitly approved scope → record updates on a schedule. New documents needing review, verification challenges and unknown essential facts go into a pending queue. Only confirmed success counts as submitted.
+**The goal is unattended scheduled job search and applications after setup.** Configure your verified facts, screening rules, account access and standing submission authorization first. An agent platform such as Codex can then run discovery → screening → material quality review → submission → record updates on a schedule. The agent reviews new documents without asking for approval on each job. Verification challenges and unknown essential facts block only the affected job. Only confirmed success counts as submitted.
 
 ## How does it work?
 
@@ -57,9 +57,9 @@ flowchart TD
     H -->|Yes| K{Choose an approach}
     K -->|Tailored| L[Prepare CV · Cover letter · Answer drafts]
     K -->|Batch preparation| M[Select a reviewed general CV]
-    L --> N[Review materials and define submission authorization]
+    L --> N[Agent checks facts and layout]
     M --> N
-    N --> O[Submit approved applications manually or on schedule]
+    N --> O[Submit under standing authorization]
     O --> P[Update records · Follow up · Review strategy]
 ```
 
@@ -119,14 +119,16 @@ Check dependencies, install what you can, and guide me through any manual steps.
 Import my CV and organize education, work experience, projects, skills and contacts.
 Ask about conflicting dates or qualifications; do not invent missing information.
 Help configure searches, CV and cover-letter templates, application rules and records.
-Show me the facts summary and document previews for approval before using them.
+Review the facts summary and document previews against my source records. Ask me only when an essential fact is missing or contradictory.
 Finish by checking whether we can start searching and listing unavailable features.
 Do not submit applications or send messages yet.
 ```
 
 Your agent may ask several questions to clarify your criteria and verify your experience. You do not have to create profile files or edit configuration formats yourself.
 
-After initialization, double-click `打开Dashboard.cmd` in the workspace to open the local application dashboard. Existing Excel history can be imported once and its original preserved. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
+After initialization, double-click `打开Dashboard.cmd` in the workspace to start and monitor both the local application dashboard and material editor. The dashboard opens automatically in the system default browser; the editor is available from the dashboard. Existing Excel history can be imported once and its original preserved. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
+
+The same `打开Dashboard.cmd` also starts the offline CV and cover-letter editor. It can edit text, move and resize text boxes, images and other HTML blocks, and change type size and colors. Saving rebuilds the PDF and keeps the previous version. See the [editor workflow](references/editor-workflow.md).
 
 ### 4. Try one job first
 
@@ -171,17 +173,17 @@ Exclude senior and freelance roles and jobs clearly incompatible with my qualifi
 Tailor materials for strong matches; use reviewed general CVs for other eligible jobs.
 When I start the workflow each day, show me 10 new jobs with recommendation reasons.
 Do not prepare duplicate applications for jobs I have already applied to.
-Prepare the batch first; assist with submitting only after I review and approve it.
+Verify the facts and materials, then submit automatically without asking me to approve each job.
 ```
 
-Once setup is complete, schedule the workflow daily or on weekdays. Installing the skill does not create the task itself; see below. Login walls or access restrictions may leave some steps pending for your help.
+Once setup is complete, schedule the workflow daily or on weekdays. Installing the skill does not create the task itself; see below. Login walls or access restrictions may leave some jobs blocked while the run continues.
 
 ## After setup: schedule automated applications in Codex
 
-Complete one manual end-to-end run first and check search results, documents and records. Then schedule the repeatable work.
+Run one controlled end-to-end test first, then schedule the repeatable work. Real applications use the recorded standing authorization without per-job approval.
 
 1. Open your **personal job-search workspace** in the Codex desktop app and check the skill, files, documents and web tools.
-2. Ask Codex in your current conversation to create a scheduled task. Specify time, timezone, criteria, limits and submission authorization; review the task card before enabling it.
+2. Ask Codex in your current conversation to create a scheduled task. Specify time, timezone, criteria and limits; use the standing submission authorization already recorded in your workspace.
 3. Use **Scheduled** in the sidebar to review runs, edit or pause tasks. Some versions may label this **Automations**; follow the interface available to you.
 4. For local runs, keep the computer on, online and the app running, with workspace files and account access available. Scheduled tasks retain platform permissions.
 
@@ -196,20 +198,19 @@ Find up to 10 new jobs per run using my criteria. Check availability, duplicates
 and essential requirements, perform A–G analysis, and prepare suitable materials
 and application answers.
 
-Automatically submit applications whose materials I have reviewed and whose
-submission I have explicitly approved, within the approved jobs, documents
-and quantity limits. Suitability alone is not submission authorization.
-Queue new materials and applications outside that scope for review.
-Queue verification challenges, expired login and unknown essential identity
-facts for my attention; continue other workable jobs. Do not invent answers,
+Under my standing authorization, submit directly after the agent verifies
+the facts, layout and files. Do not ask me to approve each job. The agent
+reviews newly tailored materials and saves its review evidence.
+Record verification challenges, expired login and unknown essential identity
+facts as blockers for the affected job; continue other workable jobs. Do not invent answers,
 duplicate applications or send unauthorized messages.
 
-Update records using actual success evidence and summarize submitted,
-pending-review and blocked applications with next actions after each run.
-Test the workflow once for my review before enabling the schedule.
+Update records using actual success evidence and summarize submitted and
+blocked applications with next actions after each run.
+Test the workflow once with controlled data before enabling the schedule.
 ```
 
-**Move from batch preparation to automated submission gradually:** review general CVs and screening rules, then review and approve the first batch of applications. Scheduled runs can execute those approved applications; newly tailored documents still follow the review workflow. Automation depends on platform and job-board capabilities and does not guarantee unattended completion on every website.
+**Unattended boundary:** general CVs need prior fact, layout and hash verification; the agent checks newly tailored materials in the same way. Eligible jobs with verifiable required answers proceed directly. Challenges and unknown essential facts block only the affected job. Platform and job-board capabilities still determine whether a particular site can complete unattended.
 
 Use local workspace tasks for local files; web tasks cannot directly read folders on your computer. Availability and interface vary by version. See the [official OpenAI scheduled-task documentation](https://learn.chatgpt.com/docs/automations?surface=app).
 

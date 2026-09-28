@@ -1,4 +1,9 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Candidate</title><style>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>CV</title>
+<style>
   @page {
     size: A4 portrait;
     margin: 0;
@@ -320,7 +325,7 @@
   .item-header { gap: 2mm; }
   .item-date { margin-left: 0; }
   .item-bullets li { line-height: 1.32; }
-  .main { display: block; }
+  .main { display: flex; }
   .header { margin-bottom: 3mm; }
   .profil-header-row { margin-top: 0; margin-bottom: 0; }
   .section-line { margin-bottom: 2px; }
@@ -333,4 +338,33 @@
   .section-line { margin-bottom: 0; }
   .profil-text { padding-top: 3mm; padding-bottom: 3mm; margin-bottom: 0; }
   .profil-text + .section-title { margin-top: 0; }
-</style></head><body><div class="page"><aside class="sidebar"><img src="portrait.png" alt="Placeholder" style="width:35mm;height:35mm"><h2>Contact</h2><p>candidate@example.com</p><div class="availability">Availability to confirm</div><ul class="lang-bullets"><li>Languages to confirm</li></ul><ul class="skill-bullets"><li>Skills to confirm</li></ul></aside><main class="main"><header class="header"><h1>Candidate</h1><div class="subtitle">Target role</div></header><div class="profil-header-target">Contract to confirm</div><div class="profil-text">Profile to complete using confirmed facts</div><div class="item"><div class="item-title">Experience 1</div><div class="item-date">Date</div><div class="item-sub">Organization</div><div class="item-loc">Location</div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div><div class="item"><div class="item-title">Experience 2</div><div class="item-date">Date</div><div class="item-sub">Organization</div><div class="item-loc">Location</div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div><div class="item"><div class="item-title">Experience 3</div><div class="item-date">Date</div><div class="item-sub">Organization</div><div class="item-loc">Location</div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div><div class="item"><div class="item-title">Experience 4</div><div class="item-date">Date</div><div class="item-sub">Organization</div><div class="item-loc">Location</div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div><div class="item"><div class="item-title">Education</div><div class="item-date">Date</div><div class="item-sub">School</div><div class="item-loc">Location</div><div class="course-list">Courses to confirm</div></div></main></div></body></html>
+</style>
+</head>
+<body>
+<div class="cv-container">
+  <aside class="sidebar">
+    <img src="portrait.png" class="profile-photo" alt="Portrait">
+    <h2>CONTACT</h2>
+    <div class="contact-item contact-details">Contact information to complete</div>
+    <div class="contact-item availability">Availability to confirm</div>
+    <h2>LANGUES</h2>
+    <ul class="lang-bullets"><li>Languages to confirm</li></ul>
+    <h2>COMPÉTENCES TECHNIQUES</h2>
+    <ul class="skill-bullets"><li>Skills to confirm</li></ul>
+  </aside>
+  <main class="main">
+    <header class="header"><h1>Candidate</h1><div class="subtitle">Target role</div></header>
+    <div class="profil-header-row"><div class="profil-header-title">PROFIL</div><div class="profil-header-target">Contract to confirm</div></div>
+    <div class="section-line"></div>
+    <div class="profil-text">Profile to complete using confirmed facts</div>
+    <div class="section-title">EXPÉRIENCE PROFESSIONNELLE</div>
+    <div class="item-block"><div class="item-header"><div class="item-title">Experience 1</div><div class="item-date">Date</div></div><div class="item-sub-row"><div class="item-sub">Organization</div><div class="item-loc">Location</div></div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div>
+    <div class="item-block"><div class="item-header"><div class="item-title">Experience 2</div><div class="item-date">Date</div></div><div class="item-sub-row"><div class="item-sub">Organization</div><div class="item-loc">Location</div></div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div>
+    <div class="section-title">PROJETS ACADÉMIQUES ET TECHNIQUES</div>
+    <div class="item-block"><div class="item-header"><div class="item-title">Experience 3</div><div class="item-date">Date</div></div><div class="item-sub-row"><div class="item-sub">Organization</div><div class="item-loc">Location</div></div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div>
+    <div class="item-block"><div class="item-header"><div class="item-title">Experience 4</div><div class="item-date">Date</div></div><div class="item-sub-row"><div class="item-sub">Organization</div><div class="item-loc">Location</div></div><ul class="item-bullets"><li>Replace with verified facts</li></ul></div>
+    <div class="section-title">FORMATION</div>
+    <div class="item-block"><div class="item-header"><div class="item-title">Education</div><div class="item-date">Date</div></div><div class="item-sub-row"><div class="item-sub">School</div><div class="item-loc">Location</div></div><div class="course-list">Courses to confirm</div></div>
+  </main>
+</div></body>
+</html>

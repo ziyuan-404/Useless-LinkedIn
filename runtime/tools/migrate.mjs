@@ -6,7 +6,7 @@ import {root,skillRoot,args} from './runtime.mjs';
 const a=args();
 const workspace=a.workspace?path.resolve(a.workspace):root;
 if(workspace===skillRoot||workspace.startsWith(skillRoot+path.sep))throw Error('Workspace must be separate from the Skill');
-const dir=path.join(workspace,'00-个人资料');
+const dir=path.join(workspace,'个人资料');
 const legacyDirs=['.career-os','.useless-linkedin'].map(name=>path.join(workspace,name));
 const newExists=await fs.stat(dir).then(x=>x.isDirectory(),()=>false);
 const presentLegacy=[];for(const candidate of legacyDirs)if(await fs.stat(candidate).then(x=>x.isDirectory(),()=>false))presentLegacy.push(candidate);

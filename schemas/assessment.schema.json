@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Useless LinkedIn job assessment",
   "type": "object",
-  "required": ["contextHash", "company", "role", "ko", "sections", "priority", "decision", "questions"],
+  "required": ["contextHash", "company", "role", "ko", "sections", "priority", "matchLevel", "decision", "questions"],
   "properties": {
     "contextHash": {"type": "string", "minLength": 1},
     "company": {"type": "string", "minLength": 1},
@@ -17,6 +17,7 @@
     }},
     "sections": {"type": "object", "required": ["A", "B", "C", "D", "E", "F", "G"], "additionalProperties": {"type": "object", "required": ["score", "reason"], "properties": {"score": {"type": ["integer", "null"], "minimum": 1, "maximum": 5}, "reason": {"type": "string", "minLength": 1}}}},
     "priority": {"type": ["integer", "null"], "minimum": 1, "maximum": 5},
+    "matchLevel": {"enum": ["高", "中", "低", "延伸", "无法评分"]},
     "decision": {"type": "object", "required": ["route", "strongestEvidence", "gaps", "nextAction", "owner"], "properties": {
       "route": {"enum": ["precision", "bulk", "skip", "needs-user"]},
       "resumeFamily": {"type": "string"},

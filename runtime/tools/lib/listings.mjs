@@ -1,4 +1,4 @@
-import {request,browserPage,parse} from './core.mjs';
+import {request,parse} from './core.mjs';
 
 export function postingIdentityMismatch(listed,captured){
  const tokens=s=>new Set(String(s||'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').split(' ').filter(x=>x.length>2&&!['alternance','stage','pour','avec','the','and','les','des','une','vous','hfm'].includes(x)));
@@ -22,10 +22,10 @@ export function posting(link,portal,base){
 }
 
 // Listing success is determined by usable postings, not detail-page apply controls.
-export async function listing(url,{portal,match,browser=true,fetchPage=request,renderPage=browserPage}){
+export async function listing(url,{portal,match,fetchPage=request}){
  portal={...portal,allowed_hosts:portal.allowed_hosts||[new URL(url).hostname]};
  const attempts=[];let best=[];
- for(const [layer,fn] of [['HTTP',fetchPage],...(browser?[['Playwright',renderPage]]:[])]){
+ for(const [layer,fn] of [['HTTP',fetchPage]]){
   try{
    const raw=await fn(url);let jobs=[];
    if(raw.status>=200&&raw.status<300){

@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 
 export const fields=['id','date','company','role','match_level','jd','mode','resume_path','letter_path','applied','awaiting_interview','awaiting_result','status','job_url','requisition_id','liveness','duplicate_status','knockout','channel','next_action','followup_date','last_contact','notes'];
 export const labels=['记录 ID','日期','公司名称','申请职位','匹配度','完整 JD','投递模式','使用简历','动机信','已投递','等待面试','等待结果','执行状态','岗位链接','招聘编号','有效性','重复状态','Knock-out','投递渠道','下一步','跟进日期','最近联系','卡点/结果'];
-export const dbPath=root=>path.join(root,'00-个人资料','dashboard','applications.sqlite');
+export const dbPath=root=>path.join(root,'个人资料','dashboard','applications.sqlite');
 export function openDashboard(root){
  const file=dbPath(root);fs.mkdirSync(path.dirname(file),{recursive:true});
  const db=new DatabaseSync(file);db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;');
@@ -86,18 +86,30 @@ export function localDate(date=new Date()){
  const local=new Date(date.getTime()-date.getTimezoneOffset()*60000);
  return local.toISOString().slice(0,10);
 }
+function followupFromReceipt(receipt){
+ const day=receipt.observedAt?.slice(0,10);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day||'')||!Number.isFinite(Date.parse(receipt.observedAt)))throw Error('Submission receipt needs a valid observedAt date');
+ const [year,month,date]=day.split('-').map(Number);
+ return new Date(Date.UTC(year,month-1,date+7)).toISOString().slice(0,10);
+}
 export function syncSubmittedLead(db,job){
  if(job.state!=='submitted'||job.submitted!==true||!job.submissionEvidence)throw Error('Only a confirmed submitted lead can be synced');
  let receipt;try{receipt=JSON.parse(job.submissionEvidence);}catch{throw Error('Structured submission receipt required');}
  if(!['success-page','confirmation-email','platform-status'].includes(receipt.kind)||!/^[a-f0-9]{64}$/i.test(receipt.artifactSha256||''))throw Error('Structured submission receipt required');
+ const followupDate=followupFromReceipt(receipt);
+ const matchLevel=['高','中','低','延伸','无法评分'].includes(job.matchLevel)?job.matchLevel:'无法评分';
+ const nextAction=date=>`等待回复；${date} 检查是否需要首次跟进`;
+ const defaults={match_level:matchLevel,next_action:nextAction(followupDate),followup_date:followupDate};
  const row=db.prepare('SELECT * FROM applications WHERE job_url=? OR id=? ORDER BY CASE WHEN job_url=? THEN 0 ELSE 1 END LIMIT 1').get(job.url,job.id,job.url);
- if(row?.submission_verified===1&&row.submission_evidence===job.submissionEvidence)return row;
+ if(row?.submission_verified===1&&row.submission_evidence===job.submissionEvidence&&Object.keys(defaults).every(key=>row[key]))return row;
  let saved;
  if(row){
   if(row.job_url&&row.job_url!==job.url)throw Error('Dashboard ID belongs to a different posting');
-  saved=updateRecord(db,row.id,{version:row.version,status:'已提交',applied:'☑',awaiting_interview:'☐',awaiting_result:'☐',job_url:job.url,submission_evidence:job.submissionEvidence});
+  const missing=Object.fromEntries(Object.entries(defaults).filter(([key])=>!row[key]));
+  if(!row.next_action)missing.next_action=nextAction(row.followup_date||followupDate);
+  saved=updateRecord(db,row.id,{version:row.version,status:'已提交',applied:'☑',awaiting_interview:'☐',awaiting_result:'☐',job_url:job.url,submission_evidence:job.submissionEvidence,...missing});
  }else{
-  saved=insertRecord(db,{id:job.id,date:new Date().toISOString().slice(0,10),company:job.company||'待核实公司',role:job.title||'待核实岗位',jd:job.jd||'',mode:job.applicationMode||'',resume_path:job.output||'',status:'已提交',applied:'☑',job_url:job.url,submission_evidence:job.submissionEvidence});
+  saved=insertRecord(db,{id:job.id,date:receipt.observedAt.slice(0,10),company:job.company||'待核实公司',role:job.title||'待核实岗位',jd:job.jd||'',mode:job.applicationMode||'',resume_path:job.output||'',status:'已提交',applied:'☑',job_url:job.url,submission_evidence:job.submissionEvidence,...defaults});
  }
  const now=new Date().toISOString();db.prepare('UPDATE applications SET submission_verified=1,updated_at=? WHERE id=?').run(now,saved.id);
  db.prepare('INSERT INTO application_events VALUES (?,?,?,?,?,?)').run(randomUUID(),saved.id,now,'submission-receipt-verified',null,JSON.stringify({leadId:job.id,submissionEvidence:job.submissionEvidence}));

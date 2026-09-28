@@ -1,4 +1,5 @@
 # Public skill source only. Personal workspaces belong outside this repository.
+/个人资料/
 /00-个人资料/
 /CV/
 /海投简历/
@@ -23,4 +24,4 @@ __pycache__/
 *.jpg
 *.jpeg
 *.webp
-!/workspace-template/00-个人资料/template/portrait.png
+!/workspace-template/个人资料/template/portrait.png

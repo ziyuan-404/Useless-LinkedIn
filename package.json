@@ -3,10 +3,15 @@
   "private": true,
   "version": "0.3.0",
   "type": "module",
-  "engines": {"node": ">=24"},
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "check": "node runtime/tools/check-architecture.mjs"
   },
-  "dependencies": {"playwright": "1.63.0"}
+  "dependencies": {
+    "interactjs": "1.10.28",
+    "playwright": "1.63.0"
+  }
 }

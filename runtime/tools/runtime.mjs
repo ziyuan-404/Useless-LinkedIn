@@ -10,15 +10,18 @@ export function findWorkspace(start=process.cwd()){
   let dir=path.resolve(start);
   if(dir===skillRoot||dir.startsWith(skillRoot+path.sep))throw Error('Set USELESS_LINKEDIN_WORKSPACE or run useless-linkedin init --workspace PATH; the Skill directory is not a workspace');
   while(dir!==path.dirname(dir)){
-    if(dir!==skillRoot && fs.existsSync(path.join(dir,'00-个人资料')))return dir;
+    if(dir!==skillRoot && fs.existsSync(path.join(dir,'个人资料')))return dir;
     dir=path.dirname(dir);
   }
   throw Error('No career workspace found. Run useless-linkedin init --workspace PATH or set USELESS_LINKEDIN_WORKSPACE');
 }
 const entry=path.basename(process.argv[1]||'');
 const setupCommand=['init.mjs','migrate.mjs','check-architecture.mjs'].includes(entry)||entry==='useless-linkedin.mjs'&&['init','migrate'].includes(process.argv[2])||process.argv.includes('--help');
-export const workspaceRoot=process.env.USELESS_LINKEDIN_WORKSPACE?path.resolve(process.env.USELESS_LINKEDIN_WORKSPACE):setupCommand?process.cwd():findWorkspace();
-if(workspaceRoot===skillRoot&&!setupCommand)throw Error('Workspace must be separate from the installed Skill');
+const workspaceFlag=process.argv.indexOf('--workspace');
+const explicitWorkspace=workspaceFlag>=0?process.argv[workspaceFlag+1]:null;
+if(workspaceFlag>=0&&(!explicitWorkspace||explicitWorkspace.startsWith('--')))throw Error('Use --workspace PATH');
+export const workspaceRoot=explicitWorkspace?path.resolve(explicitWorkspace):process.env.USELESS_LINKEDIN_WORKSPACE?path.resolve(process.env.USELESS_LINKEDIN_WORKSPACE):setupCommand?process.cwd():findWorkspace();
+if((workspaceRoot===skillRoot||workspaceRoot.startsWith(skillRoot+path.sep))&&(!setupCommand||explicitWorkspace))throw Error('Workspace must be separate from the installed Skill');
 export const root=workspaceRoot;
 const require=createRequire(import.meta.url);
 export function dependency(name){try{return require(name);}catch{const base=process.env.USELESS_LINKEDIN_NODE_MODULES || path.join(os.homedir(),'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules');return require(path.join(base,name));}}
