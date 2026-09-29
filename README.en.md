@@ -82,7 +82,7 @@ Please install the Skill from the root of this GitHub repository:
 https://github.com/ziyuan-404/Useless-LinkedIn
 Use useless-linkedin as the installed skill name.
 Use the platform's skill installer and retain the entire skill pack and resources.
-Tell me whether I need to reopen the conversation to use it.
+Keep the root INSTALL.md and tell me whether I need to reopen the conversation to use it.
 ```
 
 After installation, start a new turn or reopen the conversation as your agent advises. Invoke it with `$useless-linkedin` or ask it to use the Useless LinkedIn job-search skill.
@@ -91,10 +91,10 @@ After installation, start a new turn or reopen the conversation as your agent ad
 
 ```text
 Read SKILL.md at the root of this folder and follow the Useless LinkedIn workflow.
-Check the environment first, then help me initialize a separate job-search workspace.
+Follow INSTALL.md to install dependencies, then initialize a separate job-search workspace.
 ```
 
-This delegates installation and setup to your agent. There is currently no dedicated one-click installer button. You do not need to type technical commands yourself; ask the agent to explain any manual steps one at a time.
+Downloading the Skill does not run local programs. On first use, the agent follows [INSTALL.md](INSTALL.md) to install runtime dependencies and initialize a separate workspace. You do not need to set environment variables or install npm, Python packages and Chromium one by one. An operating-system administrator prompt may still require your action.
 
 ### 3. Share your CV and configure your workflow
 
@@ -110,11 +110,11 @@ Contract type: [internship / alternance / permanent employment].
 Earliest start date: [date].
 Languages, commute limits, school schedule and other constraints: [your details].
 
-Check the environment and available capabilities. Run `useless-linkedin init --workspace`
-to copy the blank rules, templates, and dashboard into this workspace without overwriting
-existing files or my original CV. Store personal facts only in this workspace,
-never in the skill installation folder.
-Check dependencies, install what you can, and guide me through any manual steps.
+Follow SKILL.md and INSTALL.md to install the runtimes and dependencies automatically. Run
+`useless-linkedin install --workspace` to initialize the blank rules, templates and dashboard
+without overwriting existing files or my original CV. Store personal facts only in this workspace,
+never in the skill installation folder. Check the dependencies and launchers afterward;
+tell me the specific step only if an operating-system authorization prompt blocks you.
 
 Import my CV and organize education, work experience, projects, skills and contacts.
 Ask about conflicting dates or qualifications; do not invent missing information.
@@ -126,7 +126,7 @@ Do not submit applications or send messages yet.
 
 Your agent may ask several questions to clarify your criteria and verify your experience. You do not have to create profile files or edit configuration formats yourself.
 
-After initialization, double-click `打开Dashboard.cmd` on Windows or `打开Dashboard.command` on macOS in the workspace. Both start and monitor the local dashboard and material editor in one window; the dashboard opens automatically in the default browser. On macOS, `init --workspace PATH` creates the executable `.command` file. Rerun `init` in an existing workspace to add it without overwriting personal data. Existing Excel history can be imported once and its original preserved. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
+After installation, double-click `打开Dashboard.cmd` on Windows or `打开Dashboard.command` on macOS in the workspace. Both start and monitor the local dashboard and material editor in one window; the dashboard opens automatically in the default browser. Rerun the installer in an existing workspace to restore missing files without overwriting personal data. Existing Excel history can be imported once and its original preserved. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
 
 The same platform-specific launcher also starts the offline CV and cover-letter editor. It can edit text, move and resize text boxes, images and other HTML blocks, and change type size and colors. Saving rebuilds the PDF and keeps the previous version. See the [editor workflow](references/editor-workflow.md).
 

@@ -46,7 +46,8 @@ else if(!ignore.includes(`${dataDirectory}/dashboard/`)){
 }
 const dashboardDb=openDashboard(workspace);dashboardDb.close();
 const launcher=path.join(workspace,'打开Dashboard.cmd');
-const launcherText=`@echo off\r\nsetlocal\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\nset "USELESS_LINKEDIN_WORKSPACE=%~dp0"\r\nwhere node >nul 2>nul\r\nif errorlevel 1 (\r\n  echo Node.js was not found. Install Node.js 24 or newer, then retry.\r\n  pause\r\n  exit /b 1\r\n)\r\nnode "${path.join(skillRoot,'runtime','tools','launch-local.mjs')}"\r\necho.\r\necho Local services stopped. Press any key to close this window.\r\npause >nul\r\n`;
+const cmdPath=value=>value.replaceAll('%','%%');
+const launcherText=`@echo off\r\nsetlocal\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\nset "USELESS_LINKEDIN_WORKSPACE=%~dp0"\r\nset "NODE_EXE=${cmdPath(process.execPath)}"\r\nif not exist "%NODE_EXE%" (\r\n  where node >nul 2>nul\r\n  if errorlevel 1 (\r\n    echo Node.js was not found. Install Node.js 24 or newer, then retry.\r\n    pause\r\n    exit /b 1\r\n  )\r\n  set "NODE_EXE=node"\r\n)\r\n"%NODE_EXE%" "${cmdPath(path.join(skillRoot,'runtime','tools','launch-local.mjs'))}"\r\necho.\r\necho Local services stopped. Press any key to close this window.\r\npause >nul\r\n`;
 try{await fs.writeFile(launcher,launcherText,{flag:'wx'});created.push('打开Dashboard.cmd');}catch(e){if(e.code!=='EEXIST')throw e;}
 if(process.platform==='darwin'){
  const macLauncher=path.join(workspace,'打开Dashboard.command');
@@ -56,17 +57,19 @@ if(process.platform==='darwin'){
   'cd "$(dirname "$0")" || exit 1',
   'export USELESS_LINKEDIN_WORKSPACE="$PWD"',
   'export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"',
-  'if ! command -v node >/dev/null 2>&1; then',
+  `NODE_BIN=${shellQuote(process.execPath)}`,
+  'if [ ! -x "$NODE_BIN" ]; then NODE_BIN="$(command -v node || true)"; fi',
+  'if [ -z "$NODE_BIN" ]; then',
   '  echo "Node.js was not found. Install Node.js 24 or newer, then retry."',
   '  read -r -p "Press Return to close this window..." _',
   '  exit 1',
   'fi',
-  "if ! node -e 'process.exit(Number(process.versions.node.split(\".\")[0]) >= 24 ? 0 : 1)' >/dev/null 2>&1; then",
+  "if ! \"$NODE_BIN\" -e 'process.exit(Number(process.versions.node.split(\".\")[0]) >= 24 ? 0 : 1)' >/dev/null 2>&1; then",
   '  echo "Node.js 24 or newer is required."',
   '  read -r -p "Press Return to close this window..." _',
   '  exit 1',
   'fi',
-  `node ${shellQuote(path.join(skillRoot,'runtime','tools','launch-local.mjs'))}`,
+  `"$NODE_BIN" ${shellQuote(path.join(skillRoot,'runtime','tools','launch-local.mjs'))}`,
   'status=$?',
   'echo',
   'echo "Local services stopped. Press Return to close this window."',

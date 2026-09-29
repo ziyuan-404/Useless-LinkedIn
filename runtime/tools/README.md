@@ -1,6 +1,6 @@
 # Shared automation tools
 
-Run tools from the Skill installation with Node.js 24+. Set `USELESS_LINKEDIN_WORKSPACE` to a separate personal directory and run `useless-linkedin.mjs init --workspace PATH` once. Candidate facts and outputs stay in that workspace.
+On first use, the Agent follows `INSTALL.md` and runs `useless-linkedin.mjs install --workspace PATH` from the Skill installation. This installs locked Node/Python dependencies, local PDF Chromium and the separate personal workspace. Candidate facts and outputs stay in that workspace. Node.js 24+ and Python 3.10+ are bootstrapped by the Agent when absent; no user environment-variable setup is required.
 
 For an older `.career-os/` workspace, run `useless-linkedin.mjs migrate --workspace PATH`; it refuses ambiguous old and new directories. Run `useless-linkedin.mjs doctor` to check dependencies and workspace readiness.
 

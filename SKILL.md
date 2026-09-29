@@ -16,7 +16,7 @@ description: "单入口、多模块的个人求职工作流：导入简历并建
 1. `USELESS_LINKEDIN_WORKSPACE` 指定的独立工作区；
 2. 当前目录或其父目录中已存在 `个人资料/` 的独立工作区。
 
-首次运行 `node SKILL_ROOT/runtime/tools/useless-linkedin.mjs init --workspace PATH`。此命令只复制 `workspace-template/` 的空白配置和看板；不会覆盖现有文件。不可把 Skill 安装目录作为工作区。
+首次使用、工作区尚未初始化或本地依赖缺失时，先读 [安装与首次配置](INSTALL.md)，由 Agent 执行 `node SKILL_ROOT/runtime/tools/useless-linkedin.mjs install --workspace PATH`，完成依赖安装、工作区初始化和检查；不要把配置命令交给用户手动运行。下载 Skill 本身不会执行安装命令。已有工作区沿用原路径，不覆盖个人资料；不可把 Skill 安装目录作为工作区。
 
 统一使用：
 

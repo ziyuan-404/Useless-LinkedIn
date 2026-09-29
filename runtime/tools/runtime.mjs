@@ -16,7 +16,7 @@ export function findWorkspace(start=process.cwd()){
   throw Error('No career workspace found. Run useless-linkedin init --workspace PATH or set USELESS_LINKEDIN_WORKSPACE');
 }
 const entry=path.basename(process.argv[1]||'');
-const setupCommand=['init.mjs','migrate.mjs','check-architecture.mjs'].includes(entry)||entry==='useless-linkedin.mjs'&&['init','migrate'].includes(process.argv[2])||process.argv.includes('--help');
+const setupCommand=['init.mjs','install.mjs','migrate.mjs','check-architecture.mjs'].includes(entry)||entry==='useless-linkedin.mjs'&&['init','install','migrate'].includes(process.argv[2])||process.argv.includes('--help');
 const workspaceFlag=process.argv.indexOf('--workspace');
 const explicitWorkspace=workspaceFlag>=0?process.argv[workspaceFlag+1]:null;
 if(workspaceFlag>=0&&(!explicitWorkspace||explicitWorkspace.startsWith('--')))throw Error('Use --workspace PATH');
@@ -33,7 +33,7 @@ export async function artifactTool(){
   }
 }
 export function pythonCommand(){
-  for(const command of [process.env.USELESS_LINKEDIN_PYTHON,process.platform==='win32'?'python':'python3','python',path.join(os.homedir(),'.cache/codex-runtimes/codex-primary-runtime/dependencies/python',process.platform==='win32'?'python.exe':'bin/python')].filter(Boolean)){
+  for(const command of [process.env.USELESS_LINKEDIN_PYTHON,path.join(skillRoot,'.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python'),process.platform==='win32'?'python':'python3','python',path.join(os.homedir(),'.cache/codex-runtimes/codex-primary-runtime/dependencies/python',process.platform==='win32'?'python.exe':'bin/python')].filter(Boolean)){
     const result=spawnSync(command,['--version'],{encoding:'utf8'});
     if(result.status===0)return command;
   }

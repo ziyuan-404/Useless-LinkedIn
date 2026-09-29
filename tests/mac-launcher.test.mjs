@@ -21,7 +21,7 @@ test('macOS workspace launcher starts both services and opens Dashboard',{
  await fs.writeFile(path.join(bin,'open'),'#!/bin/sh\nprintf "%s\\n" "$1" > "$USELESS_LINKEDIN_TEST_OPEN_LOG"\n',{mode:0o755});
  const child=spawn('/bin/bash',[launcher],{
   cwd:workspace,detached:true,stdio:['pipe','pipe','pipe'],
-  env:{...process.env,PATH:`${bin}:${process.env.PATH}`,USELESS_LINKEDIN_TEST_OPEN_LOG:openLog}
+  env:{...process.env,PATH:`${bin}:/usr/bin:/bin`,USELESS_LINKEDIN_TEST_OPEN_LOG:openLog}
  });
  let output='';
  child.stdout.on('data',chunk=>{output+=chunk;});
