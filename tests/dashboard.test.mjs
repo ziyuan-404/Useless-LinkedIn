@@ -16,7 +16,8 @@ test('local Dashboard serves records and guards edits',async()=>{
   let ready=false;for(let i=0;i<100;i++){try{const r=await fetch(`${base}/api/health`);ready=r.ok;if(ready)break;}catch{}await new Promise(resolve=>setTimeout(resolve,50));}assert.ok(ready,'Server did not start');
   const write=(method,url,data,origin=base)=>fetch(base+url,{method,headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify(data)});
   assert.equal((await fetch(base+'/')).status,200);
-  assert.match(await (await fetch(base+'/dashboard.js')).text(),/申请与下一步/);
+  assert.match(await (await fetch(base+'/dashboard.js')).text(),/dashboard-i18n\.js/);
+  assert.match(await (await fetch(base+'/dashboard-i18n.js')).text(),/申请与下一步/);
   assert.equal((await write('POST','/api/applications',{id:'test-1',date:'2026-09-22',company:'Example',role:'Developer',status:'已提交',applied:'☑'})).status,400);
   assert.equal((await write('POST','/api/applications',{id:'test-1',date:'2026-09-22',company:'Example',role:'Developer'},'http://evil.example')).status,403);
   const created=await write('POST','/api/applications',{id:'test-1',date:'2026-09-22',company:'Example',role:'Developer',job_url:'https://example.org/job'});assert.equal(created.status,201);

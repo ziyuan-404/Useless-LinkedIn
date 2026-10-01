@@ -72,7 +72,7 @@ const server=http.createServer(async(req,res)=>{
   }
   if(req.method!=='GET'){send(res,405,{error:'Method not allowed'});return;}
   const name=url.pathname==='/'?'index.html':url.pathname.slice(1);
-  if(!['index.html','dashboard.js','dashboard.css','dashboard-layout.css'].includes(name)){send(res,404,{error:'Not found'});return;}
+  if(!['index.html','dashboard.js','dashboard-i18n.js','dashboard.css','dashboard-layout.css'].includes(name)){send(res,404,{error:'Not found'});return;}
   const file=path.join(publicDir,name),data=await fs.readFile(file);
   res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; connect-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'"});res.end(data);
  }catch(e){fail(res,e);}
