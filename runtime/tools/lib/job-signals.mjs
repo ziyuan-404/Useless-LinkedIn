@@ -10,7 +10,7 @@ export function normalizeUrl(raw){
       const job=/^#\/job\/([^/?#]+)/.exec(url.hash);
       if(job)url.searchParams.set('mokahr_job_id',decodeURIComponent(job[1]));
     }
-    url.hash='';
+    if(url.hostname==='app.mokahr.com'||!/^#\/(?:jobs?|positions?)\/[^/?#]+/i.test(url.hash))url.hash='';
     for(const key of [...url.searchParams.keys()])if(/^(utm_.*|gh_src|fbclid|gclid|mc_cid|mc_eid|igshid|_hsenc|_hsmi|trk|trackingid)$/i.test(key))url.searchParams.delete(key);
     url.searchParams.sort();
     if(url.pathname.length>1)url.pathname=url.pathname.replace(/\/$/,'');

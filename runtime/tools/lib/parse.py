@@ -12,7 +12,8 @@ class Extract(HTMLParser):
             self.skip+=1
             if tag=='script' and a.get('type')=='application/ld+json': self.script=[]
         if tag=='title': self.title=True
-        if tag=='a': self.link={'url':a.get('href',''),'title':''}
+        if tag=='a': self.link={'url':a.get('href',''),'title':'','rel':a.get('rel',''),'label':a.get('aria-label','')}
+        if tag=='link' and 'next' in a.get('rel','').split(): self.links.append({'url':a.get('href',''),'title':'','rel':'next'})
         # Indeed cards include role=button anchors with opaque advertising hrefs.
         if tag in ('a','button') and re.fullmatch(r'sj_[0-9a-f]{16}',a.get('id','')):
             self.link={'url':'/viewjob?jk='+a['id'][3:],'title':''}

@@ -40,13 +40,16 @@ async function assertPublicUrl(url){
  return href;
 }
 export async function request(url,opts={}){
- let current=url;
+ let current=url,options={...opts,headers:{...opts.headers}};
  for(let redirects=0;redirects<=5;redirects++){
   current=await assertPublicUrl(current);
-  const r=await fetch(current,{...opts,redirect:'manual',signal:AbortSignal.timeout(18000),headers:{'user-agent':'UselessLinkedIn/1.0 (public job discovery)',...opts.headers}});
+  const r=await fetch(current,{...options,redirect:'manual',signal:AbortSignal.timeout(18000),headers:{'user-agent':'UselessLinkedIn/1.0 (public job discovery)',...options.headers}});
   if([301,302,303,307,308].includes(r.status)){
    const location=r.headers.get('location');if(!location)throw Error('Redirect without location');
-   current=new URL(location,current).href;await assertPublicUrl(current);continue;
+   const next=new URL(location,current).href;
+   if(new URL(next).origin!==new URL(current).origin)for(const key of Object.keys(options.headers))if(/authorization|cookie|api[-_]key/i.test(key))delete options.headers[key];
+   if(r.status===303||(r.status===301||r.status===302)&&options.method==='POST'){options.method='GET';delete options.body;}
+   current=next;await assertPublicUrl(current);continue;
   }
   const body=await r.text();if(body.length>8e6)throw Error('Response exceeds size limit');
   return {status:r.status,finalUrl:current,body};
@@ -64,7 +67,11 @@ export function extract(raw,url,layer){const p=parse(raw.body);const j=p.jobs[0]
 export async function capture(url){const attempts=[];let best;for(const [layer,fn] of [['HTTP',request]]){try{const raw=await fn(url);const x=extract(raw,url,layer);attempts.push({layer,status:x.status,liveness:x.liveness});if(!best||x.jd.length>best.jd.length||x.liveness.result==='active')best=x;if(x.liveness.result==='active'||x.liveness.result==='expired')break;}catch(e){attempts.push({layer,error:e.message});}}
  return {...(best||{url,jd:'',liveness:{result:'uncertain',code:'fetch_failed',reason:'All fetch attempts failed'}}),attempts,searchNeeded:!best||best.liveness.result==='uncertain'};}
 export async function transaction(fn){await fs.mkdir(home,{recursive:true});const lock=path.join(home,'.lock');const h=await fs.open(lock,'wx');try{const store=await read(path.join(home,'leads.json'),{version:1,jobs:[],scans:[]});if(store.version!==1||!Array.isArray(store.jobs)||!Array.isArray(store.scans))throw Error('Invalid lead store');const result=await fn(store);for(const job of store.jobs)await validateLead(job);await write(path.join(home,'leads.json'),store);return result;}finally{await h.close();await fs.unlink(lock);}}
-export function add(store,job){const key=normalizeUrl(job.url);if(!key)throw Error('Invalid posting URL');const old=store.jobs.find(x=>x.key===key);if(old){old.lastSeenAt=new Date().toISOString();old.sources=[...new Set([...old.sources,job.portal||job.url])];return {duplicate:true,id:old.id};}
+export function add(store,job){const key=normalizeUrl(job.url);if(!key)throw Error('Invalid posting URL');const old=store.jobs.find(x=>x.key===key);if(old){old.lastSeenAt=new Date().toISOString();old.sources=[...new Set([...(old.sources||[]),job.portal||job.url])];
+ const observations=new Map([...(old.observations||[]),...(job.observations||[])].map(o=>[JSON.stringify([o.taskId,o.source,o.url,o.query,o.layer,o.capturedAt]),o]));old.observations=[...observations.values()];
+ // Enrich empty discovery fields without overwriting assessed/submitted records.
+ for(const field of ['company','location','requisitionId','publishedAt'])if(!old[field]&&job[field])old[field]=job[field];
+ return {duplicate:true,id:old.id};}
  const id=hash(key).slice(0,16),fp=fingerprintText(job.jd||'');const possible=store.jobs.filter(x=>(fp&&x.fingerprint&&similarity(fp,x.fingerprint)>=.92)||(job.company&&x.company===job.company&&x.title===job.title&&x.location===job.location)).map(x=>x.id);
  store.jobs.push({...job,id,key,fingerprint:fp,possibleDuplicates:possible,sources:[job.portal||job.url],createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString(),state:possible.length?'possible-duplicate':'discovered',dashboardSynced:false,submitted:false});return {id,possibleDuplicates:possible};}
 export async function exportList(){const store=await read(path.join(home,'leads.json'),{jobs:[]});const escape=s=>String(s||'').replace(/\|/g,'/').replace(/\n/g,' ');await write(path.join(home,'list.md'),'# 自动发现岗位与流程阶段（机器状态；历史申请以 Dashboard 数据库及成功凭证核对）\n\n| ID | 公司 | 岗位 | 来源 | 状态 | 优先级 | URL |\n|---|---|---|---|---|---|---|\n'+store.jobs.map(x=>`| ${x.id} | ${escape(x.company)} | ${escape(x.title)} | ${escape(x.portal)} | ${x.state} | ${x.priority||''} | ${x.url} |`).join('\n')+'\n');}
