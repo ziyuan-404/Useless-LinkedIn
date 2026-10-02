@@ -6,7 +6,30 @@
 
 Share your CV and goals. The agent checks job availability, duplicates and essential requirements, prepares CVs, cover letters and application answers, submits within your authorization, and updates a local application dashboard. Configure roles, contract types, locations and start dates to suit your search.
 
-Workflow: **check pending tasks → discover jobs or read a job description → screen → prepare and review documents → apply and verify evidence → update records and follow-up dates**. You can also request just one step.
+## About the project
+
+Useless LinkedIn brings scattered job-search activities into a recorded workflow that can be resumed. It focuses on France, with configurable roles and contract types, and discovers jobs across several boards rather than only LinkedIn. It installs as one Skill for an agent, with a local dashboard and document editor for visual interaction.
+
+It addresses three recurring problems: repeating searches and screening across websites, preparing documents for different roles, and losing track of application outcomes and follow-ups.
+
+### Core capabilities
+
+| Capability | What the project provides |
+|---|---|
+| Job discovery and assessment | Falls back through APIs, page reading, the in-app browser and agent search; checks availability, duplicates and essential requirements, then gives evidence-based assessments. |
+| Experience and documents | Maintains one verified fact library; tailors CVs, cover letters and answers for priority roles, reuses reviewed general CVs for batches, and exports and checks PDFs. |
+| Applications and follow-up | Applies within authorization, distinguishes prepared documents, unconfirmed outcomes and submitted applications, and saves success evidence, next actions and follow-up dates. |
+| Visual management | A local dashboard shows overviews, trends and records; the editor adjusts existing documents. Both interfaces support Chinese, English and French. |
+
+### Design approach
+
+**Verify facts once, reuse them, and record each step.** Recommendations should come from job requirements and real experience; submission status should come from success evidence. Edited documents are reviewed again, and interrupted runs resume from persistent records to avoid duplicate applications or treating an attempted action as completion.
+
+Tools and personal data live separately, so the Skill can be updated while retaining your profile, documents and ledger. The workflow connects **Career Memory → Job Intelligence → Application Engine → Pipeline**, adapting designs from several open-source projects; see [attribution and licenses](THIRD_PARTY_NOTICES.md). Website access, login and required information still determine which applications can complete automatically. The project does not guarantee employment.
+
+## Usage workflow
+
+**Check pending tasks → discover jobs or read a job description → screen → prepare and review documents → apply and verify evidence → update records and follow-up dates**. You can also request just one step.
 
 ## 1. Installation and first setup
 

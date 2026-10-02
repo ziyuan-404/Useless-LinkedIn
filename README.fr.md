@@ -6,7 +6,30 @@
 
 Partagez votre CV et vos objectifs. L’agent vérifie la validité des offres, les doublons et les critères indispensables, prépare le CV, la lettre et les réponses, postule dans le cadre de votre autorisation, puis met à jour un tableau de suivi local. Les métiers, types de contrat, lieux et dates de début se configurent selon vos critères.
 
-Parcours : **vérifier les tâches en attente → chercher ou lire une offre → sélectionner → préparer et contrôler les documents → postuler et vérifier la confirmation → mettre à jour le suivi et les dates de relance**. Vous pouvez aussi demander une seule étape.
+## Présentation du projet
+
+Useless LinkedIn rassemble les opérations de recherche d’emploi dans un workflow documenté qui peut être repris après une interruption. Il se concentre sur la France, avec des métiers et types de contrat configurables, et recherche sur plusieurs sites, pas seulement LinkedIn. Il s’installe comme un seul Skill pour un agent ; le tableau de suivi local et l’éditeur de documents offrent des interfaces visuelles.
+
+Le projet répond à trois difficultés fréquentes : répéter les recherches et la sélection sur plusieurs sites, préparer les documents pour chaque poste, puis garder une trace fiable des résultats et des relances.
+
+### Fonctionnalités principales
+
+| Fonction | Ce que propose le projet |
+|---|---|
+| Recherche et évaluation | Utilise successivement les API, la lecture de pages, le navigateur intégré et la recherche de l’agent ; vérifie la validité, les doublons et les critères indispensables, puis fournit une analyse étayée. |
+| Parcours et documents | Conserve une seule base de faits vérifiés ; adapte CV, lettres et réponses aux postes prioritaires, réutilise les CV généraux contrôlés pour les lots, puis exporte et vérifie les PDF. |
+| Candidatures et relances | Postule dans le cadre de l’autorisation, distingue documents prêts, résultats à confirmer et candidatures envoyées, puis conserve les confirmations, prochaines actions et dates de relance. |
+| Gestion visuelle | Le tableau local présente la vue d’ensemble, les tendances et les fiches ; l’éditeur ajuste les documents existants. Les deux interfaces proposent le chinois, l’anglais et le français. |
+
+### Principes de conception
+
+**Vérifier les faits, les réutiliser et garder une trace de chaque étape.** Les recommandations reposent sur les exigences de l’offre et le parcours réel ; le statut d’envoi repose sur une confirmation. Après modification, les documents sont contrôlés à nouveau. Une exécution interrompue reprend à partir des traces enregistrées, pour éviter les doublons et ne pas confondre une tentative avec une tâche terminée.
+
+Les outils et données personnelles sont séparés : le Skill peut être mis à jour tout en conservant votre profil, vos documents et votre registre. Le workflow relie **Career Memory → Job Intelligence → Application Engine → Pipeline**, en adaptant des concepts de plusieurs projets open source ; voir les [crédits et licences](THIRD_PARTY_NOTICES.md). L’accès aux sites, la connexion et les informations obligatoires conditionnent l’automatisation. Le projet ne garantit pas une embauche.
+
+## Parcours d’utilisation
+
+**Vérifier les tâches en attente → chercher ou lire une offre → sélectionner → préparer et contrôler les documents → postuler et vérifier la confirmation → mettre à jour le suivi et les dates de relance**. Vous pouvez aussi demander une seule étape.
 
 ## 1. Installation et première configuration
 
