@@ -115,10 +115,13 @@ résultat et conserve l’original.
 2. **Trouver une fiche.** Recherchez une entreprise, un poste, un lien ou un identifiant ; filtrez par statut ou initiale et changez le tri. Les vues rapides signalent les descriptions manquantes ou les étapes contradictoires. À droite, choisissez 10, 20 ou 50 fiches par page.
 3. **Ajouter ou modifier.** Renseignez le poste, le statut d’exécution, l’adéquation, la prochaine action et la date de relance. Les cases d’étape autorisent une seule sélection. Les modifications conservent un historique ; quitter sans enregistrer déclenche un avertissement.
 4. **Vérifier la confirmation.** Saisir une description de preuve ne suffit pas : vérifiez la confirmation originale ou le résultat sur la plateforme.
+5. **Supprimer et restaurer.** Annulez immédiatement une suppression ou récupérez une fiche dans **Fiches supprimées**. Le formulaire conserve aussi les informations sur l’entreprise et l’analyse du poste.
 
 ![Données fictives : candidatures et filtres](docs/media/dashboard.gif)
 
 Les deux interfaces proposent **中文 / English / Français** et conservent la langue après rechargement. Ce choix ne traduit pas vos notes de candidature ni le contenu de vos documents.
+
+Le tableau et l’éditeur partagent un même espace. La navigation en haut conserve l’état des pages ouvertes et synchronise la langue entre les deux interfaces. Les filtres, formulaires et changements de page proposent des animations qui respectent la préférence système de réduction des mouvements.
 
 ![Données fictives : changement de langue](docs/media/interface-languages.gif)
 
@@ -130,7 +133,7 @@ Il permet d’ajuster les CV et lettres déjà générés par l’agent pour une
 
 1. Ouvrez l’éditeur depuis le tableau, choisissez le dossier et le type de document, puis cliquez sur **Ouvrir le document**.
 2. Cliquez sur un élément pour le sélectionner, double-cliquez sur le texte pour le modifier, puis faites glisser l’élément ou ses bords pour le déplacer ou le redimensionner.
-3. Le panneau de propriétés contrôle le texte, les images, la taille de police, les couleurs, l’opacité et l’ordre des éléments. Vérifiez toute la page pour repérer les chevauchements ou débordements.
+3. Utilisez **Ajouter un élément** pour insérer une zone de texte, une forme, un séparateur ou une image. Le panneau de propriétés contrôle le contenu, la position, les dimensions, la taille de police, les couleurs, l’opacité et l’ordre des éléments. Vérifiez toute la page pour repérer les chevauchements ou débordements.
 4. Cliquez sur **Enregistrer et générer le PDF**. En cas de réussite, le HTML, le PDF et l’aperçu sont actualisés ; l’ancienne version est conservée dans `work/editor-history/` du dossier. En cas d’échec, les fichiers existants et les modifications en cours sont conservés.
 5. Demandez à l’agent de vérifier à nouveau les faits, le texte du PDF et la mise en page avant de postuler. Modifier les fichiers invalide le contrôle précédent.
 
@@ -138,7 +141,7 @@ Il permet d’ajuster les CV et lettres déjà générés par l’agent pour une
 
 *Les GIF utilisent des entreprises, postes et documents fictifs, sans candidature réelle ni CV personnel.*
 
-Changer de document ou quitter avec des modifications non enregistrées déclenche un avertissement. Consultez le [workflow de l’éditeur](references/editor-workflow.md).
+**Annuler** recharge le document actuel. Changer de document déclenche un avertissement sur les modifications non enregistrées. Pour revenir au tableau, vous pouvez poursuivre l’édition, conserver le brouillon de la page actuelle ou enregistrer avant de revenir. Consultez le [workflow de l’éditeur](references/editor-workflow.md).
 
 ## 5. Exécution planifiée (facultatif)
 

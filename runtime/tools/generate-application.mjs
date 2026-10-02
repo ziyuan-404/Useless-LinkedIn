@@ -1,3 +1,4 @@
+import {storageName,uniqueDirectory,resolveStoragePath} from './lib/storage-paths.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -8,18 +9,18 @@ const a=args();
 if(a.help){console.log('generate-application.mjs --company COMPANY --role ROLE --claims payload.json [--date YYYY-MM-DD] [--validate-only]');process.exit(0);}
 for(const k of ['company','role','claims'])if(typeof a[k]!=='string')throw Error(`Missing --${k}`);
 const basics=await fs.readFile(path.join(root,'个人资料/profile/basics.md'),'utf8');const candidateName=basics.match(/^-\s*姓名[:：]\s*(.+)$/m)?.[1]?.trim();if(!candidateName||/待填写|to complete/i.test(candidateName))throw Error('Configure a confirmed candidate name in the local profile');
-const payload=JSON.parse(await fs.readFile(path.resolve(root,a.claims),'utf8'));
+const payload=JSON.parse(await fs.readFile(await resolveStoragePath(root,a.claims),'utf8'));
 for(const [kind,allowed] of [['cv',['.subtitle','.profil-text','.contact-details','.lang-bullets','.skill-bullets','.profil-header-target','.availability','.item-title','.item-date','.item-sub','.item-loc','.item-bullets','.course-list']],['letter',['.subject','.letter','.personal-info']]]){
  if(!Array.isArray(payload[kind])||!payload[kind].length)throw Error(`${kind} replacements required`);
  for(const item of payload[kind]){
   if(!allowed.includes(item.selector)||typeof item.text!=='string'||!item.text.trim()||!Array.isArray(item.sources)||!item.sources.length)throw Error(`Invalid ${kind} replacement`);
-  for(const source of item.sources){const p=path.resolve(root,source.path);if(!p.startsWith(path.join(root,'个人资料')+path.sep))throw Error('Source outside 个人资料');const text=await fs.readFile(p,'utf8');if(typeof source.quote!=='string'||source.quote.length<8||!text.includes(source.quote))throw Error(`Source quote missing: ${source.path}`);}
+  for(const source of item.sources){const p=await resolveStoragePath(root,source.path);if(!p.startsWith(path.join(root,'个人资料')+path.sep))throw Error('Source outside 个人资料');const text=await fs.readFile(p,'utf8');if(typeof source.quote!=='string'||source.quote.length<8||!text.includes(source.quote))throw Error(`Source quote missing: ${source.path}`);}
  }
 }
 for(const [kind,selector] of [['cv','.subtitle'],['cv','.profil-text'],['cv','.contact-details'],['cv','.lang-bullets'],['letter','.subject'],['letter','.letter'],['letter','.personal-info']])if(!payload[kind].some(x=>x.selector===selector))throw Error(`Required ${selector}`);
 if(a['validate-only']){console.log('Sources valid; semantic review still required');process.exit(0);}
 const date=a.date || new Date().toLocaleDateString('en-CA',{timeZone:'Europe/Paris'});if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Invalid date');
-const finalOut=a.output?path.resolve(root,a.output):path.join(root,'个人资料/CV',`${date}-${slug(a.company)}-${slug(a.role)}`);
+const finalOut=a.output?path.resolve(root,a.output):await uniqueDirectory(path.join(root,'个人资料/CV'),storageName({date,company:a.company,role:a.role}));
 if(!finalOut.startsWith(path.join(root,'个人资料/CV')+path.sep))throw Error('Output must be a new directory under CV');
 if(await fs.stat(finalOut).then(()=>true,()=>false))throw Error('Application directory already exists');
 const out=path.join(root,'个人资料/CV',`.building-${process.pid}-${Date.now()}`);

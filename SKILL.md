@@ -21,7 +21,7 @@ description: "面向法国求职的单入口、多模块工作流：导入简历
 统一使用：
 
 - 唯一候选人事实库：`WORKSPACE_ROOT/个人资料/profile/`
-- 精投产物：`WORKSPACE_ROOT/个人资料/CV/YYYY-MM-DD-jobId-contextHash/`
+- 精投产物：`WORKSPACE_ROOT/个人资料/CV/YYYY-MM-DD__公司__岗位/`；命名和旧路径兼容规则见 [storage-naming.md](references/storage-naming.md)
 - 海投简历池：`WORKSPACE_ROOT/个人资料/海投简历/`
 - 投递 Dashboard 与材料编辑器：Windows 用 `WORKSPACE_ROOT/打开Dashboard.cmd`，macOS 用 `WORKSPACE_ROOT/打开Dashboard.command`，在同一常驻窗口启动两个本机服务；权威台账为 `个人资料/dashboard/applications.sqlite`
 - 运营规则：`WORKSPACE_ROOT/个人资料/operations/`
@@ -45,7 +45,7 @@ description: "面向法国求职的单入口、多模块工作流：导入简历
 
 按当前请求选择一个入口，跨阶段任务从 [每日循环](workflows/daily-cycle.md) 开始；只读取实际需要的后续文件。
 
-定时无人值守运行另读 [执行方案](workflows/unattended-run.md)，由 Agent 完成材料审查与提交，不请求逐岗位批准。
+定时无人值守运行另读 [执行方案](workflows/unattended-run.md)，由 Agent 在当前用户已记录的授权范围内完成材料审查与提交；有效常驻授权下不请求逐岗位重复批准。
 
 | 用户意图 | 工作流 |
 |---|---|
@@ -78,7 +78,7 @@ description: "面向法国求职的单入口、多模块工作流：导入简历
 - 法律条款、隐私政策、Cookie 弹窗及申请协议按当前用户授权和运行环境规则处理。
 - 浏览器与环境要求：招聘网站页面统一使用 Codex 内置浏览器 In-app Browser（`iab`）；命令行只执行 API/HTTP 读取。Playwright Chromium 仅用于本地 PDF 渲染与检查。
 - 可以读取公开岗位页、填写已确认的字段、选择文件、起草回答和记录结果。
-- 真实申请、上传个人文件、填写雇主筛选问答和最终提交已获用户常驻全局预授权，直接执行提交并核验成功凭证，无需反复向用户二次确认，不得借浏览器安全规则暂停。
+- 真实申请、上传个人文件、填写雇主筛选问答和最终提交必须处于当前用户已记录的授权范围内；如有有效的常驻授权，无需逐岗位重复确认，提交后仍须核验成功凭证。本公开包不继承任何原工作区或个人会话的授权。
 - 仅当遇到 CAPTCHA、Cloudflare 强阻断、未知登录密码/2FA 验证码、付费或与事实库冲突的身份/签证硬条件时才交给用户处理。
 - 邮件、LinkedIn 消息和跟进默认只生成草稿。
 - 只有看到明确成功证据才可标记 `已提交`；按钮点击或文件上传不等于成功。

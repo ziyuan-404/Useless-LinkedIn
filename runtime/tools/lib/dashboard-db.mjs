@@ -4,6 +4,9 @@ import {randomUUID} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 
 export const fields=['id','date','company','role','match_level','jd','mode','resume_path','letter_path','applied','awaiting_interview','awaiting_result','status','job_url','requisition_id','liveness','duplicate_status','knockout','channel','next_action','followup_date','last_contact','notes'];
+// Keep the 23-column legacy import contract unchanged.
+export const extraFields=['company_info','role_analysis'];
+const recordFields=[...fields,...extraFields];
 export const labels=['记录 ID','日期','公司名称','申请职位','匹配度','完整 JD','投递模式','使用简历','动机信','已投递','等待面试','等待结果','执行状态','岗位链接','招聘编号','有效性','重复状态','Knock-out','投递渠道','下一步','跟进日期','最近联系','卡点/结果'];
 export const dbPath=root=>path.join(root,'个人资料','dashboard','applications.sqlite');
 export function openDashboard(root){
@@ -18,6 +21,7 @@ export function openDashboard(root){
  liveness TEXT NOT NULL DEFAULT '', duplicate_status TEXT NOT NULL DEFAULT '', knockout TEXT NOT NULL DEFAULT '',
  channel TEXT NOT NULL DEFAULT '', next_action TEXT NOT NULL DEFAULT '', followup_date TEXT NOT NULL DEFAULT '',
  last_contact TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
+ company_info TEXT NOT NULL DEFAULT '', role_analysis TEXT NOT NULL DEFAULT '', archived_at TEXT NOT NULL DEFAULT '',
  source_sheet TEXT, source_row INTEGER, submission_evidence TEXT NOT NULL DEFAULT '',
  submission_verified INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL DEFAULT 1,
  created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
@@ -27,13 +31,15 @@ export function openDashboard(root){
  CREATE TABLE IF NOT EXISTS imports (
  source_sha256 TEXT PRIMARY KEY, source_path TEXT NOT NULL, imported_at TEXT NOT NULL,
  row_count INTEGER NOT NULL, url_count INTEGER NOT NULL);`);
+ const columns=new Set(db.prepare('PRAGMA table_info(applications)').all().map(column=>column.name));
+ for(const name of [...extraFields,'archived_at'])if(!columns.has(name))db.exec(`ALTER TABLE applications ADD COLUMN ${name} TEXT NOT NULL DEFAULT ''`);
  return db;
 }
 export function cleanInput(input,{existing=false,preserve=false}={}){
  if(!input||typeof input!=='object'||Array.isArray(input))throw Error('A record object is required');
- const allowed=new Set([...fields,'submission_evidence','submission_verified','version']);
+ const allowed=new Set([...recordFields,'submission_evidence','submission_verified','version']);
  for(const k of Object.keys(input))if(!allowed.has(k))throw Error(`Unknown field: ${k}`);
- const out={};for(const k of fields)if(Object.hasOwn(input,k)){
+ const out={};for(const k of recordFields)if(Object.hasOwn(input,k)){
    if(typeof input[k]!=='string')throw Error(`${k} must be text`);
    out[k]=preserve?input[k]:input[k].trim();if(out[k].length>100000)throw Error(`${k} is too long`);
  }
@@ -57,15 +63,15 @@ export function validateRecord(row){
 }
 export function insertRecord(db,input,{sourceSheet=null,sourceRow=null,action='created'}={}){
  const data=cleanInput(input,{preserve:Boolean(sourceSheet)});const now=new Date().toISOString();
- const row=Object.fromEntries(fields.map(k=>[k,data[k]??(k==='applied'||k==='awaiting_interview'||k==='awaiting_result'?'☐':k==='status'?'待处理':'')]));
+ const row=Object.fromEntries(recordFields.map(k=>[k,data[k]??(k==='applied'||k==='awaiting_interview'||k==='awaiting_result'?'☐':k==='status'?'待处理':'')]));
  row.submission_evidence=data.submission_evidence??'';if(!sourceSheet)validateRecord({...row,source_sheet:sourceSheet});
- const cols=[...fields,'source_sheet','source_row','submission_evidence','created_at','updated_at'];
- db.prepare(`INSERT INTO applications (${cols.join(',')}) VALUES (${cols.map(()=>'?').join(',')})`).run(...fields.map(k=>row[k]),sourceSheet,sourceRow,row.submission_evidence,now,now);
+ const cols=[...recordFields,'source_sheet','source_row','submission_evidence','created_at','updated_at'];
+ db.prepare(`INSERT INTO applications (${cols.join(',')}) VALUES (${cols.map(()=>'?').join(',')})`).run(...recordFields.map(k=>row[k]),sourceSheet,sourceRow,row.submission_evidence,now,now);
  db.prepare('INSERT INTO application_events VALUES (?,?,?,?,?,?)').run(randomUUID(),row.id,now,action,null,JSON.stringify(row));
  return db.prepare('SELECT * FROM applications WHERE id=?').get(row.id);
 }
 export function updateRecord(db,id,input){
- const old=db.prepare('SELECT * FROM applications WHERE id=?').get(id);if(!old)throw Error('Record not found');
+ const old=db.prepare("SELECT * FROM applications WHERE id=? AND archived_at=''").get(id);if(!old)throw Error('Record not found');
  if(!Number.isInteger(input.version)||input.version!==old.version)throw Error('Record changed; reload before saving');
  const changes=cleanInput(input,{existing:true,preserve:true});if(changes.id&&changes.id!==id)throw Error('Record ID cannot change');delete changes.id;
  const next={...old,...changes};validateRecord(next);
@@ -77,10 +83,22 @@ export function updateRecord(db,id,input){
  }catch(e){db.exec('ROLLBACK');throw e;}
 }
 export function summary(db){
- const rows=db.prepare('SELECT status,submission_verified,followup_date,applied,awaiting_interview,awaiting_result,jd FROM applications').all();
+ const rows=db.prepare("SELECT status,submission_verified,followup_date,applied,awaiting_interview,awaiting_result,jd FROM applications WHERE archived_at=''").all();
  const today=localDate();
  const closed=new Set(['跳过','拒绝','撤回','失效']);
  return {total:rows.length,byStatus:Object.fromEntries([...new Set(rows.map(x=>x.status))].map(s=>[s,rows.filter(x=>x.status===s).length])),markedSubmitted:rows.filter(x=>x.status==='已提交').length,pendingVerification:rows.filter(x=>x.status==='已提交'&&x.submission_verified!==1).length,verifiedSubmitted:rows.filter(x=>x.submission_verified===1).length,waitingUser:rows.filter(x=>x.status==='待用户').length,awaitingInterview:rows.filter(x=>x.awaiting_interview==='☑').length,awaitingResult:rows.filter(x=>x.awaiting_result==='☑').length,missingJd:rows.filter(x=>x.jd.trim().length<300).length,followupDue:rows.filter(x=>x.followup_date&&x.followup_date<=today&&!closed.has(x.status)).length,stageConflicts:rows.filter(x=>[x.applied,x.awaiting_interview,x.awaiting_result].filter(v=>v==='☑').length>1).length};
+}
+export function setRecordArchived(db,id,input,archived=true){
+ const old=db.prepare('SELECT * FROM applications WHERE id=?').get(id);if(!old)throw Error('Record not found');
+ if(!Number.isInteger(input?.version)||input.version!==old.version)throw Error('Record changed; reload before saving');
+ if(Boolean(old.archived_at)===archived)return old;
+ const now=new Date().toISOString();db.exec('BEGIN IMMEDIATE');
+ try{
+  db.prepare('UPDATE applications SET archived_at=?,version=version+1,updated_at=? WHERE id=?').run(archived?now:'',now,id);
+  const saved=db.prepare('SELECT * FROM applications WHERE id=?').get(id);
+  db.prepare('INSERT INTO application_events VALUES (?,?,?,?,?,?)').run(randomUUID(),id,now,archived?'deleted':'restored',JSON.stringify(old),JSON.stringify(saved));
+  db.exec('COMMIT');return saved;
+ }catch(error){db.exec('ROLLBACK');throw error;}
 }
 export function localDate(date=new Date()){
  const local=new Date(date.getTime()-date.getTimezoneOffset()*60000);
@@ -101,6 +119,8 @@ export function syncSubmittedLead(db,job){
  const nextAction=date=>`等待回复；${date} 检查是否需要首次跟进`;
  const defaults={match_level:matchLevel,next_action:nextAction(followupDate),followup_date:followupDate};
  const row=db.prepare('SELECT * FROM applications WHERE job_url=? OR id=? ORDER BY CASE WHEN job_url=? THEN 0 ELSE 1 END LIMIT 1').get(job.url,job.id,job.url);
+ // Explicitly deleted records stay deleted when the application pipeline syncs.
+ if(row?.archived_at)return row;
  if(row?.submission_verified===1&&row.submission_evidence===job.submissionEvidence&&Object.keys(defaults).every(key=>row[key]))return row;
  let saved;
  if(row){

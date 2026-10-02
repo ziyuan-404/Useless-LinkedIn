@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {resolveStoragePath} from './storage-paths.mjs';
 import {root} from '../runtime.mjs';
 import {validateAssessment} from './schema.mjs';
 
@@ -9,7 +10,7 @@ export async function checkSources(items,allowed){
  for(const item of items){
   if(!Array.isArray(item.sources)||!item.sources.length)throw Error('Sources required');
   for(const source of item.sources){
-   const file=path.resolve(root,source.path);
+   const file=await resolveStoragePath(root,source.path);
    if(!allowed.some(base=>file===base||file.startsWith(base+path.sep)))throw Error('Unsupported source');
    const text=await fs.readFile(file,'utf8');
    if(typeof source.quote!=='string'||source.quote.length<8||!text.includes(source.quote))throw Error('Source quote missing');

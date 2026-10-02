@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh" class="motion-pending" data-default-view="__DEFAULT_VIEW__" data-dashboard-port="__DASHBOARD_PORT__" data-editor-port="__EDITOR_PORT__">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Useless LinkedIn</title>
+ <link rel="stylesheet" href="/motion.css">
+ <link rel="stylesheet" href="/workspace.css">
+ <script type="module" src="/workspace.js"></script>
+</head>
+<body>
+ <main class="workspace-stage" aria-busy="true">
+  <iframe id="workspace-dashboard" class="workspace-frame" title="投递看板" data-view="dashboard"></iframe>
+  <iframe id="workspace-editor" class="workspace-frame" title="材料编辑器" data-view="editor"></iframe>
+ </main>
+ <div class="workspace-transition-glass" aria-hidden="true"></div>
+ <aside class="workspace-message" role="status" hidden>
+  <p></p>
+  <button type="button"></button>
+ </aside>
+</body>
+</html>

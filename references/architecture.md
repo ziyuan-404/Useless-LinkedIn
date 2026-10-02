@@ -29,7 +29,7 @@ WORKSPACE_ROOT/
 │   ├── applications/automation/   # 机器线索与岗位级评估
 │   ├── audits/                    # 简历池审核记录
 │   ├── dashboard/                 # 本地 SQLite 申请台账
-│   ├── CV/YYYY-MM-DD-jobId-contextHash/
+│   ├── CV/YYYY-MM-DD__公司__岗位/
 │   ├── 海投简历/                 # 稳定 PDF 变体，只读选择
 │   └── operations/
 │       ├── application-rules.md

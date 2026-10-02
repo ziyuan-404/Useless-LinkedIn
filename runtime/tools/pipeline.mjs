@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {root,skillRoot,toolsRoot,args} from './runtime.mjs';
+import {jobDirectory,storageName,uniqueDirectory,resolveStoragePath} from './lib/storage-paths.mjs';
 import {home,hash,read,write,transaction,add,exportList} from './lib/core.mjs';
 import {fingerprintText,similarity} from './lib/job-signals.mjs';
 import {assertTransition} from './lib/state-machine.mjs';
@@ -13,7 +14,8 @@ const historyResult=spawnSync(process.execPath,[path.join(toolsRoot,'tracker.mjs
 let store=await read(path.join(home,'leads.json'),{jobs:[]});let job=a.id?store.jobs.find(j=>j.id===a.id):store.jobs.find(j=>j.url===a.url);
 if(!job){if(!a.url)throw Error('Provide --url or valid --id');const r=await transaction(s=>add(s,{url:a.url,title:a.role||'',company:a.company||'',portal:'direct'}));store=await read(path.join(home,'leads.json'));job=store.jobs.find(j=>j.id===r.id);}
 if(['materials-pending-review','review-required','approved','submitting','submission-unconfirmed','submitted','followup-due','blocked-login','blocked-captcha'].includes(job.state)){console.log(JSON.stringify({id:job.id,state:job.state,historyMatch:job.historyMatch||false}));process.exit(0);}
-const dir=path.join(home,'jobs',job.id);await fs.mkdir(dir,{recursive:true});const lock=await fs.open(path.join(dir,'.lock'),'wx');
+const dir=await jobDirectory(root,home,job);await fs.mkdir(dir,{recursive:true});
+if(!job.directory){job.directory=path.basename(dir);await transaction(s=>{s.jobs.find(j=>j.id===job.id).directory=job.directory;});}const lock=await fs.open(path.join(dir,'.lock'),'wx');
 try{
  const captured=await currentCapture({job,dir,webCapture:a['web-capture'],assessment:a.assessment});
  await write(path.join(dir,'capture.json'),captured);await write(path.join(dir,'jd.txt'),captured.jd||'');
@@ -33,7 +35,7 @@ try{
  await write(path.join(dir,'agent-task.md'),prompt);await write(path.join(dir,'schema.json'),JSON.parse(await fs.readFile(path.join(skillRoot,'schemas/assessment.schema.json'),'utf8')));
  if(!a.assessment){await set({state:'awaiting-agent',liveness:captured.liveness,contextHash});console.log(JSON.stringify({id:job.id,state:'awaiting-agent',task:path.join(dir,'agent-task.md'),context:path.join(dir,'context.json')}));}
  else{
- const result=JSON.parse(await fs.readFile(path.resolve(root,a.assessment),'utf8'));
+ const result=JSON.parse(await fs.readFile(await resolveStoragePath(root,a.assessment),'utf8'));
  const ko=await validateDecision(result,{captured,dir,contextHash});
  await write(path.join(dir,'assessment.json'),result);await write(path.join(dir,'questions.json'),result.questions);
  await write(path.join(dir,'report.md'),`# ${result.company} — ${result.role}\n\nKO: ${ko}; priority: ${result.priority??'unknown'}/5\n\n`+[...'ABCDEFG'].map(k=>`## ${k} (${result.sections[k].score??'unknown'}/5)\n\n${result.sections[k].reason}`).join('\n\n')+`\n\n## H — Application answer drafts\n\n`+result.questions.map(q=>`- ${q.question} (${q.status}; ${q.source})\n  ${q.answer}`).join('\n\n'));
@@ -50,9 +52,9 @@ try{
  for(let i=0;i<2;i++)if(!result.payload.cv.some(x=>x.selector==='.item-date'&&x.index===i))throw Error(`Missing sourced experience date ${i}`);
  for(const selector of ['.item-date','.item-sub'])if(!result.payload.cv.some(x=>x.selector===selector&&x.index===4))throw Error('Education route must be explicitly customized');
  await write(path.join(dir,'payload.json'),result.payload);
- const output=path.join(root,'个人资料/CV',`${new Date().toISOString().slice(0,10)}-${job.id}-${hash(contextHash+JSON.stringify(result.payload)).slice(0,8)}`);
+ let output=await uniqueDirectory(path.join(root,'个人资料/CV'),storageName({date:new Date().toISOString().slice(0,10),company:result.company,role:result.role}));
  const receipt=await read(path.join(dir,'generation.json'),null);
- if(receipt?.contextHash===contextHash&&receipt?.payloadHash===hash(JSON.stringify(result.payload))&&await fs.stat(receipt.output).then(()=>true,()=>false)){console.log('Existing matching output reused');}
+ if(receipt?.contextHash===contextHash&&receipt?.payloadHash===hash(JSON.stringify(result.payload))&&await fs.stat(await resolveStoragePath(root,receipt.output)).then(()=>true,()=>false)){output=await resolveStoragePath(root,receipt.output);console.log('Existing matching output reused');}
  else{const p=spawnSync(process.execPath,[path.join(toolsRoot,'generate-application.mjs'),'--company',result.company,'--role',result.role,'--claims',path.join(dir,'payload.json'),'--output',path.relative(root,output)],{encoding:'utf8',maxBuffer:4e6});if(p.status!==0){await set({state:'generation-failed',ko});throw Error(p.stderr||p.stdout);}await write(path.join(dir,'generation.json'),{contextHash,payloadHash:hash(JSON.stringify(result.payload)),output,createdAt:new Date().toISOString()});}
  await set({state:'materials-pending-review',ko,priority:result.priority,matchLevel:result.matchLevel,company:result.company,title:result.role,output,submitted:false,contextHash});console.log(JSON.stringify({id:job.id,ko,output,review:'semantic and visual review required',questions:path.join(dir,'questions.json')}));
  }

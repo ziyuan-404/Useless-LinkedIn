@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {root} from '../runtime.mjs';
+import {jobDirectory,resolveStoragePath} from './storage-paths.mjs';
 import {home} from './core.mjs';
 
 const sha=value=>createHash('sha256').update(value).digest('hex');
@@ -12,14 +13,14 @@ async function digest(file){
 }
 export async function currentSnapshot(job,reviewEvidence){
   if(!job.output)throw Error('No application material to review');
-  const output=path.resolve(root,job.output);
+  const output=await resolveStoragePath(root,job.output);
   const stat=await fs.stat(output);
   const materialFiles=stat.isDirectory()
     ?(await fs.readdir(output)).filter(name=>name.toLowerCase().endsWith('.pdf')).map(name=>path.join(output,name))
     :[output];
   if(!materialFiles.length)throw Error('No PDF material found');
-  const materials=await Promise.all(materialFiles.sort().map(digest));
-  const dir=path.join(home,'jobs',job.id);
+  const materials=await Promise.all(materialFiles.sort().map(async file=>{const item=await digest(file);for(const prior of job.approvalSnapshot?.materials||[])if(await resolveStoragePath(root,prior.path)===file){item.path=prior.path;break;}return item;}));
+  const dir=await jobDirectory(root,home,job);
   const context=JSON.parse(await fs.readFile(path.join(dir,'context.json'),'utf8'));
   const sources={};
   for(const file of Object.keys(context.sources||{})){

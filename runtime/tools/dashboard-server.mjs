@@ -4,7 +4,8 @@ import http from 'node:http';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {root,args} from './runtime.mjs';
-import {openDashboard,insertRecord,updateRecord,summary,localDate} from './lib/dashboard-db.mjs';
+import {openDashboard,insertRecord,updateRecord,setRecordArchived,summary,localDate} from './lib/dashboard-db.mjs';
+import {motionSession,claimMotionIntro} from './lib/motion-session.mjs';
 
 const a=args();const port=Number(a.port||8765);
 if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Port must be 1024–65535');
@@ -21,7 +22,7 @@ function dailySubmissions(){
   const day=new Date(end);day.setUTCDate(end.getUTCDate()-20+index);
   return day.toISOString().slice(0,10);
  });
- const counts=db.prepare("SELECT date, count(*) AS total FROM applications WHERE status='已提交' AND date BETWEEN ? AND ? GROUP BY date").all(days[0],days.at(-1));
+ const counts=db.prepare("SELECT date, count(*) AS total FROM applications WHERE archived_at='' AND status='已提交' AND date BETWEEN ? AND ? GROUP BY date").all(days[0],days.at(-1));
  const byDate=new Map(counts.map(row=>[row.date,row.total]));
  return days.map(date=>({date,count:byDate.get(date)||0}));
 }
@@ -31,14 +32,16 @@ const server=http.createServer(async(req,res)=>{
  try{
   const host=req.headers.host||'';if(!new RegExp(`^(127\\.0\\.0\\.1|localhost):${port}$`,'i').test(host)){send(res,403,{error:'Local access only'});return;}
   const url=new URL(req.url,`http://127.0.0.1:${port}`);
-  if(req.method==='GET'&&url.pathname==='/api/health'){send(res,200,{ok:true,workspace:root});return;}
+  if(req.method==='GET'&&url.pathname==='/api/health'){send(res,200,{ok:true,workspace:root,...await motionSession(root)});return;}
+  if(req.method==='GET'&&url.pathname==='/api/motion-session'){send(res,200,await motionSession(root));return;}
   if(req.method==='GET'&&url.pathname==='/api/summary'){send(res,200,summary(db));return;}
   if(req.method==='GET'&&url.pathname==='/api/trend'){send(res,200,dailySubmissions());return;}
+  if(req.method==='GET'&&url.pathname==='/api/deleted-applications'){send(res,200,db.prepare("SELECT id,company,role,version,archived_at FROM applications WHERE archived_at<>'' ORDER BY archived_at DESC").all());return;}
   if(req.method==='GET'&&url.pathname==='/api/applications'){
    const query=(url.searchParams.get('q')||'').slice(0,200),status=(url.searchParams.get('status')||'').slice(0,100),initial=url.searchParams.get('initial')||'',sort=url.searchParams.get('sort')||'date-desc',focus=url.searchParams.get('focus')||'';
    const order={'date-desc':'date DESC, company_key(company) ASC, id ASC','date-asc':'date ASC, company_key(company) ASC, id ASC','company-asc':'company_key(company) ASC, date DESC, id ASC','company-desc':'company_key(company) DESC, date DESC, id ASC'}[sort];
    if(!order||initial&&!/^[A-Z#]$/.test(initial)||!['','due','waiting','verify','verified','missing-jd','conflicts'].includes(focus))throw Error('Invalid filter or sort');
-   let sql='SELECT * FROM applications WHERE 1=1',params=[];
+   let sql="SELECT * FROM applications WHERE archived_at=''",params=[];
    if(query){sql+=' AND (id LIKE ? OR company LIKE ? OR role LIKE ? OR job_url LIKE ?)';params.push(...Array(4).fill(`%${query}%`));}
    if(status){sql+=' AND status=?';params.push(status);}
    if(initial){sql+=' AND company_initial(company)=?';params.push(initial);}
@@ -60,21 +63,27 @@ const server=http.createServer(async(req,res)=>{
    sql+=` ORDER BY ${order} LIMIT 1000`;send(res,200,db.prepare(sql).all(...params));return;
   }
   const item=url.pathname.match(/^\/api\/applications\/([^/]+)$/);
-  if(req.method==='GET'&&item){const row=db.prepare('SELECT * FROM applications WHERE id=?').get(decodeURIComponent(item[1]));if(!row)throw Error('Record not found');send(res,200,row);return;}
+  if(req.method==='GET'&&item){const row=db.prepare("SELECT * FROM applications WHERE id=? AND archived_at=''").get(decodeURIComponent(item[1]));if(!row)throw Error('Record not found');send(res,200,row);return;}
   const events=url.pathname.match(/^\/api\/applications\/([^/]+)\/events$/);
   if(req.method==='GET'&&events){send(res,200,db.prepare('SELECT * FROM application_events WHERE application_id=? ORDER BY at DESC').all(decodeURIComponent(events[1])));return;}
-  if(['POST','PATCH'].includes(req.method)){
+  const restore=url.pathname.match(/^\/api\/applications\/([^/]+)\/restore$/);
+  if(['POST','PATCH','DELETE'].includes(req.method)){
    if(req.headers.origin!==`http://127.0.0.1:${port}`&&req.headers.origin!==`http://localhost:${port}`){send(res,403,{error:'Invalid origin'});return;}
    if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||'')){send(res,415,{error:'JSON required'});return;}
    const value=await body(req);
+   if(req.method==='POST'&&url.pathname==='/api/motion-session/claim'){send(res,200,await claimMotionIntro(root));return;}
    if(req.method==='POST'&&url.pathname==='/api/applications'){send(res,201,insertRecord(db,value));return;}
    if(req.method==='PATCH'&&item){send(res,200,updateRecord(db,decodeURIComponent(item[1]),value));return;}
+   if(req.method==='DELETE'&&item){send(res,200,setRecordArchived(db,decodeURIComponent(item[1]),value));return;}
+   if(req.method==='POST'&&restore){send(res,200,setRecordArchived(db,decodeURIComponent(restore[1]),value,false));return;}
   }
   if(req.method!=='GET'){send(res,405,{error:'Method not allowed'});return;}
-  const name=url.pathname==='/'?'index.html':url.pathname.slice(1);
-  if(!['index.html','dashboard.js','dashboard-i18n.js','dashboard.css','dashboard-layout.css'].includes(name)){send(res,404,{error:'Not found'});return;}
-  const file=path.join(publicDir,name),data=await fs.readFile(file);
-  res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; connect-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'"});res.end(data);
+  const name=url.pathname==='/'?'workspace.html':url.pathname==='/app'?'index.html':url.pathname.slice(1);
+  const shared=['workspace.html','workspace.js','workspace.css','workspace-card.js','workspace-genie.js','anchor-motion.js','language-layout.js','language-layout.css','motion.js','motion.css','motion-tokens.js','motion-boot.js','controls.js','controls.css','segmented.js','segmented.css'].includes(name);
+  if(!shared&&!['index.html','dashboard.js','dashboard-i18n.js','dashboard.css','dashboard-layout.css'].includes(name)){send(res,404,{error:'Not found'});return;}
+  const file=path.join(publicDir,shared?'../shared':'',name);let data=await fs.readFile(file);
+  if(name==='workspace.html')data=data.toString('utf8').replace('__DEFAULT_VIEW__','dashboard').replace('__DASHBOARD_PORT__',String(port)).replace('__EDITOR_PORT__','8766');
+  res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; connect-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; frame-src 'self' http://127.0.0.1:8765 http://127.0.0.1:8766 http://localhost:8765 http://localhost:8766; base-uri 'none'; form-action 'self'"});res.end(data);
  }catch(e){fail(res,e);}
 });
 server.on('error',async e=>{

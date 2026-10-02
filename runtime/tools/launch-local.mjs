@@ -1,6 +1,7 @@
 import {spawn} from 'node:child_process';
 import path from 'node:path';
 import {root,toolsRoot} from './runtime.mjs';
+import {beginMotionSession} from './lib/motion-session.mjs';
 
 const services=[
  {name:'Dashboard',port:8765,entry:'dashboard.mjs',args:['--serve']},
@@ -69,6 +70,7 @@ async function stop(){
 
 try{
  console.log(`工作区：${root}`);
+ await beginMotionSession(root);
  for(const service of services)await ensure(service);
  openBrowser(services[0]);
  console.log('两个服务已就绪，正在浏览器中打开 Dashboard；材料编辑器可从看板进入。按 Ctrl+C 停止本窗口启动的服务。');

@@ -25,4 +25,10 @@ __pycache__/
 *.jpg
 *.jpeg
 *.webp
+/tests/
+/test-results/
+/playwright-report/
+**/audits/
+*.bak
+*.tmp
 !/workspace-template/个人资料/template/portrait.png

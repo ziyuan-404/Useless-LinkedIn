@@ -1,0 +1,44 @@
+@import url('/controls.css');
+@import url('/segmented.css');
+@import url('/language-layout.css');
+@property --reveal-radius { syntax: '<length>'; inherits: false; initial-value: 0px; }
+:root { --motion-color: cubic-bezier(.32,0,.2,1); --motion-spring: linear(0, .08 8%, .27 18%, .55 32%, .8 48%, .94 65%, 1.002 86%, 1); }
+html.motion-pending body > main, html.motion-pending body > .topbar { opacity: 0; }
+.motion-veil, .motion-glow { position: fixed; inset: 0; z-index: 10000; pointer-events: none; }
+.motion-veil { background: radial-gradient(ellipse at var(--reveal-x) var(--reveal-y), #ffffff99, #dcebff52 48%, #f7faff8c 85%), linear-gradient(135deg,#ffffff70,#e4efff4a,#ffffff78); backdrop-filter: blur(36px) saturate(1.35) brightness(1.055); mask-image: radial-gradient(circle at var(--reveal-x) var(--reveal-y), transparent max(0px,calc(var(--reveal-radius) - 180px)), #0003 max(0px,calc(var(--reveal-radius) - 100px)), #000b calc(var(--reveal-radius) + 20px), #000 calc(var(--reveal-radius) + 160px)); }
+.motion-glow { background: radial-gradient(circle at var(--reveal-x) var(--reveal-y), transparent max(0px,calc(var(--reveal-radius) - 185px)), #b6d9ff40 max(0px,calc(var(--reveal-radius) - 75px)), #ffffff70 var(--reveal-radius), transparent calc(var(--reveal-radius) + 190px)); filter:blur(9px); }
+.motion-surface-veil,.motion-surface-glow { position:absolute; inset:0; border-radius:inherit; }
+.motion-surface-veil { z-index:3; }
+.motion-surface-glow { z-index:4; }
+.motion-route-prepared { opacity:0; }
+html.motion-entering body > main, html.motion-entering body > .topbar { transform-origin: 50% 35%; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 140ms; }
+dialog[data-motion-state] { transform-origin: center; }
+/* Native centering is explicit, immune to a previous morph's temporary insets. */
+dialog[open]:not(.motion-morphing) { position: fixed; inset: 0; margin: auto; height: fit-content; overflow: clip; }
+dialog[data-motion-state]::backdrop { background: #17233466; backdrop-filter: blur(6px); transition: opacity 560ms var(--motion-color), display 560ms allow-discrete, overlay 560ms allow-discrete; }
+dialog[data-motion-state='closing']::backdrop { opacity: 0; }
+@starting-style { dialog[data-motion-state]::backdrop { opacity: 0; } }
+.motion-source-hidden { visibility: hidden !important; }
+dialog.motion-morphing { box-sizing: border-box; opacity: 1; }
+.motion-dialog-content { position: relative; z-index: 1; box-sizing: border-box; overflow: hidden; }
+.motion-source-paint { position: absolute; inset: 0; pointer-events: none; }
+.motion-source-label { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; white-space: nowrap; pointer-events: none; }
+.discard-dialog .motion-dialog-content > p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.linkbtn { background: linear-gradient(135deg, #2a75c4, #2368b8); border-color: #2368b8; color: #fff; }
+.linkbtn:hover { background: linear-gradient(135deg, #2876c7, #2368b8); }
+button, .topbar-actions a { transition: background-color 160ms ease, box-shadow 160ms ease; }
+button:active:not(:disabled) { scale: .975; }
+details > :not(summary) { transform-origin: top; }
+.trend-chart[data-motion='pending'] .trend-series { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+ html.motion-pending body > main, html.motion-pending body > .topbar { opacity: 1; }
+ .motion-veil, .motion-glow { display: none; }
+ *, *::before, *::after, select::picker(select) { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+ button:active:not(:disabled) { scale: 1; }
+ dialog[data-motion-state]::backdrop { backdrop-filter: none; }
+}
+
+html.motion-language .topbar { z-index:10001; }
+html.workspace-content-card,html.workspace-content-card body{background:transparent!important}
+html.workspace-content-card main{background:#f5f7fa}

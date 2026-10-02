@@ -51,7 +51,7 @@
 
 ## 输出位置
 
-输出到 `WORKSPACE_ROOT/个人资料/CV/YYYY-MM-DD-jobId-contextHash/`。优先遵守 JD 的文件命名要求；否则使用：
+输出到 `WORKSPACE_ROOT/个人资料/CV/YYYY-MM-DD__公司__岗位/`。优先遵守 JD 的文件命名要求；否则使用：
 
 - `姓名-CV-公司-岗位.pdf`
 - `姓名-Motivation-Letter-公司-岗位.pdf`
