@@ -2,6 +2,10 @@
 
 This public repository contains generic code, instructions, configuration, blank layouts/workbooks and licensed upstream resources. It is created as a fresh Git repository; no original local Git history is included.
 
+The README interface GIFs in `docs/media/` are recorded in an isolated demo workspace using fictional companies, application records and document content. They contain no real candidate profile or application history. Raw recordings and test workspaces are excluded from publication.
+
+README 中 `docs/media/` 的界面 GIF 来自独立测试工作区，使用虚构公司、申请记录和材料，不包含真实候选人档案或投递历史。原始录制文件和测试工作区不公开。
+
 Excluded: candidate profiles and source snapshots, original resumes/photos, contact details, education/visa/identity facts, messages, application history, real dashboards, answer banks, credentials, cookies, sessions, local audit/test outputs and machine-specific caches. The retained portrait is a neutral placeholder. Public upstream copyright and attribution are intentionally preserved.
 
 本仓库是独立脱敏副本，原始私人工作区未修改。公开内容仅为通用代码、空白模板和许可资源，不包含求职者个人资料、申请记录或旧Git历史。公开Skill不继承原用户会话中的授权。
