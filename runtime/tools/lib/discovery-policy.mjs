@@ -6,6 +6,7 @@ export function httpFailure(raw){
  throw Object.assign(Error(`HTTP ${status}`),{status,retryAfter:raw.headers?.['retry-after']});
 }
 export function failureDisposition(error,{attempt=1,now=Date.now(),baseSeconds=30,maxSeconds=1800}={}){
+ if(error.credentialsMissing)return {status:'needs-agent',reason:error.message,failureClass:'credentials-missing'};
  if(error.budget)return {status:'partial',reason:'configured_request_budget'};
  if(error.deferredUntil)return {status:'retry-wait',reason:error.message,nextRetryAt:error.deferredUntil};
  const status=error.status??Number(/(?:HTTP|access_)(\d{3})/.exec(error.message)?.[1]);

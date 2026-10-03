@@ -10,6 +10,8 @@ import {failureDisposition,httpFailure,createDiscoveryFetcher} from './lib/disco
 import {stageDiscovery} from './lib/discovery-journal.mjs';
 import {acquireFileLock} from './lib/file-lock.mjs';
 import {validateLead} from './lib/schema.mjs';
+import {credentialsReady} from './lib/official-job-apis.mjs';
+import {anySearchSuggestions} from './lib/optional-web-search.mjs';
 
 const a=args();
 if(a.help){console.log('scan [--config FILE] [--portal NAME] [--plan] [--resume] [--max-requests N] [--max-pages N] [--import FILE --import-only] [--listing-capture FILE] [--sources FILE] [--task-results FILE] [--retry-agent]\n0 = unlimited. --no-browser disables rendered-page fallback. Transient retries honor nextRetryAt.');process.exit(0);}
@@ -67,7 +69,7 @@ async function collect(rows,source,observation,{observedJob=true}={}){
   if(!j){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:row.url||'',title:row.title||'',reason:'Not a published posting, invalid URL/title, or explicit source restriction'});continue;}
   try{publicUrl(j.url);}catch(e){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:j.url,reason:e.message});continue;}
   const signals=relevance(j,c,source);
-  const record=JSON.parse(JSON.stringify({...j,discoverySignals:signals,discoveryDisposition:signals.matches?'candidate':'review',observations:[{...observation,pageUrl:j.sourceUrl||observation.pageUrl,capturedAt:j.capturedAt||observation.capturedAt,source:source.name,url:j.url}]}));
+  const record=JSON.parse(JSON.stringify({...j,discoveryContentHash:hash(JSON.stringify([j.title,j.description||j.jd||'',j.contract||'',j.location||'',j.updatedAt||''])),discoverySignals:signals,discoveryDisposition:signals.matches?'candidate':'review',observations:[{...observation,pageUrl:j.sourceUrl||observation.pageUrl,capturedAt:j.capturedAt||observation.capturedAt,source:source.name,url:j.url}]}));
   const at=new Date().toISOString();
   try{await validateLead({...record,id:'pending',key:normalizeUrl(record.url),state:'discovered',createdAt:at,lastSeenAt:at});}catch(e){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:j.url,reason:e.message});continue;}
   accepted.push(record);log.filtered+=signals.matches?1:0;log.review+=signals.matches?0:1;
@@ -119,6 +121,7 @@ while(progress&&!a['import-only']){
   if(source.renderer==='agent'&&!observed){task.status='needs-agent';task.reason='interactive_browser_selected';activateFallbacks();continue;}
   // Upgrade old temporary failures rather than permanently parking them as Agent work.
   if(task.status==='needs-agent'&&/HTTP (?:408|425|429|5\d\d)|access_(?:429|5\d\d)|fetch failed|timeout|connection refused/i.test(task.reason||''))task.status='retry-wait';
+  if(task.failureClass==='credentials-missing'&&credentialsReady(source)){task.status='pending';delete task.failureClass;delete task.reason;}
   if(!observed&&(['blocked','needs-agent'].includes(task.status)&&!a['retry-agent']||Date.parse(task.nextRetryAt||'')>Date.now()||attemptedFailures.has(task.id)))continue;
   // Offline replay never launches unrelated public requests.
   if(a['listing-capture']&&!observed)continue;
@@ -147,15 +150,16 @@ while(progress&&!a['import-only']){
    log.attempts.push({taskId:task.id,layer:observed?'AgentBrowser':task.kind==='api'?'API':'HTTP',url:result.url||task.url,page:result.page??task.cursor?.page??0,count:result.jobs.length,reason:result.reason});
    const collected=await collect(result.jobs,source,{taskId:task.id,query:task.query,location:task.location,layer:observed||result.rendered?'AgentBrowser':task.kind==='api'?'API':'HTTP',url:currentUrl,pageUrl:result.finalUrl||currentUrl,capturedAt:observed?.capturedAt||new Date().toISOString()},{observedJob:task.kind==='api'});
    if(collected.invalidCount||result.unusableRecords){result.complete=false;result.reason='unusable_posting_records';task.hasUnusableRecords=true;}
-   task.currentKeys=[...new Set([...(task.currentKeys||[]),...collected])];
-   const signature=hash(JSON.stringify(result.jobs.map(j=>[normalizeUrl(j.url),j.title,j.contract||'',j.publishedAt||'']).sort()));
-   task.currentPages={...(task.currentPages||{}),[currentUrl+':'+(result.page??task.cursor?.page??0)]:signature};
-   const pageKey=currentUrl+':'+(result.page??task.cursor?.page??0);
-   const incremental=task.refreshing&&source.incremental?.newest_first===true&&source.incremental?.stop_on_unchanged===true&&Date.now()-Date.parse(task.lastFullScanAt||'')<(source.incremental.full_refresh_hours??168)*3600000&&task.baselinePages?.[pageKey]===signature;
-   const repeated=result.jobs.length&&(task.seenPages||[]).includes(signature)&&observed?.paginationComplete!==true;
-   task.seenPages=[...new Set([...(task.seenPages||[]),signature])];
+   task.currentKeys=result.unchangedSnapshot?(task.baselineKeys||[]):[...new Set([...(task.currentKeys||[]),...collected])];
+   const signature=hash(JSON.stringify(result.jobs.map(j=>[normalizeUrl(j.url),j.title,j.contract||'',j.publishedAt||'',j.updatedAt||'',hash(j.description||j.jd||'')]).sort()));
+   const pageKey=result.pageKey||currentUrl+':'+(result.page??task.cursor?.page??0);
+   task.currentPages={...(task.currentPages||{}),[pageKey]:signature};
+   const incremental=result.incrementalEligible!==false&&task.refreshing&&source.incremental?.newest_first===true&&source.incremental?.stop_on_unchanged===true&&Date.now()-Date.parse(task.lastFullScanAt||'')<(source.incremental.full_refresh_hours??168)*3600000&&task.baselinePages?.[pageKey]===signature;
+   const seenSignature=result.partition?result.partition+':'+signature:signature;
+   const repeated=result.jobs.length&&(task.seenPages||[]).includes(seenSignature)&&observed?.paginationComplete!==true;
+   task.seenPages=[...new Set([...(task.seenPages||[]),seenSignature])];
    task.cursor=incremental?null:result.nextCursor;task.completed=!task.hasUnusableRecords&&(incremental||!!result.complete&&!repeated);task.reason=task.hasUnusableRecords&&!result.nextCursor?'unusable_posting_records':incremental?'incremental_unchanged_page':repeated?'repeated_page':result.reason;
-   task.incrementalStopped=incremental;task.attempts=0;delete task.nextRetryAt;delete task.failureClass;
+   task.incrementalStopped=incremental||!!result.unchangedSnapshot;task.attempts=0;delete task.nextRetryAt;delete task.failureClass;
    task.status=task.completed?'completed':result.nextCursor&&!repeated?'partial':'needs-agent';
    if(task.completed&&!incremental)task.lastFullScanAt=new Date().toISOString();
    task.updatedAt=new Date().toISOString();if(task.completed)task.finishedAt=task.updatedAt;
@@ -172,6 +176,20 @@ while(progress&&!a['import-only']){
    log.attempts.push({taskId:task.id,layer:task.kind==='api'?'API':'HTTP',url:currentUrl,error:e.message});await persist();
   }
  }
+}
+// Optional open-web retrieval supplies suggestions, never unverified job leads.
+if(c.discovery?.web_backend==='anysearch'&&!a['import-only']&&!a['listing-capture'])for(const task of tasks.filter(t=>selected(t)&&!t.completed&&t.kind==='web-search')){
+ const settings=c.discovery.anysearch||{};
+ if(task.failureClass==='credentials-missing'&&credentialsReady({api_token_env:settings.api_token_env}))task.status='pending';
+ if(['blocked','needs-agent'].includes(task.status)&&!a['retry-agent']||Date.parse(task.nextRetryAt||'')>Date.now())continue;
+ if(report.requests>=maxRequests){task.status='partial';task.reason='configured_request_budget';continue;}
+ try{
+  const result=await anySearchSuggestions(task,settings,{fetchPage:(url,opts)=>fetchPage(url,opts,{name:'AnySearch',http_client:'native'})});
+  Object.assign(task,{searchSuggestions:result.suggestions,providerWindow:result.providerWindow,status:'needs-agent',completed:false,reason:result.reason,updatedAt:new Date().toISOString()});
+  report.warnings.push('AnySearch supplies up to 10 suggestions per query; details and coverage still require verification.');
+  getLog(task.portal).attempts.push({taskId:task.id,layer:'AnySearch',count:result.received,reason:result.reason});
+ }catch(error){Object.assign(task,failureDisposition(error,{attempt:(task.attempts||0)+1,baseSeconds:c.discovery?.retry_base_seconds??30,maxSeconds:c.discovery?.retry_max_seconds??1800}),{updatedAt:new Date().toISOString()});}
+ await persist();
 }
 for(const observed of captures.filter(x=>!usedCaptures.has(x))){
  const name=observed.portal||new URL(observed.pageUrl||observed.url).hostname;if(a.portal&&name!==a.portal)continue;
@@ -195,7 +213,7 @@ report.complete=report.coverage.pending===0;report.finishedAt=new Date().toISOSt
 await persist();
 await write(path.join(home,'robots-cache.json'),[...robotsCache]);
 await transaction(store=>{
- const rulesHash=hash(JSON.stringify({include:c.include_keywords,roles:c.role_keywords,exclude:c.exclude_keywords,aliases:c.keyword_aliases,sources:[...sourceMap.values()].map(s=>({name:s.name,include:s.include_keywords,roles:s.role_keywords,exclude:s.exclude_keywords,aliases:s.keyword_aliases}))}));
+ const rulesHash=hash(JSON.stringify({include:c.include_keywords,roles:c.role_keywords,exclude:c.exclude_keywords,aliases:c.keyword_aliases,exclude_scope:c.exclude_scope,sources:[...sourceMap.values()].map(s=>({name:s.name,include:s.include_keywords,roles:s.role_keywords,exclude:s.exclude_keywords,aliases:s.keyword_aliases,exclude_scope:s.exclude_scope}))}));
  if(store.discoveryRulesHash!==rulesHash){
    for(const job of store.jobs.filter(j=>j.discoveryOnly&&['discovered','possible-duplicate'].includes(j.state)&&j.triage?.method!=='manual')){const signals=relevance(job,c,sourceMap.get(job.portal)||{});job.discoverySignals=signals;job.discoveryDisposition=signals.matches?'candidate':'review';if(job.triage?.status==='excluded')job.triage.status='pending';}
   store.discoveryRulesHash=rulesHash;

@@ -4,7 +4,7 @@ import {read,write,hash} from './core.mjs';
 // Revalidate each page. An unchanged first page is never evidence about later pages.
 export function conditionalFetcher(fetchPage,{directory,enabled=true,fullRefreshHours=168}={}){
  return async(url,opts={},source={})=>{
-  if(!enabled||source.incremental?.conditional===false||(opts.method||'GET').toUpperCase()!=='GET')return fetchPage(url,{...opts,httpClient:source.http_client||opts.httpClient},source);
+  if(!enabled||opts.responseMode==='stream'||source.incremental?.conditional===false||(opts.method||'GET').toUpperCase()!=='GET')return fetchPage(url,{...opts,httpClient:source.http_client||opts.httpClient},source);
   const file=path.join(directory,hash(JSON.stringify([url,source.name||'',opts.headers||{}]))+'.json');
   const cached=await read(file,null),fresh=cached&&Date.now()-Date.parse(cached.savedAt)<fullRefreshHours*3600000;
   const headers={...opts.headers};

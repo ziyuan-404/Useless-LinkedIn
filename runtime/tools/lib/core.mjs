@@ -42,21 +42,26 @@ export async function assertPublicUrl(url){
  return href;
 }
 export async function request(url,opts={}){
- const {httpClient='native',...init}=opts;
+ const {httpClient='native',credentialBody=false,credentialHeaders=false,responseMode='text',timeoutMs=18000,maxResponseBytes=8*1024*1024,...init}=opts;
+ if(!Number.isFinite(maxResponseBytes)||maxResponseBytes<=0)throw Error('maxResponseBytes must be positive');
  if(!['native','impit'].includes(httpClient))throw Error('Unknown HTTP client');
  const client=httpClient==='impit'?new (dependency('impit').Impit)({browser:'chrome',timeout:18000}):null;
  let current=url,options={...init,headers:{...init.headers}};
  for(let redirects=0;redirects<=5;redirects++){
   current=await assertPublicUrl(current);
-  const r=await (client?client.fetch.bind(client):fetch)(current,{...options,redirect:'manual',signal:AbortSignal.timeout(18000),headers:{'user-agent':'UselessLinkedIn/1.0 (public job discovery)',...options.headers}});
+  const r=await (client?client.fetch.bind(client):fetch)(current,{...options,redirect:'manual',signal:AbortSignal.timeout(timeoutMs),headers:{'user-agent':'UselessLinkedIn/1.0 (public job discovery)',...options.headers}});
   if([301,302,303,307,308].includes(r.status)){
    const location=r.headers.get('location');if(!location)throw Error('Redirect without location');
    const next=new URL(location,current).href;
+   if(new URL(next).origin!==new URL(current).origin&&(credentialBody&&options.body||credentialHeaders))throw Error('Authenticated request changed origin');
    if(new URL(next).origin!==new URL(current).origin)for(const key of Object.keys(options.headers))if(/authorization|cookie|api[-_]key/i.test(key))delete options.headers[key];
    if(r.status===303||(r.status===301||r.status===302)&&options.method==='POST'){options.method='GET';delete options.body;}
    current=next;await assertPublicUrl(current);continue;
   }
-  const body=await r.text();if(body.length>8e6)throw Error('Response exceeds size limit');
+  if(responseMode==='stream')return {status:r.status,finalUrl:current,bodyStream:r.body,headers:Object.fromEntries(r.headers)};
+  const chunks=[];let bytes=0;
+  for await(const chunk of r.body||[]){const data=Buffer.from(chunk);bytes+=data.length;if(bytes>maxResponseBytes)throw Error(`Response exceeds configured byte budget (${maxResponseBytes} bytes)`);chunks.push(data);}
+  const body=Buffer.concat(chunks).toString('utf8');
   return {status:r.status,finalUrl:current,body,headers:Object.fromEntries(r.headers)};
  }
  throw Error('Too many redirects');
@@ -106,12 +111,14 @@ export function compactObservations(rows){
 // Shared source/URL fields are stored once; every query, task, date and count remains recoverable.
 export function expandObservations(rows){return rows.flatMap(row=>row.contexts?row.contexts.map(context=>({source:row.source,url:row.url,layer:row.layer,...context,capturedAt:context.capturedAt||row.capturedAt,firstSeenAt:context.firstSeenAt||context.capturedAt||row.capturedAt,lastSeenAt:context.lastSeenAt||context.capturedAt||row.capturedAt,count:context.count||1})):[row]);}
 const indexes=new WeakMap();
+const companyKey=job=>JSON.stringify([job.company,job.title,job.location]);
+function indexCompany(index,job){if(!job.company)return;const key=companyKey(job);if(!index.companies.has(key))index.companies.set(key,new Set());index.companies.get(key).add(job);}
 const verifiedKey=job=>job.verifiedIdentity&&job.identityEvidence?.url&&Number.isFinite(Date.parse(job.identityEvidence.capturedAt))&&String(job.identityEvidence.evidence||'').trim()?job.verifiedIdentity:null;
 function jobIndex(store){
  if(!indexes.has(store)){
-  const urls=new Map(),verified=new Map();
+  const urls=new Map(),verified=new Map(),companies=new Map(),fingerprinted=[];
   for(const j of store.jobs){for(const url of [j.url,...(j.urlAliases||[])]){const key=normalizeUrl(url);if(key&&!urls.has(key))urls.set(key,j);}if(verifiedKey(j))verified.set(verifiedKey(j),j);}
-  indexes.set(store,{urls,verified});
+  const index={urls,verified,companies,fingerprinted};for(const j of store.jobs){indexCompany(index,j);if(j.fingerprint)fingerprinted.push(j);}indexes.set(store,index);
  }
  return indexes.get(store);
 }
@@ -123,13 +130,18 @@ export function add(store,job){const key=normalizeUrl(job.url);if(!key)throw Err
  // Prefer an explicitly verified employer URL; an ID/title guess cannot merge sources.
  if(verified&&job.employerOriginal===true&&!old.submitted&&!old.historyMatch){old.url=job.url;old.key=key;old.employerOriginal=true;}
  if(verified){old.verifiedIdentity=verified;old.identityEvidence=job.identityEvidence;index.verified.set(verified,old);}
+ if(job.discoveryContentHash){
+  if(old.discoveryContentHash&&old.discoveryContentHash!==job.discoveryContentHash&&old.triage?.method!=='manual'&&old.discoveryOnly&&!old.assessment&&!old.submitted){delete old.triage;old.discoveryDisposition=job.discoveryDisposition;old.discoverySignals=job.discoverySignals;for(const field of ['title','description','jd','contract','updatedAt'])if(job[field]!==undefined)old[field]=job[field];}
+  old.discoveryContentHash=job.discoveryContentHash;
+ }
  if(old.discoveryDisposition==='review'&&job.discoveryDisposition==='candidate'&&old.triage?.method!=='manual'){old.discoveryDisposition='candidate';old.discoverySignals=job.discoverySignals;delete old.triage;}
  old.possiblyClosed=false;if(old.absenceSignals)for(const signal of old.absenceSignals)signal.resolvedAt=old.lastSeenAt;
  // Enrich empty discovery fields without overwriting assessed/submitted records.
  for(const field of ['company','location','requisitionId','publishedAt'])if(!old[field]&&job[field])old[field]=job[field];
+ indexCompany(index,old);
  return {duplicate:true,id:old.id};}
- const id=hash(key).slice(0,16),fp=fingerprintText(job.jd||'');const possible=fp||job.company?store.jobs.filter(x=>(fp&&x.fingerprint&&similarity(fp,x.fingerprint)>=.92)||(job.company&&x.company===job.company&&x.title===job.title&&x.location===job.location)).map(x=>x.id):[];
- const created={...job,observations:compactObservations(job.observations||[]),id,key,fingerprint:fp,possibleDuplicates:possible,sources:[job.portal||job.url],createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString(),state:possible.length?'possible-duplicate':'discovered',dashboardSynced:false,submitted:false};store.jobs.push(created);index.urls.set(key,created);if(verified)index.verified.set(verified,created);return {id,possibleDuplicates:possible};}
+ const id=hash(key).slice(0,16),fp=fingerprintText(job.jd||'');const candidates=new Set([...(index.companies.get(companyKey(job))||[]),...(fp?index.fingerprinted:[])]),possible=[...candidates].filter(x=>(fp&&x.fingerprint&&similarity(fp,x.fingerprint)>=.92)||(job.company&&x.company===job.company&&x.title===job.title&&x.location===job.location)).map(x=>x.id);
+ const created={...job,observations:compactObservations(job.observations||[]),id,key,fingerprint:fp,possibleDuplicates:possible,sources:[job.portal||job.url],createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString(),state:possible.length?'possible-duplicate':'discovered',dashboardSynced:false,submitted:false};store.jobs.push(created);index.urls.set(key,created);indexCompany(index,created);if(fp)index.fingerprinted.push(created);if(verified)index.verified.set(verified,created);return {id,possibleDuplicates:possible};}
 export async function exportList(){
  const store=await read(path.join(home,'leads.json'),{jobs:[]});const escape=s=>String(s||'').replace(/\|/g,'/').replace(/\n/g,' ');
  await write(path.join(home,'list.md'),'# 自动发现岗位与流程阶段（历史申请以 Dashboard 数据库及成功凭证核对）\n\n待分拣：`triage --list-review`；消失复核：`triage --list-closed`；批量检查：`triage --run`。\n\n| ID | 公司 | 岗位 | 来源 | 搜索分拣 | 分拣结果 | 消失复核 | 状态 | 优先级 | URL |\n|---|---|---|---|---|---|---|---|---|---|\n'+store.jobs.map(x=>`| ${x.id} | ${escape(x.company)} | ${escape(x.title)} | ${escape(x.portal)} | ${x.discoveryDisposition||''} | ${x.triage?.status||(x.discoveryDisposition==='review'?'pending':'')} | ${x.possiblyClosed?'possibly_closed':x.liveness?.result==='expired'?'expired':''} | ${x.state} | ${x.priority||''} | ${x.url} |`).join('\n')+'\n');

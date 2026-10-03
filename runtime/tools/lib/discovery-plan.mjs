@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {FT_SEARCH,LBA_SEARCH} from './official-job-apis.mjs';
 export const searchTaskStatuses=Object.freeze(['pending','standby','partial','retry-wait','blocked','needs-agent','completed','retired']);
 
 const unique=values=>[...new Set(values.map(x=>String(x).trim()).filter(Boolean))];
@@ -45,12 +46,14 @@ export function validateDiscoveryConfig(config){
   if(entry.job_pattern)new RegExp(entry.job_pattern);
   if(entry.wttj?.queries!==undefined&&(!Array.isArray(entry.wttj.queries)||entry.wttj.queries.some(x=>typeof x!=='string')))throw Error('wttj.queries must be a string array');
   for(const value of [entry.api?.page_size,entry.wttj?.page_size,entry.wttj?.max_hits,entry.pagination?.page_size].filter(x=>x!==undefined))if(!Number.isInteger(value)||value<1)throw Error('API/listing page sizes must be positive integers');
+  if(entry.api?.max_response_bytes!==undefined&&(!Number.isFinite(entry.api.max_response_bytes)||entry.api.max_response_bytes<=0))throw Error('api.max_response_bytes must be positive');
   for(const pagination of [entry.api?.pagination,entry.pagination].filter(Boolean)){
    if(pagination.mode&&!['page','offset'].includes(pagination.mode))throw Error('pagination.mode must be page or offset');
    if(pagination.start!==undefined&&(!Number.isInteger(pagination.start)||pagination.start<0))throw Error('pagination.start must be a nonnegative integer');
   }
  }
  for(const [key,value] of Object.entries(config.discovery||{})){
+  if(key==='web_backend'&&!['agent','anysearch'].includes(value))throw Error('discovery.web_backend must be agent or anysearch');
   if(['max_requests_per_run','max_pages_per_task','refresh_hours','web_refresh_hours','min_interval_ms','retry_base_seconds','retry_max_seconds'].includes(key)&&(!Number.isFinite(value)||value<0))throw Error(`discovery.${key} must be a nonnegative number`);
   if(key==='web_queries'&&(!Array.isArray(value)||value.some(x=>typeof x!=='string')))throw Error('discovery.web_queries must be a string array');
  }
@@ -66,6 +69,8 @@ export function buildDiscoveryPlan(config){
   const queries=expandQueries(config,source),locations=locationsFor(source.locations??config.locations);
   const templates=[...(source.search_urls||[]),source.search_url,source.career_url].filter(Boolean);
   if(source.provider==='wttj')for(const query of source.wttj?.queries?.length?source.wttj.queries:queries)push({kind:'api',portal:source.name,provider:'wttj',query,location:'',url:source.search_url?renderSearchUrl(source.search_url,{query,location:locations[0]}):'https://www.welcometothejungle.com/fr/jobs'});
+  else if(source.provider==='france-travail')for(const query of queries)for(const location of locations)push({kind:'api',portal:source.name,provider:source.provider,query,location,url:source.api_url||FT_SEARCH});
+  else if(source.provider==='la-bonne-alternance')push({kind:'api',portal:source.name,provider:source.provider,query:'',location:'',url:source.api_url||(source.api?.mode==='export'?LBA_SEARCH.replace(/\/search$/,'/export'):LBA_SEARCH)});
   else if(source.api_url||['greenhouse','lever','ashby'].includes(source.provider)){
    const template=source.api_url|| (source.provider==='greenhouse'?`https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(source.board_token||'')}/jobs${source.include_description?'?content=true':''}`:source.provider==='ashby'?`https://api.ashbyhq.com/posting-api/job-board/${encodeURIComponent(source.site||'')}`:`https://api${source.region==='eu'?'.eu':''}.lever.co/v0/postings/${encodeURIComponent(source.site||'')}?mode=json`);
    if(source.provider==='greenhouse'&&!source.board_token||['lever','ashby'].includes(source.provider)&&!source.site)throw Error(`${source.name}: missing ATS board_token/site`);
@@ -92,7 +97,8 @@ export function mergeTasks(plan,previous=[],{resume=false,refreshHours=24,now=Da
   const prior=old.get(task.id);if(!prior)return task;
   const cadence=['web-search','career-discovery'].includes(task.kind)?task.refreshHours??refreshHours:refreshHours;
   const fresh=now-Date.parse(prior.finishedAt||prior.updatedAt||'')<cadence*3600000;
-  if(resume||!prior.completed||fresh)return {...prior,...task,status:prior.status||'pending',completed:!!prior.completed,cursor:prior.cursor};
+  const boundedRefresh=prior.status==='needs-agent'&&/^provider_(?:search_window_unverified|partial_warnings)$/.test(prior.reason||'')&&!fresh;
+  if(!boundedRefresh&&(resume||!prior.completed||fresh))return {...prior,...task,status:prior.status||'pending',completed:!!prior.completed,cursor:prior.cursor};
   return {...task,cycle:(prior.cycle||1)+1,baselinePages:prior.currentPages||{},baselineKeys:prior.currentKeys||[],lastFullScanAt:prior.lastFullScanAt,refreshing:true};
  });
  // Keep history, but never run obsolete URLs/filters after configuration changes.

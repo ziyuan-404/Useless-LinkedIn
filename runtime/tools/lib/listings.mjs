@@ -37,7 +37,7 @@ export function posting(link,portal={},base,{observedJob=false}={}){
   for(const key of ['from','utm_source','utm_campaign','utm_medium'])url.searchParams.delete(key);
   url.hash=/^#\/(?:job|jobs|position)\//i.test(url.hash)?url.hash:'';
   const title=String(link.title||'').replace(/\s+/g,' ').trim();if(!title)return null;
-  const metadata=Object.fromEntries(['location','jd','description','contract','requisitionId','publishedAt','sourceUrl','capturedAt','kind','source','structured','verifiedIdentity','identityEvidence','employerOriginal'].filter(k=>link[k]!==undefined).map(k=>[k,link[k]]));
+  const metadata=Object.fromEntries(['location','jd','description','contract','requisitionId','publishedAt','updatedAt','sourceUrl','capturedAt','kind','source','structured','verifiedIdentity','identityEvidence','employerOriginal'].filter(k=>link[k]!==undefined).map(k=>[k,link[k]]));
   return {...metadata,url:url.href,title,company:typeof link.company==='string'?link.company:'',portal:portal.name,discoveryOnly:true,isJob:true};
  }catch{return null;}
 }

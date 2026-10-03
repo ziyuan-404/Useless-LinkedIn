@@ -14,7 +14,7 @@ query_matrix:
 # Discovery scope does not assert willingness to relocate; assess mobility on full JD.
 locations: [France]
 include_keywords: [alternance, alternant, apprentissage, apprenti, apprentice, apprenticeship, stage, stagiaire, intern, internship, VIE, work-study]
-role_keywords: [engineer, ingénieur, ingénieure, ingénieurs, software, web, développeuse, développeuses, développeurs, developer, developers, programmer, programmeur, programmeuse, développeur, developpeur, developer, développement, developpement, informatique, logiciel, python, java, data, analyst, BI, SQL, automatisation, automation, RPA, intelligence artificielle, machine learning, no code, low code, embarqué, robotique, support IT]
+role_keywords: [engineer, ingénieur, ingénieure, ingénieurs, software, web, développeuse, développeuses, développeurs, developer, developers, programmer, programmeur, programmeuse, développeur, developpeur, developer, développement, developpement, informatique, logiciel, python, java, javascript, typescript, react, node, node.js, vue, angular, data, analyst, BI, SQL, automatisation, automation, RPA, intelligence artificielle, machine learning, no code, low code, embarqué, robotique, support IT]
 exclude_keywords: [senior, principal, director, head of]
 discovery:
   web_search: true
@@ -27,7 +27,7 @@ discovery:
   web_refresh_hours: 168
   conditional_requests: true
   triage_max_requests: 40
-  triage_refresh_hours: 168
+  triage_refresh_hours: 0
   respect_robots: true
   min_interval_ms: 500
   retry_base_seconds: 30
@@ -54,38 +54,58 @@ portals:
   - name: HelloWork
     web_search: fallback
     renderer: auto
-    http_client: impit
     enabled: true
     search_url: https://www.hellowork.com/fr-fr/emploi/recherche.html?k={query}&l={location}
     job_pattern: /fr-fr/emplois/\d+
   - name: Indeed France
     web_search: fallback
     renderer: auto
-    http_client: impit
     enabled: true
     search_url: https://fr.indeed.com/jobs?q={query}&l={location}
     job_pattern: (viewjob|rc/clk).*jk=
   - name: LinkedIn
     web_search: fallback
     renderer: auto
-    http_client: impit
     allowed_hosts: [www.linkedin.com, fr.linkedin.com, linkedin.com]
     search_domain: linkedin.com
     enabled: true
     search_url: https://www.linkedin.com/jobs/search/?keywords={query}&location={location}
     job_pattern: /jobs/view/
   - name: La Bonne Alternance
+    provider: la-bonne-alternance
+    api_token_env: LBA_API_TOKEN
+    listing_mode: disabled
     web_search: fallback
-    renderer: auto
-    http_client: impit
     enabled: true
-    search_url: https://labonnealternance.apprentissage.beta.gouv.fr/recherche?display=list&job_name={query}
-    job_pattern: /emploi/offres_emploi_(lba|partenaires)/[0-9a-f]{24}/
-    # Predicted recruiters are NOT published vacancies; optional authenticated API
-    # responses can use api_url/api_token_env + configurable api.rows_path/fields.
+    search_domain: labonnealternance.apprentissage.beta.gouv.fr
+    api:
+      # Daily complete official export; streamed batches, no 450-job search cap.
+      mode: export
+      page_size: 500
+      max_export_bytes: 536870912
+      export_timeout_ms: 180000
+    incremental:
+      conditional: false
+    # To restrict by geography/ROME use mode: search + official api.params.
+    # Search is bounded by the provider and cannot prove complete coverage.
   - name: France Travail
+    provider: france-travail
     enabled: true
+    listing_mode: disabled
+    web_search: fallback
     search_domain: francetravail.fr
+    oauth:
+      client_id_env: FRANCE_TRAVAIL_CLIENT_ID
+      client_secret_env: FRANCE_TRAVAIL_CLIENT_SECRET
+    api:
+      page_size: 150
+      params:
+        sort: 1
+    incremental:
+      conditional: false
+      newest_first: true
+      stop_on_unchanged: true
+      full_refresh_hours: 168
   - name: APEC
     enabled: true
     search_domain: apec.fr

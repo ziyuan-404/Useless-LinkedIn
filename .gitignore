@@ -29,6 +29,7 @@ __pycache__/
 !/tests/discovery.test.mjs
 !/tests/discovery-recovery.test.mjs
 !/tests/discovery-triage.test.mjs
+!/tests/discovery-official.test.mjs
 /test-results/
 /playwright-report/
 **/audits/

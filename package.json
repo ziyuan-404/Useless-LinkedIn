@@ -15,6 +15,7 @@
     "impit": "0.14.5",
     "interactjs": "1.10.28",
     "playwright": "1.63.0",
-    "robots-parser": "3.0.1"
+    "robots-parser": "3.0.1",
+    "stream-json": "3.7.0"
   }
 }

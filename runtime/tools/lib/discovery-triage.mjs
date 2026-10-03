@@ -8,13 +8,14 @@ import {assertTransition} from './state-machine.mjs';
 import fs from 'node:fs/promises';
 import {acquireFileLock} from './file-lock.mjs';
 
-export const triageRulesHash=(config,source)=>hash(JSON.stringify([config.include_keywords,config.role_keywords,config.exclude_keywords,config.keyword_aliases,source.include_keywords,source.role_keywords,source.exclude_keywords,source.keyword_aliases]));
+export const triageRulesHash=(config,source)=>hash(JSON.stringify([config.include_keywords,config.role_keywords,config.exclude_keywords,config.keyword_aliases,config.exclude_scope,source.include_keywords,source.role_keywords,source.exclude_keywords,source.keyword_aliases,source.exclude_scope]));
 export function needsTriage(job,config,source={}){
  if(job.possiblyClosed)return true;
  if(job.state==='expired')return false;
  if(job.discoveryDisposition!=='review'||job.submitted||job.assessment)return false;
  if(job.triage?.method==='manual'&&['candidate','excluded'].includes(job.triage.status))return false;
- if(job.triage?.status==='excluded'&&job.triage.rulesHash===triageRulesHash(config,source)&&Date.now()-Date.parse(job.triage.checkedAt)<(config.discovery?.triage_refresh_hours??168)*3600000)return false;
+ const refresh=config.discovery?.triage_refresh_hours??0;
+ if(job.triage?.status==='excluded'&&job.triage.rulesHash===triageRulesHash(config,source)&&(!refresh||Date.now()-Date.parse(job.triage.checkedAt)<refresh*3600000))return false;
  return true;
 }
 export function triageFetcher(config,{maxRequests=40}={}){

@@ -42,3 +42,7 @@ API 依据：[Greenhouse Job Board](https://docs.greenhouse.io/job-board.html)�
 ## 第二轮审查修复
 
 新增 triage CLI、pipeline 自动单岗位初筛、完整 JD 缓存复用、人工批量原文决定、规则变化重开、消失复核及已投递保护。默认词库补软件/工程及法语阴性岗位词，contractHits 返回真正命中词；排除岗位等级默认仅看标题，避免 JD 中“senior mentor”误排 junior 岗位，可设 exclude_scope=full-jd 恢复全文排除。默认逐页 HTTP 条件请求保留完整覆盖；无验证器/POST 不假定能跳过页面。不同 query 共享来源/URL/读取层字段，通过 contexts 可还原；不删除查询证据。复用 impit 和 robots-parser，保留既有持久队列和隔离 Playwright。所有模拟测试运行在开发工作区，发布副本仅同步通用模拟代码。
+
+## 第三轮审查修复
+
+去掉四个平台默认 impit，只保留显式选择。默认新增 JavaScript/TypeScript/React/Node.js；自动排除不按周无故重抓，规则或发现内容变化才重开，人工决定保持稳定，消失复核仍可触发。France Travail 接官方 OAuth、当前 3150 条检索窗口、时间分段续搜及经证明排序的默认增量；La Bonne Alternance 接完整每日导出并复用 stream-json 流式处理，提供有明确覆盖警告的结构化搜索模式。凭据缺失后补齐可自动继续，跨域鉴权重定向被拒绝，signed URL 不持久化。公司/岗位/地点重复候选加索引，避免完整导出中为每条记录扫描全库。接口约束与未验证范围见 [官方接口说明](official-job-apis.md)。
