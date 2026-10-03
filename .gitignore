@@ -25,7 +25,9 @@ __pycache__/
 *.jpg
 *.jpeg
 *.webp
-/tests/
+/tests/*
+!/tests/discovery.test.mjs
+!/tests/discovery-recovery.test.mjs
 /test-results/
 /playwright-report/
 **/audits/

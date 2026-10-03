@@ -28,8 +28,9 @@ export async function searchWttjPage(entry,{fetchText,fetchJson,query='',page=0,
   if(!Array.isArray(data?.hits))throw Error('WTTJ returned no jobs array');
   const known=Number.isInteger(data.nbPages),nextPage=known&&page+1<data.nbPages?page+1:null;
   const windowLimited=known&&Number.isFinite(data.nbHits)&&data.nbHits>data.nbPages*(data.hitsPerPage||size);
-  return {jobs:data.hits.map(jobFromHit).filter(Boolean),rowCount:data.hits.length,nextPage,total:data.nbHits,credentials:{appId,key},
-   complete:known&&nextPage===null&&!windowLimited,reason:windowLimited?'provider_search_window':!known?'pagination_metadata_missing':nextPage===null?'exhausted':'next_page'};
+  const jobs=data.hits.map(jobFromHit).filter(Boolean),unusableRecords=data.hits.length-jobs.length;
+  return {jobs,unusableRecords,rowCount:data.hits.length,nextPage,total:data.nbHits,credentials:{appId,key},
+   complete:known&&nextPage===null&&!windowLimited&&!unusableRecords,reason:windowLimited?'provider_search_window':unusableRecords?'unusable_posting_records':!known?'pagination_metadata_missing':nextPage===null?'exhausted':'next_page'};
 }
 
 export async function searchWttj(entry,dependencies){

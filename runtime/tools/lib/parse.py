@@ -5,9 +5,10 @@ sys.stdout.reconfigure(encoding='utf-8')
 from html.parser import HTMLParser
 class Extract(HTMLParser):
     def __init__(self):
-        super().__init__(convert_charrefs=True); self.skip=0; self.script=None; self.text=[]; self.links=[]; self.schemas=[]; self.link=None; self.title=False; self.titles=[]
+        super().__init__(convert_charrefs=True); self.skip=0; self.script=None; self.text=[]; self.links=[]; self.embeds=[]; self.schemas=[]; self.link=None; self.title=False; self.titles=[]
     def handle_starttag(self,tag,attrs):
         a=dict(attrs)
+        if tag in ('iframe','script') and a.get('src'): self.embeds.append({'url':a['src'],'tag':tag})
         if tag in ('script','style','noscript'):
             self.skip+=1
             if tag=='script' and a.get('type')=='application/ld+json': self.script=[]
@@ -45,4 +46,4 @@ if sys.argv[1]=='yaml':
 else:
     e=Extract(); e.feed(sys.stdin.read())
     text=re.sub(r'[ \t]+',' ',''.join(e.text)); text=re.sub(r'\n\s*\n','\n',text).strip()
-    print(json.dumps({'text':text,'title':''.join(e.titles),'links':e.links,'jobs':list(walk(e.schemas))},ensure_ascii=False))
+    print(json.dumps({'text':text,'title':''.join(e.titles),'links':e.links,'embeds':e.embeds,'jobs':list(walk(e.schemas))},ensure_ascii=False))

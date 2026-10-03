@@ -7,7 +7,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "check": "node runtime/tools/check-architecture.mjs"
+    "check": "node runtime/tools/check-architecture.mjs",
+    "test": "node --test tests/discovery*.test.mjs",
+    "test:discovery": "node --test tests/discovery*.test.mjs"
   },
   "dependencies": {
     "interactjs": "1.10.28",

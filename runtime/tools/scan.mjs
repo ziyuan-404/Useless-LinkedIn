@@ -2,12 +2,16 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {args} from './runtime.mjs';
 import {listing,posting} from './lib/listings.mjs';
-import {home,config,request,transaction,add,write,exportList,read,hash,publicUrl} from './lib/core.mjs';
-import {buildDiscoveryPlan,mergeTasks,relevance,taskId} from './lib/discovery-plan.mjs';
+import {home,config,request,transaction,write,exportList,read,hash,publicUrl,normalizeUrl} from './lib/core.mjs';
+import {buildDiscoveryPlan,mergeTasks,relevance,taskId,taskPriority} from './lib/discovery-plan.mjs';
 import {readApiPage,listingNext,inferCareerSource} from './lib/discovery-sources.mjs';
+import {failureDisposition,httpFailure,createDiscoveryFetcher} from './lib/discovery-policy.mjs';
+import {stageDiscovery} from './lib/discovery-journal.mjs';
+import {acquireFileLock} from './lib/file-lock.mjs';
+import {validateLead} from './lib/schema.mjs';
 
 const a=args();
-if(a.help){console.log('scan [--config FILE] [--portal NAME] [--plan] [--resume] [--max-requests N] [--max-pages N] [--import FILE --import-only] [--listing-capture FILE] [--sources FILE] [--task-results FILE]\n0 = unlimited. --no-browser is accepted; website pages are always handled in IAB by the Agent.');process.exit(0);}
+if(a.help){console.log('scan [--config FILE] [--portal NAME] [--plan] [--resume] [--max-requests N] [--max-pages N] [--import FILE --import-only] [--listing-capture FILE] [--sources FILE] [--task-results FILE] [--retry-agent]\n0 = unlimited. --no-browser disables rendered-page fallback. Transient retries honor nextRetryAt.');process.exit(0);}
 const loadArray=async(file,label)=>{if(!file)return [];const data=JSON.parse(await fs.readFile(file,'utf8'));if(!Array.isArray(data))throw Error(`${label} expects an array`);return data;};
 const c=await config(a.config);
 const registered=await read(path.join(home,'discovered-sources.json'),[]),newSources=await loadArray(a.sources,'sources');
@@ -17,26 +21,11 @@ const limit=(flag,key)=>{const value=Number(a[flag]??c.discovery?.[key]??0);if(!
 const maxRequests=limit('max-requests','max_requests_per_run'),maxPages=limit('max-pages','max_pages_per_task');
 if(!a.plan)await fs.mkdir(home,{recursive:true});
 const lockPath=path.join(home,'.scan.lock');
-async function acquireScanLock(){
- for(let attempt=0;attempt<2;attempt++){
-  try{const handle=await fs.open(lockPath,'wx');await handle.writeFile(JSON.stringify({pid:process.pid,startedAt:new Date().toISOString()}));return handle;}
-  catch(error){
-   if(error.code!=='EEXIST')throw error;
-   const owner=await read(lockPath,null);
-   if(!Number.isInteger(owner?.pid)||owner.pid<1)throw Error('Scan lock has no valid owner; inspect the lock before retrying');
-   try{process.kill(owner.pid,0);throw Error(`Another scan is already running (PID ${owner.pid})`);}
-   catch(check){if(check.code!=='ESRCH')throw check;}
-   // A terminated scan leaves its checkpoint intact; release only its dead lock.
-   await fs.unlink(lockPath).catch(e=>{if(e.code!=='ENOENT')throw e;});
-  }
- }
- throw Error('Could not acquire scan lock');
-}
-const scanLock=a.plan?null:await acquireScanLock();
+const scanLock=a.plan?null:await acquireFileLock(lockPath);
 try{
 const previous=await read(path.join(home,'search-queue.json'),[]);
 const tasks=mergeTasks(buildDiscoveryPlan(c),previous,{resume:!!a.resume,refreshHours:c.discovery?.refresh_hours??24});
-const selected=task=>!task.retired&&(!a.portal||task.portal===a.portal);
+const selected=task=>!task.retired&&task.status!=='standby'&&(!a.portal||task.portal===a.portal);
 if(a.plan){console.log(JSON.stringify({version:2,sources:c.portals.length,taskCount:tasks.filter(selected).length,limits:{requests:Number.isFinite(maxRequests)?maxRequests:null,pagesPerTask:Number.isFinite(maxPages)?maxPages:null},tasks:tasks.filter(selected)},null,2));process.exit(0);}
 const capturesRaw=a['listing-capture']?JSON.parse(await fs.readFile(a['listing-capture'],'utf8')):[];
 const captures=Array.isArray(capturesRaw)?capturesRaw:[capturesRaw];
@@ -71,21 +60,26 @@ function registerSource(entry){
  for(const item of extra)if(!tasks.some(t=>t.id===item.id))tasks.push(item);
 }
 async function collect(rows,source,observation,{observedJob=true}={}){
- const accepted=[],log=getLog(source.name);log.found+=rows.length;
+ const accepted=[],log=getLog(source.name);let invalid=0;log.found+=rows.length;
  for(const row of rows){
   const j=posting(row,source,observation.pageUrl||observation.url||row.url,{observedJob});
-  if(!j){log.rejected++;report.rejected.push({portal:source.name,url:row.url||'',title:row.title||'',reason:'Not a published posting, invalid URL/title, or explicit source restriction'});continue;}
-  try{publicUrl(j.url);}catch(e){log.rejected++;report.rejected.push({portal:source.name,url:j.url,reason:e.message});continue;}
-  const signals=relevance(j,c,source);log.filtered+=signals.matches?1:0;log.review+=signals.matches?0:1;
-  accepted.push({...j,discoverySignals:signals,discoveryDisposition:signals.matches?'candidate':'review',observations:[{...observation,source:source.name,url:j.url}]});
+  if(!j){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:row.url||'',title:row.title||'',reason:'Not a published posting, invalid URL/title, or explicit source restriction'});continue;}
+  try{publicUrl(j.url);}catch(e){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:j.url,reason:e.message});continue;}
+  const signals=relevance(j,c,source);
+  const record=JSON.parse(JSON.stringify({...j,discoverySignals:signals,discoveryDisposition:signals.matches?'candidate':'review',observations:[{...observation,pageUrl:j.sourceUrl||observation.pageUrl,capturedAt:j.capturedAt||observation.capturedAt,source:source.name,url:j.url}]}));
+  const at=new Date().toISOString();
+  try{await validateLead({...record,id:'pending',key:normalizeUrl(record.url),state:'discovered',createdAt:at,lastSeenAt:at});}catch(e){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:j.url,reason:e.message});continue;}
+  accepted.push(record);log.filtered+=signals.matches?1:0;log.review+=signals.matches?0:1;
   registerSource(inferCareerSource(j.url));
  }
- if(accepted.length)await transaction(store=>{for(const job of accepted){const result=add(store,job);report[result.duplicate?'duplicates':'added'].push(result);}});
+ if(accepted.length)await stageDiscovery(home,accepted);
+ const keys=accepted.map(j=>normalizeUrl(j.url));keys.invalidCount=invalid;return keys;
 }
-for(const j of imported){
- if(a.portal&&j.portal!==a.portal)continue;
- const source=sourceMap.get(j.portal)||{name:j.portal||new URL(j.url).hostname};
- await collect([j],source,{layer:'Import',file:path.resolve(a.import),url:j.sourceUrl||j.url,capturedAt:j.capturedAt||new Date().toISOString()});
+const importGroups=new Map();
+for(const j of imported){if(a.portal&&j.portal!==a.portal)continue;const name=j.portal||new URL(j.url).hostname;if(!importGroups.has(name))importGroups.set(name,[]);importGroups.get(name).push(j);}
+for(const [name,rows] of importGroups){
+ const source=sourceMap.get(name)||{name};
+ await collect(rows,source,{layer:'Import',file:path.resolve(a.import),capturedAt:new Date().toISOString()});
 }
 for(const result of results){
  const task=tasks.find(t=>t.id===result.id);if(!selected(task))continue;
@@ -93,35 +87,53 @@ for(const result of results){
  if(result.cursor)task.cursor=result.cursor;
  if(result.status==='completed')delete task.cursor;
 }
-const credentials=new Map(),pagesThisRun=new Map(),usedCaptures=new Set();
-const fetchPage=async(url,opts)=>{
+const credentials=new Map(),pagesThisRun=new Map(),usedCaptures=new Set(),attemptedFailures=new Set();
+const robotsCache=new Map(await read(path.join(home,'robots-cache.json'),[]));
+const fetchPage=createDiscoveryFetcher({request,cache:robotsCache,respectRobots:c.discovery?.respect_robots!==false,minIntervalMs:c.discovery?.min_interval_ms??500,beforeRequest:()=>{
  if(report.requests>=maxRequests)throw Object.assign(Error('Configured request budget reached'),{budget:true});
- report.requests++;return request(url,opts);
-};
+ report.requests++;
+}});
+function activateFallbacks(){
+ for(const task of tasks.filter(t=>t.fallbackOnly)){
+  let primary=tasks.filter(t=>t.kind==='api'&&t.portal===task.portal&&!t.retired&&(task.parentTaskId?t.id===task.parentTaskId:task.kind==='web-search'||!t.query||!task.query||t.query===task.query));
+  if(!primary.length&&task.kind==='web-search')primary=tasks.filter(t=>t.kind==='listing'&&!t.fallbackOnly&&t.portal===task.portal&&!t.retired);
+  const usable=primary.length&&primary.every(t=>t.completed),needsFallback=!primary.length||primary.some(t=>['blocked','needs-agent'].includes(t.status));
+  if(needsFallback&&task.status==='standby')task.status='pending';
+  else if(usable&&task.status==='pending')task.status='standby';
+ }
+}
+activateFallbacks();
 // Visit one page per task in each round, preserving the rest when budgets expire.
 let progress=true;
 while(progress&&!a['import-only']){
  progress=false;
- for(const task of [...tasks].sort((left,right)=>(Date.parse(left.updatedAt)||0)-(Date.parse(right.updatedAt)||0))){
+ for(const task of [...tasks].sort((left,right)=>(Date.parse(left.updatedAt)||0)-(Date.parse(right.updatedAt)||0)||taskPriority(left)-taskPriority(right))){
   if(!selected(task)||task.completed||!['api','listing'].includes(task.kind))continue;
   const source=sourceMap.get(task.portal);if(source?.enabled===false)continue;if(!source){task.status='needs-agent';task.reason='source_not_configured';continue;}
   const pages=pagesThisRun.get(task.id)||0;
   if(pages>=maxPages){task.status='partial';task.reason='configured_page_budget';continue;}
   const currentUrl=task.cursor?.urls?.[0]||task.cursor?.url||task.url;
-  const observed=captures.find(x=>(x.taskId===task.id||!x.taskId)&&(x.url===currentUrl||x.pageUrl===currentUrl)&&!usedCaptures.has(x));
-  if(!observed&&['blocked','needs-agent'].includes(task.status))continue;
+  const observed=task.kind==='listing'?captures.find(x=>(x.taskId===task.id||!x.taskId)&&(x.url===currentUrl||x.pageUrl===currentUrl)&&!usedCaptures.has(x)):null;
+  if(pages===0&&a['retry-agent']&&task.status==='needs-agent'){task.seenPages=[];task.currentPages={};task.currentKeys=[];delete task.hasUnusableRecords;}
+  if(source.renderer==='agent'&&!observed){task.status='needs-agent';task.reason='interactive_browser_selected';activateFallbacks();continue;}
+  // Upgrade old temporary failures rather than permanently parking them as Agent work.
+  if(task.status==='needs-agent'&&/HTTP (?:408|425|429|5\d\d)|access_(?:429|5\d\d)|fetch failed|timeout|connection refused/i.test(task.reason||''))task.status='retry-wait';
+  if(!observed&&(['blocked','needs-agent'].includes(task.status)&&!a['retry-agent']||Date.parse(task.nextRetryAt||'')>Date.now()||attemptedFailures.has(task.id)))continue;
   // Offline replay never launches unrelated public requests.
   if(a['listing-capture']&&!observed)continue;
   if(!observed&&report.requests>=maxRequests){task.status='partial';task.reason='configured_request_budget';continue;}
   const log=getLog(source.name);
   try{
    let result;
-   if(task.kind==='api')result=await readApiPage(source,task,{fetchPage,credentials:credentials.get(source.name)});
+   const sourceFetch=(url,opts)=>fetchPage(url,opts,source);
+   if(task.kind==='api')result=await readApiPage(source,task,{fetchPage:sourceFetch,credentials:credentials.get(source.name)});
    else{
     if(observed){
      usedCaptures.add(observed);
      result={jobs:observed.links,status:200,finalUrl:observed.pageUrl||observed.url,nextUrls:(observed.nextUrls||[]).map(u=>new URL(u,observed.pageUrl||observed.url).href),paginationComplete:observed.paginationComplete,completionEvidence:observed.completionEvidence,blocked:observed.blocked===true};
-    }else result=await listing(currentUrl,{portal:source,fetchPage});
+    }else result=await listing(currentUrl,{portal:source,fetchPage:sourceFetch,noBrowser:!!a['no-browser'],beforeNavigation:()=>fetchPage.beforeNavigation(currentUrl,source)});
+    httpFailure(result);
+    if(result.blocked)throw Object.assign(Error('listing_access_'+(result.status||'blocked')),{blocked:true,status:result.status});
     result.url=currentUrl;result.rowCount=result.jobs.length;
     Object.assign(result,listingNext(source,task,result));
     const remaining=(task.cursor?.urls||[]).slice(1);
@@ -131,22 +143,30 @@ while(progress&&!a['import-only']){
    if(result.credentials)credentials.set(source.name,result.credentials);
    pagesThisRun.set(task.id,pages+1);progress=true;
    log.attempts.push({taskId:task.id,layer:observed?'AgentBrowser':task.kind==='api'?'API':'HTTP',url:result.url||task.url,page:result.page??task.cursor?.page??0,count:result.jobs.length,reason:result.reason});
-   await collect(result.jobs,source,{taskId:task.id,query:task.query,location:task.location,layer:observed?'AgentBrowser':task.kind==='api'?'API':'HTTP',url:currentUrl,pageUrl:result.finalUrl||currentUrl,capturedAt:observed?.capturedAt||new Date().toISOString()},{observedJob:task.kind==='api'});
-   const signature=hash(JSON.stringify(result.jobs.map(j=>j.url).sort()));
+   const collected=await collect(result.jobs,source,{taskId:task.id,query:task.query,location:task.location,layer:observed||result.rendered?'AgentBrowser':task.kind==='api'?'API':'HTTP',url:currentUrl,pageUrl:result.finalUrl||currentUrl,capturedAt:observed?.capturedAt||new Date().toISOString()},{observedJob:task.kind==='api'});
+   if(collected.invalidCount||result.unusableRecords){result.complete=false;result.reason='unusable_posting_records';task.hasUnusableRecords=true;}
+   task.currentKeys=[...new Set([...(task.currentKeys||[]),...collected])];
+   const signature=hash(JSON.stringify(result.jobs.map(j=>[normalizeUrl(j.url),j.title,j.contract||'',j.publishedAt||'']).sort()));
+   task.currentPages={...(task.currentPages||{}),[currentUrl+':'+(result.page??task.cursor?.page??0)]:signature};
+   const pageKey=currentUrl+':'+(result.page??task.cursor?.page??0);
+   const incremental=task.refreshing&&source.incremental?.newest_first===true&&source.incremental?.stop_on_unchanged===true&&Date.now()-Date.parse(task.lastFullScanAt||'')<(source.incremental.full_refresh_hours??168)*3600000&&task.baselinePages?.[pageKey]===signature;
    const repeated=result.jobs.length&&(task.seenPages||[]).includes(signature)&&observed?.paginationComplete!==true;
    task.seenPages=[...new Set([...(task.seenPages||[]),signature])];
-   task.cursor=result.nextCursor;task.completed=!!result.complete&&!repeated;task.reason=repeated?'repeated_page':result.reason;
+   task.cursor=incremental?null:result.nextCursor;task.completed=!task.hasUnusableRecords&&(incremental||!!result.complete&&!repeated);task.reason=task.hasUnusableRecords&&!result.nextCursor?'unusable_posting_records':incremental?'incremental_unchanged_page':repeated?'repeated_page':result.reason;
+   task.incrementalStopped=incremental;task.attempts=0;delete task.nextRetryAt;delete task.failureClass;
    task.status=task.completed?'completed':result.nextCursor&&!repeated?'partial':'needs-agent';
+   if(task.completed&&!incremental)task.lastFullScanAt=new Date().toISOString();
    task.updatedAt=new Date().toISOString();if(task.completed)task.finishedAt=task.updatedAt;
    if(repeated)task.cursor=null;
    if(task.kind==='api'&&!task.completed&&!task.cursor){
-    const fallback={kind:'web-search',portal:task.portal,parentTaskId:task.id,url:task.url,query:[source.search_domain?`site:${source.search_domain}`:'',task.query,task.location].filter(Boolean).join(' ')||task.url,reason:task.reason,status:'pending',completed:false};fallback.id=taskId(fallback);
+    const fallback={kind:'web-search',fallbackOnly:true,portal:task.portal,parentTaskId:task.id,url:task.url,query:[source.search_domain?`site:${source.search_domain}`:'',task.query,task.location].filter(Boolean).join(' ')||task.url,reason:task.reason,status:'pending',completed:false};fallback.id=taskId(fallback);
     if(!tasks.some(x=>x.id===fallback.id))tasks.push(fallback);
    }
    for(const entry of result.careerSources||[])registerSource(entry);
-   await persist();
+   activateFallbacks();await persist();
   }catch(e){
-   task.status=e.budget?'partial':'needs-agent';task.reason=e.message;task.updatedAt=new Date().toISOString();
+   Object.assign(task,failureDisposition(e,{attempt:(task.attempts||0)+1,baseSeconds:c.discovery?.retry_base_seconds??30,maxSeconds:c.discovery?.retry_max_seconds??1800}),{updatedAt:new Date().toISOString()});
+   attemptedFailures.add(task.id);activateFallbacks();
    log.attempts.push({taskId:task.id,layer:task.kind==='api'?'API':'HTTP',url:currentUrl,error:e.message});await persist();
   }
  }
@@ -171,8 +191,26 @@ report.searchRequests=tasks.filter(t=>selected(t)&&!t.completed);
 report.coverage={planned:tasks.filter(selected).length,completed:tasks.filter(t=>selected(t)&&t.completed).length,pending:report.searchRequests.length};
 report.complete=report.coverage.pending===0;report.finishedAt=new Date().toISOString();
 await persist();
-await transaction(store=>{store.scans.push(report);store.scans=store.scans.slice(-100);});
+await write(path.join(home,'robots-cache.json'),[...robotsCache]);
+await transaction(store=>{
+ const rulesHash=hash(JSON.stringify({include:c.include_keywords,roles:c.role_keywords,exclude:c.exclude_keywords,aliases:c.keyword_aliases,sources:[...sourceMap.values()].map(s=>({name:s.name,include:s.include_keywords,roles:s.role_keywords,exclude:s.exclude_keywords,aliases:s.keyword_aliases}))}));
+ if(store.discoveryRulesHash!==rulesHash){
+  for(const job of store.jobs.filter(j=>j.discoveryOnly&&['discovered','possible-duplicate'].includes(j.state))){const signals=relevance(job,c,sourceMap.get(job.portal)||{});job.discoverySignals=signals;job.discoveryDisposition=signals.matches?'candidate':'review';}
+  store.discoveryRulesHash=rulesHash;
+ }
+ for(const task of tasks.filter(t=>selected(t)&&t.completed&&!t.incrementalStopped&&t.currentKeys)){
+  const seen=new Set(task.currentKeys);
+  for(const job of store.jobs){
+   if(!(job.observations||[]).some(o=>o.taskId===task.id)||[job.url,...(job.urlAliases||[])].some(url=>seen.has(normalizeUrl(url))))continue;
+   const signals=new Map((job.absenceSignals||[]).map(s=>[s.taskId,s]));signals.set(task.id,{taskId:task.id,observedAt:task.finishedAt,reason:'absent_from_complete_snapshot'});job.absenceSignals=[...signals.values()];
+   // Missing from a search snapshot requests verification, never an expiry transition.
+   if(Date.parse(job.lastSeenAt)<=Date.parse(task.finishedAt))job.possiblyClosed=true;
+  }
+ }
+ const summary=scan=>({version:scan.version,startedAt:scan.startedAt,finishedAt:scan.finishedAt,complete:scan.complete,requests:scan.requests,coverage:scan.coverage,addedCount:scan.addedCount??scan.added?.length??0,duplicateCount:scan.duplicateCount??scan.duplicates?.length??0,rejectedCount:scan.rejectedCount??scan.rejected?.length??0});
+ store.scans=[...store.scans.map(summary),summary(report)].slice(-100);
+},{onDiscovery:changes=>{for(const result of changes)report[result.duplicate?'duplicates':'added'].push(result);}});
 await write(path.join(home,'last-scan.json'),report);
-await write(path.join(home,'scan-agent-task.md'),`Read search-queue.json and the Skill workflow discover-jobs.md. Handle every pending web-search/career-discovery task and listing/API task needing Agent access. Use IAB for actual website pages; use Agent WebSearch for open-web search. API success does not complete other tasks. Follow actual next pages/load-more until observed end; capture pagination URLs. Import arbitrary published detail links with scan --import FILE --import-only. Add employer career sites with scan --sources FILE. Replay observed lists with scan --listing-capture FILE. Persist outcomes with scan --task-results FILE --import-only (id, status: completed/partial/blocked, capturedAt, evidence, optional cursor). Do not mark partial or blocked searches completed. Keep predictions, training advertisements and search summaries separate from published vacancies; full JD/liveness and candidate gates belong to process-job.md. Configured budgets preserve pending tasks; scan --resume continues them. Pending tasks: ${report.coverage.pending}.\n`);
+await write(path.join(home,'scan-agent-task.md'),`Read search-queue.json and the Skill workflow discover-jobs.md. Handle every pending web-search/career-discovery task and listing/API task needing Agent access. Retry-wait tasks resume automatically after nextRetryAt; do not bypass robots exclusions or access challenges. Choose public HTTP, an isolated Playwright browser, or an available interactive browser according to site behavior; use Agent WebSearch for open-web search. API success only parks explicitly configured fallback tasks; independent discovery remains active. Follow actual next pages/load-more until observed end; capture pagination URLs. Import arbitrary published detail links with scan --import FILE --import-only. Add employer career sites with scan --sources FILE. Replay observed lists with scan --listing-capture FILE. Persist outcomes with scan --task-results FILE --import-only (id, status: completed/partial/blocked, capturedAt, evidence, optional cursor). Do not mark partial or blocked searches completed. Keep predictions, training advertisements and search summaries separate from published vacancies; Review leads require cheap triage before process-job; candidate leads proceed to full JD/liveness and candidate gates in process-job.md. Configured budgets preserve pending tasks; scan --resume continues them. Pending tasks: ${report.coverage.pending}.\n`);
 await exportList();console.log(JSON.stringify(report,null,2));
-}finally{if(scanLock){await scanLock.close();await fs.unlink(lockPath);}}
+}finally{if(scanLock)await scanLock.close();}

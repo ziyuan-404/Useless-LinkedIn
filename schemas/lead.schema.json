@@ -2,32 +2,374 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Useless LinkedIn discovered lead",
   "type": "object",
-  "required": ["id", "key", "url", "state", "createdAt", "lastSeenAt"],
+  "required": [
+    "id",
+    "key",
+    "url",
+    "state",
+    "createdAt",
+    "lastSeenAt"
+  ],
   "properties": {
-    "id": {"type": "string", "minLength": 1},
-    "key": {"type": "string", "minLength": 1},
-    "url": {"type": "string", "format": "uri"},
-    "title": {"type": "string"},
-    "company": {"type": "string"},
-    "portal": {"type": "string"},
-    "isJob": {"type": "boolean"},
-    "discoveryDisposition": {"enum": ["candidate", "review"]},
-    "discoverySignals": {"type": "object", "required": ["matches", "needsFullJd", "contractHits", "roleHits", "excludeHits"], "properties": {"matches": {"type": "boolean"}, "needsFullJd": {"type": "boolean"}, "contractHits": {"type": "array", "items": {"type": "string"}}, "roleHits": {"type": "array", "items": {"type": "string"}}, "excludeHits": {"type": "array", "items": {"type": "string"}}}},
-    "observations": {"type": "array", "items": {"type": "object", "required": ["layer", "url", "capturedAt"], "properties": {"layer": {"enum": ["API", "HTTP", "AgentBrowser", "Import"]}, "url": {"type": "string", "format": "uri"}, "capturedAt": {"type": "string", "format": "date-time"}, "source": {"type": "string"}, "taskId": {"type": "string"}, "query": {"type": "string"}, "location": {"type": "string"}, "pageUrl": {"type": "string", "format": "uri"}}}},
-    "state": {"$ref": "state.schema.json"},
-    "createdAt": {"type": "string", "format": "date-time"},
-    "lastSeenAt": {"type": "string", "format": "date-time"},
-    "possibleDuplicates": {"type": "array", "items": {"type": "string"}},
-    "historyMatch": {"type": "boolean"},
-    "historyEvidence": {"type": ["object", "null"], "required": ["source", "url"], "properties": {"source": {"enum": ["dashboard", "dashboard-db"]}, "recordId": {"type": "string"}, "sheet": {"type": ["string", "null"]}, "row": {"type": ["integer", "null"], "minimum": 1}, "url": {"type": "string"}}},
-    "applicationMode": {"enum": ["precision", "bulk"]},
-    "output": {"type": "string"},
-    "dashboardSynced": {"type": "boolean"},
-    "submitted": {"type": "boolean"},
-    "reason": {"type": "string"},
-    "reviewEvidence": {"type": "string"},
-    "approvalSnapshot": {"type": "object", "required": ["id", "contextHash", "assessmentHash", "materials", "answersHash", "reviewedAt", "reviewEvidence"], "properties": {"id": {"type": "string"}, "contextHash": {"type": "string"}, "assessmentHash": {"type": "string"}, "materials": {"type": "array", "items": {"type": "object", "required": ["path", "sha256"], "properties": {"path": {"type": "string"}, "sha256": {"type": "string"}}}}, "answersHash": {"type": "string"}, "reviewedAt": {"type": "string", "format": "date-time"}, "reviewEvidence": {"type": "string"}}},
-    "submissionEvidence": {"type": "string"},
-    "events": {"type": "array", "items": {"type": "object", "required": ["at", "from", "to"], "properties": {"at": {"type": "string", "format": "date-time"}, "from": {"$ref": "state.schema.json"}, "to": {"$ref": "state.schema.json"}, "authorizationGrantIds": {"type": "array", "items": {"type": "string"}}}}}
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "title": {
+      "type": "string"
+    },
+    "company": {
+      "type": "string"
+    },
+    "portal": {
+      "type": "string"
+    },
+    "isJob": {
+      "type": "boolean"
+    },
+    "discoveryDisposition": {
+      "enum": [
+        "candidate",
+        "review"
+      ]
+    },
+    "discoverySignals": {
+      "type": "object",
+      "required": [
+        "matches",
+        "needsFullJd",
+        "contractHits",
+        "roleHits",
+        "excludeHits"
+      ],
+      "properties": {
+        "matches": {
+          "type": "boolean"
+        },
+        "needsFullJd": {
+          "type": "boolean"
+        },
+        "contractHits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "roleHits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludeHits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "layer",
+          "url",
+          "capturedAt"
+        ],
+        "properties": {
+          "layer": {
+            "enum": [
+              "API",
+              "HTTP",
+              "AgentBrowser",
+              "Import"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "capturedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "pageUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "firstSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "state": {
+      "$ref": "state.schema.json"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lastSeenAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "possibleDuplicates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "historyMatch": {
+      "type": "boolean"
+    },
+    "historyEvidence": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "source",
+        "url"
+      ],
+      "properties": {
+        "source": {
+          "enum": [
+            "dashboard",
+            "dashboard-db"
+          ]
+        },
+        "recordId": {
+          "type": "string"
+        },
+        "sheet": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "row": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "applicationMode": {
+      "enum": [
+        "precision",
+        "bulk"
+      ]
+    },
+    "output": {
+      "type": "string"
+    },
+    "dashboardSynced": {
+      "type": "boolean"
+    },
+    "submitted": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "reviewEvidence": {
+      "type": "string"
+    },
+    "approvalSnapshot": {
+      "type": "object",
+      "required": [
+        "id",
+        "contextHash",
+        "assessmentHash",
+        "materials",
+        "answersHash",
+        "reviewedAt",
+        "reviewEvidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "contextHash": {
+          "type": "string"
+        },
+        "assessmentHash": {
+          "type": "string"
+        },
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "answersHash": {
+          "type": "string"
+        },
+        "reviewedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewEvidence": {
+          "type": "string"
+        }
+      }
+    },
+    "submissionEvidence": {
+      "type": "string"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "at",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "from": {
+            "$ref": "state.schema.json"
+          },
+          "to": {
+            "$ref": "state.schema.json"
+          },
+          "authorizationGrantIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "urlAliases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      }
+    },
+    "verifiedIdentity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "employerOriginal": {
+      "type": "boolean"
+    },
+    "possiblyClosed": {
+      "type": "boolean"
+    },
+    "absenceSignals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "taskId",
+          "observedAt",
+          "reason"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "identityEvidence": {
+      "type": "object",
+      "required": [
+        "url",
+        "capturedAt",
+        "evidence"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "if": {
+    "required": [
+      "verifiedIdentity"
+    ]
+  },
+  "then": {
+    "required": [
+      "identityEvidence"
+    ]
   }
 }

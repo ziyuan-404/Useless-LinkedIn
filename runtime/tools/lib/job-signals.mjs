@@ -11,7 +11,19 @@ export function normalizeUrl(raw){
       if(job)url.searchParams.set('mokahr_job_id',decodeURIComponent(job[1]));
     }
     if(url.hostname==='app.mokahr.com'||!/^#\/(?:jobs?|positions?)\/[^/?#]+/i.test(url.hash))url.hash='';
-    for(const key of [...url.searchParams.keys()])if(/^(utm_.*|gh_src|fbclid|gclid|mc_cid|mc_eid|igshid|_hsenc|_hsmi|trk|trackingid)$/i.test(key))url.searchParams.delete(key);
+    if(/(^|\.)welcometothejungle\.com$/.test(url.hostname)){
+      url.hostname='www.welcometothejungle.com';url.pathname=url.pathname.replace(/^\/[a-z]{2}(?:-[a-z]{2})?\/companies\//i,'/companies/');
+    }
+    if(/(^|\.)linkedin\.com$/.test(url.hostname)){
+      const id=/\/jobs\/view\/(?:[^/]*-)?(\d+)\/?$/.exec(url.pathname)?.[1];
+      if(id){url.hostname='www.linkedin.com';url.pathname=`/jobs/view/${id}`;url.search='';}
+    }
+    if(url.hostname==='boards.greenhouse.io')url.hostname='job-boards.greenhouse.io';
+    if(['job-boards.greenhouse.io','www.welcometothejungle.com'].includes(url.hostname)){
+      const id=url.searchParams.get('gh_jid');if(id&&/^\d+$/.test(id)&&url.pathname.split('/').filter(Boolean)[0]!=='embed'){url.pathname=`/${url.pathname.split('/').filter(Boolean)[0]}/jobs/${id}`;url.searchParams.delete('gh_jid');}
+    }
+    // Language selectors alter presentation, while job IDs and application tokens remain.
+    for(const key of [...url.searchParams.keys()])if(/^(utm_.*|gh_src|fbclid|gclid|mc_cid|mc_eid|igshid|_hsenc|_hsmi|trk|trackingid|refid|lang|language|locale)$/i.test(key))url.searchParams.delete(key);
     url.searchParams.sort();
     if(url.pathname.length>1)url.pathname=url.pathname.replace(/\/$/,'');
     return url.href;
@@ -45,6 +57,7 @@ export function classifyLiveness({status=0,requestedUrl='',finalUrl='',bodyText=
   if(status===404||status===410)return {result:'expired',code:'http_gone',reason:`HTTP ${status}`};
   if(/les candidatures ne sont plus accept[ée]es|n.accept[eé] plus de candidatures|offre (?:n.est plus|plus) disponible/i.test(bodyText))return {result:'expired',code:'fr_closed',reason:'Applications closed'};
   if(/job (?:is )?no longer available|this job has expired|position has been filled|applications? (?:are|is) closed/i.test(bodyText))return {result:'expired',code:'closed',reason:'Applications closed'};
+  if(/stelle (?:ist )?(?:nicht mehr verfügbar|bereits besetzt)|position (?:ist )?bereits besetzt|oferta (?:ya no está disponible|cerrada)|puesto (?:ya )?cubierto|posizione (?:non è più disponibile|chiusa)|vaga (?:encerrada|não está mais disponível)|职位已关闭|岗位已下线/i.test(bodyText))return {result:'expired',code:'localized_closed',reason:'Applications closed'};
   const id=new URL(requestedUrl||'https://example.invalid').searchParams.get('jk');
   if(id&&finalUrl&&!finalUrl.includes(id))return {result:'uncertain',code:'redirected_off_posting',reason:'Posting identifier missing after redirect'};
   if(applyControls.some(x=>/postuler|apply|candidater|envoyer.*candidature/i.test(x)))return {result:'active',code:'apply_control_visible',reason:'Visible apply control'};

@@ -12,8 +12,8 @@ query_matrix:
   contracts: [alternance, apprentissage]
   roles: [développeur, data analyst, data engineer, intelligence artificielle, automatisation, RPA, logiciel, informatique, robotique, business intelligence]
 # Discovery scope does not assert willingness to relocate; assess mobility on full JD.
-locations: [France, Île-de-France, ""]
-include_keywords: [alternance, alternant, apprentissage, apprenti, apprentice, apprenticeship, stage, intern]
+locations: [France]
+include_keywords: [alternance, alternant, apprentissage, apprenti, apprentice, apprenticeship, stage, stagiaire, intern, internship, VIE, work-study]
 role_keywords: [développeur, developpeur, developer, développement, developpement, informatique, logiciel, python, java, data, analyst, BI, SQL, automatisation, automation, RPA, intelligence artificielle, machine learning, no code, low code, embarqué, robotique, support IT]
 exclude_keywords: [senior, principal, director, head of]
 discovery:
@@ -24,9 +24,23 @@ discovery:
   max_requests_per_run: 80
   max_pages_per_task: 0
   refresh_hours: 24
+  web_refresh_hours: 168
+  respect_robots: true
+  min_interval_ms: 500
+  retry_base_seconds: 30
+  retry_max_seconds: 1800
+  # Broad OR queries cover contract/role families without repeating every literal combination.
+  # Remove web_queries to use every query_matrix query for web discovery too.
+  web_queries:
+    - '(alternance OR apprentissage OR stage OR stagiaire OR VIE OR "work study") (développeur OR informatique OR logiciel OR python OR "no code" OR "low code")'
+    - '(alternance OR apprentissage OR stage OR stagiaire OR VIE OR "work study") (data OR SQL OR "business intelligence" OR "machine learning")'
+    - '(alternance OR apprentissage OR stage OR stagiaire OR VIE OR "work study") (automatisation OR automation OR RPA OR "intelligence artificielle")'
+    - '(alternance OR apprentissage OR stage OR stagiaire OR VIE OR "work study") (robotique OR embarqué OR "support IT")'
 portals:
   - name: Welcome to the Jungle
     provider: wttj
+    listing_mode: fallback
+    web_search: fallback
     enabled: true
     search_domain: welcometothejungle.com
     search_url: https://www.welcometothejungle.com/fr/jobs?query={query}&country=FR
@@ -35,20 +49,28 @@ portals:
       filters: 'offices.country_code:FR'
       page_size: 100
   - name: HelloWork
+    web_search: fallback
+    renderer: auto
     enabled: true
     search_url: https://www.hellowork.com/fr-fr/emploi/recherche.html?k={query}&l={location}
     job_pattern: /fr-fr/emplois/\d+
   - name: Indeed France
+    web_search: fallback
+    renderer: auto
     enabled: true
     search_url: https://fr.indeed.com/jobs?q={query}&l={location}
     job_pattern: (viewjob|rc/clk).*jk=
   - name: LinkedIn
+    web_search: fallback
+    renderer: auto
     allowed_hosts: [www.linkedin.com, fr.linkedin.com, linkedin.com]
     search_domain: linkedin.com
     enabled: true
     search_url: https://www.linkedin.com/jobs/search/?keywords={query}&location={location}
     job_pattern: /jobs/view/
   - name: La Bonne Alternance
+    web_search: fallback
+    renderer: auto
     enabled: true
     search_url: https://labonnealternance.apprentissage.beta.gouv.fr/recherche?display=list&job_name={query}
     job_pattern: /emploi/offres_emploi_(lba|partenaires)/[0-9a-f]{24}/

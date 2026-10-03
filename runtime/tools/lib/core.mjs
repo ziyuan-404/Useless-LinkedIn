@@ -7,6 +7,8 @@ import {isIP} from 'node:net';
 import {root,toolsRoot,pythonCommand} from '../runtime.mjs';
 import {normalizeUrl,fingerprintText,similarity,classifyLiveness} from './job-signals.mjs';
 import {validateLead} from './schema.mjs';
+import {acquireFileLock} from './file-lock.mjs';
+import {pendingDiscovery,acknowledgeDiscovery} from './discovery-journal.mjs';
 export {classifyLiveness};
 export const home=path.resolve(root,process.env.USELESS_LINKEDIN_STATE_DIR||'个人资料/applications/automation');
 if(!home.startsWith(root+path.sep))throw Error('State directory must remain within workspace');
@@ -31,7 +33,7 @@ export function publicUrl(url){
  if(!process.env.USELESS_LINKEDIN_TEST_LOCAL&&(host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||host.endsWith('.internal')||isIP(host)&&privateAddress(host)))throw Error('Private host refused');
  return u.href;
 }
-async function assertPublicUrl(url){
+export async function assertPublicUrl(url){
  const href=publicUrl(url),host=new URL(href).hostname.replace(/^\[|\]$/g,'');
  if(!process.env.USELESS_LINKEDIN_TEST_LOCAL){
   const addresses=isIP(host)?[{address:host}]:await lookup(host,{all:true,verbatim:true});
@@ -52,7 +54,7 @@ export async function request(url,opts={}){
    current=next;await assertPublicUrl(current);continue;
   }
   const body=await r.text();if(body.length>8e6)throw Error('Response exceeds size limit');
-  return {status:r.status,finalUrl:current,body};
+  return {status:r.status,finalUrl:current,body,headers:Object.fromEntries(r.headers)};
  }
  throw Error('Too many redirects');
 }
@@ -66,13 +68,51 @@ export function extract(raw,url,layer){const p=parse(raw.body);const j=p.jobs[0]
  return {url,finalUrl:raw.finalUrl,layer,status:raw.status,title,company,jd,bodyText:raw.visibleText||p.text,links:p.links,structuredJob:j||null,liveness:live,capturedAt:new Date().toISOString()};}
 export async function capture(url){const attempts=[];let best;for(const [layer,fn] of [['HTTP',request]]){try{const raw=await fn(url);const x=extract(raw,url,layer);attempts.push({layer,status:x.status,liveness:x.liveness});if(!best||x.jd.length>best.jd.length||x.liveness.result==='active')best=x;if(x.liveness.result==='active'||x.liveness.result==='expired')break;}catch(e){attempts.push({layer,error:e.message});}}
  return {...(best||{url,jd:'',liveness:{result:'uncertain',code:'fetch_failed',reason:'All fetch attempts failed'}}),attempts,searchNeeded:!best||best.liveness.result==='uncertain'};}
-export async function transaction(fn){await fs.mkdir(home,{recursive:true});const lock=path.join(home,'.lock');const h=await fs.open(lock,'wx');try{const store=await read(path.join(home,'leads.json'),{version:1,jobs:[],scans:[]});if(store.version!==1||!Array.isArray(store.jobs)||!Array.isArray(store.scans))throw Error('Invalid lead store');const result=await fn(store);for(const job of store.jobs)await validateLead(job);await write(path.join(home,'leads.json'),store);return result;}finally{await h.close();await fs.unlink(lock);}}
-export function add(store,job){const key=normalizeUrl(job.url);if(!key)throw Error('Invalid posting URL');const old=store.jobs.find(x=>x.key===key);if(old){old.lastSeenAt=new Date().toISOString();old.sources=[...new Set([...(old.sources||[]),job.portal||job.url])];
- const observations=new Map([...(old.observations||[]),...(job.observations||[])].map(o=>[JSON.stringify([o.taskId,o.source,o.url,o.query,o.layer,o.capturedAt]),o]));old.observations=[...observations.values()];
+export async function transaction(fn,{onDiscovery}={}){
+ await fs.mkdir(home,{recursive:true});const lock=await acquireFileLock(path.join(home,'.lock'));
+ try{
+  const store=await read(path.join(home,'leads.json'),{version:1,jobs:[],scans:[]});if(store.version!==1||!Array.isArray(store.jobs)||!Array.isArray(store.scans))throw Error('Invalid lead store');
+  const before=new Map(store.jobs.map(j=>[j.id,JSON.stringify(j)])),pending=await pendingDiscovery(home);let receipt=store.discoveryReceipt||0;const changes=[];
+  if(store.observationVersion!==2){for(const job of store.jobs)if(job.observations)job.observations=compactObservations(job.observations);store.observationVersion=2;}
+  for(const batch of pending){if(batch.sequence<=receipt)continue;for(const job of batch.jobs)changes.push(add(store,job));receipt=batch.sequence;}
+  onDiscovery?.(changes);const result=await fn(store);if(pending.length)store.discoveryReceipt=receipt;
+  for(const job of store.jobs)if(before.get(job.id)!==JSON.stringify(job))await validateLead(job);
+  await write(path.join(home,'leads.json'),store);if(pending.length)acknowledgeDiscovery(home,receipt);return result;
+ }finally{await lock.close();}
+}
+export function compactObservations(rows){
+ const observations=new Map();
+ for(const row of rows){
+  const key=JSON.stringify([row.source,normalizeUrl(row.url),row.query||'',row.location||'',row.layer]),old=observations.get(key),first=row.firstSeenAt||row.capturedAt,last=row.lastSeenAt||row.capturedAt;
+  if(!old)observations.set(key,{...row,firstSeenAt:first,lastSeenAt:last,count:row.count||1});
+  else{const firstSeenAt=[old.firstSeenAt,first].sort()[0],lastSeenAt=[old.lastSeenAt,last].sort().at(-1);observations.set(key,{...old,...row,firstSeenAt,lastSeenAt,capturedAt:lastSeenAt,count:old.count+(row.count||1)});}
+ }
+ return [...observations.values()];
+}
+const indexes=new WeakMap();
+const verifiedKey=job=>job.verifiedIdentity&&job.identityEvidence?.url&&Number.isFinite(Date.parse(job.identityEvidence.capturedAt))&&String(job.identityEvidence.evidence||'').trim()?job.verifiedIdentity:null;
+function jobIndex(store){
+ if(!indexes.has(store)){
+  const urls=new Map(),verified=new Map();
+  for(const j of store.jobs){for(const url of [j.url,...(j.urlAliases||[])]){const key=normalizeUrl(url);if(key&&!urls.has(key))urls.set(key,j);}if(verifiedKey(j))verified.set(verifiedKey(j),j);}
+  indexes.set(store,{urls,verified});
+ }
+ return indexes.get(store);
+}
+export function add(store,job){const key=normalizeUrl(job.url);if(!key)throw Error('Invalid posting URL');const verified=verifiedKey(job),index=jobIndex(store),old=index.urls.get(key)||(verified&&index.verified.get(verified));if(old){old.lastSeenAt=new Date().toISOString();old.sources=[...new Set([...(old.sources||[]),job.portal||job.url])];
+ old.observations=compactObservations([...(old.observations||[]),...(job.observations||[])]);
+ old.urlAliases=[...new Set([...(old.urlAliases||[]),old.url,job.url])];index.urls.set(key,old);
+ old.key=normalizeUrl(old.url);
+ if(['discovered','possible-duplicate'].includes(old.state)&&/^(?:voir l['’]offre|postuler|apply(?: now)?|view (?:job|details))$/i.test(old.title||'')&&job.title)old.title=job.title;
+ // Prefer an explicitly verified employer URL; an ID/title guess cannot merge sources.
+ if(verified&&job.employerOriginal===true&&!old.submitted&&!old.historyMatch){old.url=job.url;old.key=key;old.employerOriginal=true;}
+ if(verified){old.verifiedIdentity=verified;old.identityEvidence=job.identityEvidence;index.verified.set(verified,old);}
+ if(old.discoveryDisposition==='review'&&job.discoveryDisposition==='candidate'){old.discoveryDisposition='candidate';old.discoverySignals=job.discoverySignals;}
+ old.possiblyClosed=false;if(old.absenceSignals)for(const signal of old.absenceSignals)signal.resolvedAt=old.lastSeenAt;
  // Enrich empty discovery fields without overwriting assessed/submitted records.
  for(const field of ['company','location','requisitionId','publishedAt'])if(!old[field]&&job[field])old[field]=job[field];
  return {duplicate:true,id:old.id};}
- const id=hash(key).slice(0,16),fp=fingerprintText(job.jd||'');const possible=store.jobs.filter(x=>(fp&&x.fingerprint&&similarity(fp,x.fingerprint)>=.92)||(job.company&&x.company===job.company&&x.title===job.title&&x.location===job.location)).map(x=>x.id);
- store.jobs.push({...job,id,key,fingerprint:fp,possibleDuplicates:possible,sources:[job.portal||job.url],createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString(),state:possible.length?'possible-duplicate':'discovered',dashboardSynced:false,submitted:false});return {id,possibleDuplicates:possible};}
+ const id=hash(key).slice(0,16),fp=fingerprintText(job.jd||'');const possible=fp||job.company?store.jobs.filter(x=>(fp&&x.fingerprint&&similarity(fp,x.fingerprint)>=.92)||(job.company&&x.company===job.company&&x.title===job.title&&x.location===job.location)).map(x=>x.id):[];
+ const created={...job,observations:compactObservations(job.observations||[]),id,key,fingerprint:fp,possibleDuplicates:possible,sources:[job.portal||job.url],createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString(),state:possible.length?'possible-duplicate':'discovered',dashboardSynced:false,submitted:false};store.jobs.push(created);index.urls.set(key,created);if(verified)index.verified.set(verified,created);return {id,possibleDuplicates:possible};}
 export async function exportList(){const store=await read(path.join(home,'leads.json'),{jobs:[]});const escape=s=>String(s||'').replace(/\|/g,'/').replace(/\n/g,' ');await write(path.join(home,'list.md'),'# 自动发现岗位与流程阶段（机器状态；历史申请以 Dashboard 数据库及成功凭证核对）\n\n| ID | 公司 | 岗位 | 来源 | 状态 | 优先级 | URL |\n|---|---|---|---|---|---|---|\n'+store.jobs.map(x=>`| ${x.id} | ${escape(x.company)} | ${escape(x.title)} | ${escape(x.portal)} | ${x.state} | ${x.priority||''} | ${x.url} |`).join('\n')+'\n');}
 export {normalizeUrl};

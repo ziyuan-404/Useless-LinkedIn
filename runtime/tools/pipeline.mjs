@@ -9,13 +9,17 @@ import {assertTransition} from './lib/state-machine.mjs';
 import {postingIdentityMismatch} from './lib/listings.mjs';
 import {currentCapture} from './lib/pipeline-capture.mjs';
 import {checkSources,validateDecision} from './lib/assessment-validation.mjs';
-const a=args();if(a.help){console.log('pipeline.mjs --url URL [--assessment FILE] [--no-browser] | --id ID [--assessment FILE]');process.exit(0);}
+import {acquireFileLock} from './lib/file-lock.mjs';
+const a=args();if(a.help){console.log('pipeline.mjs --url URL [--assessment FILE] [--no-browser] | --id ID [--assessment FILE] [--include-review]');process.exit(0);}
+// Triage before any history rebuild, detail request, profile read or A–G prompt.
+const initialStore=await read(path.join(home,'leads.json'),{jobs:[]}),initialJob=a.id?initialStore.jobs.find(j=>j.id===a.id):initialStore.jobs.find(j=>j.url===a.url);
+if(initialJob?.discoveryDisposition==='review'&&!a['include-review']&&!a.assessment){console.log(JSON.stringify({id:initialJob.id,state:initialJob.state,triage:'review',skipped:true,reason:'Discovery signals require triage; use --include-review after reviewing the lead.'}));process.exit(0);}
 const historyResult=spawnSync(process.execPath,[path.join(toolsRoot,'tracker.mjs'),'--history'],{encoding:'utf8'});if(historyResult.status!==0)throw Error('Cannot check application history: '+historyResult.stderr);
 let store=await read(path.join(home,'leads.json'),{jobs:[]});let job=a.id?store.jobs.find(j=>j.id===a.id):store.jobs.find(j=>j.url===a.url);
 if(!job){if(!a.url)throw Error('Provide --url or valid --id');const r=await transaction(s=>add(s,{url:a.url,title:a.role||'',company:a.company||'',portal:'direct'}));store=await read(path.join(home,'leads.json'));job=store.jobs.find(j=>j.id===r.id);}
 if(['materials-pending-review','review-required','approved','submitting','submission-unconfirmed','submitted','followup-due','blocked-login','blocked-captcha'].includes(job.state)){console.log(JSON.stringify({id:job.id,state:job.state,historyMatch:job.historyMatch||false}));process.exit(0);}
 const dir=await jobDirectory(root,home,job);await fs.mkdir(dir,{recursive:true});
-if(!job.directory){job.directory=path.basename(dir);await transaction(s=>{s.jobs.find(j=>j.id===job.id).directory=job.directory;});}const lock=await fs.open(path.join(dir,'.lock'),'wx');
+if(!job.directory){job.directory=path.basename(dir);await transaction(s=>{s.jobs.find(j=>j.id===job.id).directory=job.directory;});}const lock=await acquireFileLock(path.join(dir,'.lock'));
 try{
  const captured=await currentCapture({job,dir,webCapture:a['web-capture'],assessment:a.assessment});
  await write(path.join(dir,'capture.json'),captured);await write(path.join(dir,'jd.txt'),captured.jd||'');
@@ -61,4 +65,4 @@ try{
  }
  }
  }
-}finally{await lock.close();await fs.unlink(path.join(dir,'.lock'));}
+}finally{await lock.close();}

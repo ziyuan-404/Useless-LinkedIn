@@ -15,3 +15,7 @@ Excluded: candidate profiles and source snapshots, original resumes/photos, cont
 Running a local tool may use third-party services: public job URLs and search terms are sent to job boards; an Agent may send selected local content to its model provider; upload or submission discloses data to the destination. This repository does not guarantee offline execution or a model provider’s retention policy. Check your runtime and services before using personal data.
 
 运行时抓取会向网站发送URL与搜索词；Agent可能将选择的材料交给模型服务。上传与申请会向目标平台披露资料。请检查实际运行环境；“文件保存在本地”不等于“没有任何外部数据传输”。
+
+The published job-discovery regression tests use synthetic fixtures and a loopback-only fake recruitment server. Test code and CI configuration are public; generated workspaces, logs, database files, browser profiles and personal data are excluded.
+
+公开岗位发现回归测试使用合成数据和仅监听本机的模拟招聘站。仅公开测试代码及 CI 配置；运行工作区、日志、数据库、浏览器资料及个人数据不公开。

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {skillRoot as root} from './runtime.mjs';
 import {leadStates} from './lib/state-machine.mjs';
+import {searchTaskStatuses} from './lib/discovery-plan.mjs';
 
 const schema=JSON.parse(await fs.readFile(path.join(root,'schemas/state.schema.json'),'utf8'));
 if (JSON.stringify(schema.enum)!==JSON.stringify(leadStates)) throw Error('state.schema.json differs from leadStates');
@@ -31,12 +32,13 @@ const terminologyFiles=[
   ...(await fs.readdir(path.join(root,'modules'))).map(x=>path.join(root,'modules',x,'MODULE.md'))
 ];
 const known=new Set(leadStates);
+const knownTokens=new Set([...leadStates,...searchTaskStatuses]);
 const errors=[];
 for (const file of files) {
   const content=await fs.readFile(file,'utf8');
   for (const [,span] of content.matchAll(/`([^`]+)`/g)) {
     if (/^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(span) && !span.startsWith('USELESS_LINKEDIN_')) errors.push(`${path.relative(root,file)}: uppercase state-like token ${span}`);
-    if (/^[a-z]+(?:-[a-z]+)+$/.test(span) && !known.has(span)) errors.push(`${path.relative(root,file)}: unknown state-like token ${span}`);
+    if (/^[a-z]+(?:-[a-z]+)+$/.test(span) && !knownTokens.has(span)) errors.push(`${path.relative(root,file)}: unknown state-like token ${span}`);
     const target=span.match(/\b--to\s+([a-z][a-z-]*)\b/);
     if (target && !known.has(target[1])) errors.push(`${path.relative(root,file)}: unknown --to state ${target[1]}`);
   }

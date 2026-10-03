@@ -34,7 +34,7 @@
 
 - 页面按钮点击无响应时，保持同一 IAB 标签页，按语义控件执行 `Enter` 或 `Space`；Cookie、Easy Apply、下一步和上传按钮都可能只响应键盘激活。
 - 上传前先创建 `filechooser` 监听，再触发控件。优先顺序为：可见上传按钮键盘激活、可见上传按钮点击、原生 `Choose File` 点击。每次只尝试一个入口，并以页面显示目标文件名为准。
-- 隐藏 `input[type=file]`、标签和可见控件均不产生 `filechooser` 时，记为该 ATS 的 IAB 上传阻塞。保留已填字段和材料路径，不空表提交，不切换到 Chrome，不把 `file upload` 当作成功投递。
+- 隐藏 `input[type=file]`、标签和可见控件均不产生 `filechooser` 时，记为该 ATS 的 IAB 上传阻塞。保留已填字段和材料路径，不空表提交，可选择适用浏览器继续核验，不把 `file upload` 当作成功投递。
 - 提交后原页面不跳转、没有成功文字或平台状态时转为 `submission-unconfirmed`；不要重复提交。只有明确回执才能进入 `submitted`。
 
 ## 卡点复盘和后续跟进
