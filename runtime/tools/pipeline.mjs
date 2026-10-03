@@ -3,7 +3,8 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {root,skillRoot,toolsRoot,args} from './runtime.mjs';
 import {jobDirectory,storageName,uniqueDirectory,resolveStoragePath} from './lib/storage-paths.mjs';
-import {home,hash,read,write,transaction,add,exportList} from './lib/core.mjs';
+import {home,hash,read,write,transaction,add,exportList,config} from './lib/core.mjs';
+import {triageOne,triageFetcher,needsTriage} from './lib/discovery-triage.mjs';
 import {fingerprintText,similarity} from './lib/job-signals.mjs';
 import {assertTransition} from './lib/state-machine.mjs';
 import {postingIdentityMismatch} from './lib/listings.mjs';
@@ -11,9 +12,14 @@ import {currentCapture} from './lib/pipeline-capture.mjs';
 import {checkSources,validateDecision} from './lib/assessment-validation.mjs';
 import {acquireFileLock} from './lib/file-lock.mjs';
 const a=args();if(a.help){console.log('pipeline.mjs --url URL [--assessment FILE] [--no-browser] | --id ID [--assessment FILE] [--include-review]');process.exit(0);}
-// Triage before any history rebuild, detail request, profile read or A–G prompt.
+// Complete-JD triage precedes expensive history, candidate facts and A–G work.
 const initialStore=await read(path.join(home,'leads.json'),{jobs:[]}),initialJob=a.id?initialStore.jobs.find(j=>j.id===a.id):initialStore.jobs.find(j=>j.url===a.url);
-if(initialJob?.discoveryDisposition==='review'&&!a['include-review']&&!a.assessment){console.log(JSON.stringify({id:initialJob.id,state:initialJob.state,triage:'review',skipped:true,reason:'Discovery signals require triage; use --include-review after reviewing the lead.'}));process.exit(0);}
+if(initialJob?.possiblyClosed||initialJob?.discoveryDisposition==='review'&&!a['include-review']&&!a.assessment){
+ const c=await config(a.config),source=c.portals.find(s=>s.name===initialJob.portal)||{};
+ if(needsTriage(initialJob,c,source)){const network=triageFetcher(c,{maxRequests:c.discovery?.triage_max_requests??40});await triageOne(initialJob,c,{fetchPage:network.fetchPage,noBrowser:!!a['no-browser']});await exportList();}
+ const updated=(await read(path.join(home,'leads.json'))).jobs.find(j=>j.id===initialJob.id);
+ if(updated.possiblyClosed||updated.triage?.status!=='candidate'){console.log(JSON.stringify({id:updated.id,state:updated.state,triage:updated.triage?.status||'pending',skipped:true,reason:'Cheap triage requires review; inspect triage --list-review or --list-closed.'}));process.exit(0);}
+}
 const historyResult=spawnSync(process.execPath,[path.join(toolsRoot,'tracker.mjs'),'--history'],{encoding:'utf8'});if(historyResult.status!==0)throw Error('Cannot check application history: '+historyResult.stderr);
 let store=await read(path.join(home,'leads.json'),{jobs:[]});let job=a.id?store.jobs.find(j=>j.id===a.id):store.jobs.find(j=>j.url===a.url);
 if(!job){if(!a.url)throw Error('Provide --url or valid --id');const r=await transaction(s=>add(s,{url:a.url,title:a.role||'',company:a.company||'',portal:'direct'}));store=await read(path.join(home,'leads.json'));job=store.jobs.find(j=>j.id===r.id);}

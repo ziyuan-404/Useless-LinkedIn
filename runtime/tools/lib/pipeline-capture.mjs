@@ -1,7 +1,7 @@
 import path from 'node:path';
 import {resolveStoragePath} from './storage-paths.mjs';
 import {root} from '../runtime.mjs';
-import {capture,classifyLiveness,read} from './core.mjs';
+import {capture,classifyLiveness,read,hash} from './core.mjs';
 
 const fresh=value=>Number.isFinite(Date.parse(value))&&Math.abs(Date.now()-Date.parse(value))<=86400000;
 
@@ -14,5 +14,9 @@ export async function currentCapture({job,dir,webCapture,assessment}){
   const context=assessment?await read(path.join(dir,'context.json'),null):null;
   const saved=context?.captured;
   if(context?.url===job.url&&saved?.liveness?.result==='active'&&typeof saved.jd==='string'&&saved.jd.length>=300&&fresh(saved.capturedAt))return saved;
+  if(!job.possiblyClosed&&job.triage?.captureFile){
+    const triaged=await read(await resolveStoragePath(root,job.triage.captureFile),null);
+    if(triaged?.url===job.url&&hash(JSON.stringify(triaged))===job.triage.captureHash&&triaged.liveness?.result==='active'&&triaged.jd?.length>=300&&fresh(triaged.capturedAt))return triaged;
+  }
   return capture(job.url);
 }

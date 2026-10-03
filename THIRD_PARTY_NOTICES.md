@@ -15,3 +15,5 @@ career-ops is licensed under the MIT License, Copyright (c) 2026 Santiago Ferná
 未调用的 resume-builder 模板、字体、Typst 包及原网页编辑器已从本发行版移除。当前本地编辑器独立实现，使用 interact.js 操作现有 HTML；现行 HTML 模板来自本项目的 `workspace-template/`，简历写作方法参考保留于 `modules/resume-builder/references/`，原项目许可证保留于模块目录。
 
 Unused upstream source trees have been removed from the runtime. Attribution for workflow ideas remains above. No private candidate data or local Git history is distributed.
+
+Discovery HTTP requests use [impit](https://github.com/apify/impit) 0.14.5, licensed under Apache-2.0, copyright Apify Technologies s.r.o. Robots directives use [robots-parser](https://github.com/samclarke/robots-parser) 3.0.1, licensed under MIT, copyright Sam Clarke. Dependencies are pinned in package-lock.json; their license metadata and distributed notices accompany npm installation. No private browser sessions are bundled.

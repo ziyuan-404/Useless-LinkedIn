@@ -14,7 +14,7 @@
 | F observations 与每页全量读写 | 观察汇总首次/最近/次数，旧格式一次迁移；SQLite 逐页事务日志，leads.json 仅批量兼容快照；不是把所有旧流程强行迁到第二套申请数据库 |
 | G 每日全量 / 消失信号 | 保存页面摘要，明确 newest-first 才启用增量停止，定期全量；完整快照缺失只标 possiblyClosed，不自动 expired；未知排序继续全量 |
 | H 默认任务成本 | 相同地点去重、默认 France 单层地点、独立配置覆盖岗位族的 OR 网页查询、API 优先及可选按需后备；完整显式 query 和矩阵仍执行，无硬截断 |
-| I review 成本 | pipeline 在读历史、JD、候选人资料、生成 A–G 之前返回 skipped；明确 --include-review 可深入处理；保留 review 线索而不删岗位 |
+| I review 成本 | 完整 JD 轻量分拣可自动提升 candidate；无关/不完整/受阻线索不进入候选人分析；批量队列/决定与 list.md 可见，保留所有岗位 |
 | J HTML 未完成 | 已观察 next 链上的静态末页可记录结束，可配置要求更严；动态/第一页/空页/重复页仍需核验 |
 | K ATS/嵌入正文 | 检测 Greenhouse、Lever、Ashby、SmartRecruiters、Workable、Workday 的入口与 iframe/script src；GH embed token 修复；Ashby 公开 API，后三者走通用渲染/Agent，不宣称已验证其私有接口；GH content=true 可配置且默认轻量列表明确不是 JD |
 | L 可复现测试 | tests/discovery*.test.mjs 和专用 CI 使用本地 HTTP 假站及真实 Chromium 动态页，不请求真实招聘网站；公开测试代码，排除任何运行日志、个人数据、临时工作区 |
@@ -38,3 +38,7 @@ Node >=24、Python/PyYAML、Playwright Chromium 由安装器准备。测试将 U
 模拟只能证明这些确定路径的行为；不能证明 Indeed、LinkedIn、WTTJ、每个 ATS 的真实反爬或页面结构永远可用，也不能保证全网搜索无遗漏。服务端限制、robots 排除、登录/验证码、未知分页、慢于渲染等待的异步加载和复杂 load-more 都必须保留未完成证据，由适用浏览器继续核验。SQLite 日志避免逐页全量写，但兼容 JSON 快照和历史 scans 仍随真实岗位数量增长；不是常数大小存储。
 
 API 依据：[Greenhouse Job Board](https://docs.greenhouse.io/job-board.html)、[Lever Postings](https://github.com/lever/postings-api)、[Ashby Job Postings](https://developers.ashbyhq.com/docs/public-job-posting-api)。
+
+## 第二轮审查修复
+
+新增 triage CLI、pipeline 自动单岗位初筛、完整 JD 缓存复用、人工批量原文决定、规则变化重开、消失复核及已投递保护。默认词库补软件/工程及法语阴性岗位词，contractHits 返回真正命中词；排除岗位等级默认仅看标题，避免 JD 中“senior mentor”误排 junior 岗位，可设 exclude_scope=full-jd 恢复全文排除。默认逐页 HTTP 条件请求保留完整覆盖；无验证器/POST 不假定能跳过页面。不同 query 共享来源/URL/读取层字段，通过 contexts 可还原；不删除查询证据。复用 impit 和 robots-parser，保留既有持久队列和隔离 Playwright。所有模拟测试运行在开发工作区，发布副本仅同步通用模拟代码。

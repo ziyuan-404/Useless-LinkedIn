@@ -7,6 +7,7 @@ import {openDashboard} from './lib/dashboard-db.mjs';
 const checks=[];
 const check=(name,ok,detail='',required=true)=>checks.push({name,ok,detail,required});
 check('Node >=24',Number(process.versions.node.split('.')[0])>=24,process.version);
+for(const name of ['impit','robots-parser']){try{dependency(name);check(name,true);}catch(e){check(name,false,e.message);}}
 try{
   const {chromium}=dependency('playwright');check('Playwright',true);
   const browser=process.env.USELESS_LINKEDIN_CHROME||chromium.executablePath();

@@ -4,7 +4,8 @@ On first use, the Agent follows `INSTALL.md` and runs `useless-linkedin.mjs inst
 
 For an older `.career-os/` workspace, run `useless-linkedin.mjs migrate --workspace PATH`; it refuses ambiguous old and new directories. Run `useless-linkedin.mjs doctor` to check dependencies and workspace readiness.
 
-- `useless-linkedin.mjs scan [--portal NAME]`: bounded public vacancy discovery. CLI network reads use API/HTTP; browser captures come from IAB. `--no-browser` remains accepted for older commands.
+- `useless-linkedin.mjs scan [--portal NAME]`: bounded public vacancy discovery. CLI uses API/HTTP (native or impit), isolated Playwright for dynamic pages, or available interactive-browser captures. `--no-browser` remains accepted for older commands.
+- `useless-linkedin.mjs triage [--list-review | --list-closed | --run]`: visible review/disappearance queue, full-JD lightweight triage, and evidence-backed batch decisions; never reads candidate facts or generates materials.
 - `useless-linkedin.mjs pipeline --url URL`: full-JD liveness/history checks and a task for the current Agent; continue with `--id ID --assessment FILE`.
 - `useless-linkedin.mjs tracker --history`: read-only posting-link history from the Dashboard database; it never changes lead state.
 - `useless-linkedin.mjs resume add/audit/verify/activate/select/list`: maintain the reviewed bulk resume pool; each family with multiple verified files needs one active choice.

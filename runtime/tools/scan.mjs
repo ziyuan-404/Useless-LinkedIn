@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {args} from './runtime.mjs';
 import {listing,posting} from './lib/listings.mjs';
-import {home,config,request,transaction,write,exportList,read,hash,publicUrl,normalizeUrl} from './lib/core.mjs';
+import {home,config,request,transaction,write,exportList,read,hash,publicUrl,normalizeUrl,expandObservations} from './lib/core.mjs';
+import {conditionalFetcher} from './lib/conditional-fetch.mjs';
 import {buildDiscoveryPlan,mergeTasks,relevance,taskId,taskPriority} from './lib/discovery-plan.mjs';
 import {readApiPage,listingNext,inferCareerSource} from './lib/discovery-sources.mjs';
 import {failureDisposition,httpFailure,createDiscoveryFetcher} from './lib/discovery-policy.mjs';
@@ -125,7 +126,8 @@ while(progress&&!a['import-only']){
   const log=getLog(source.name);
   try{
    let result;
-   const sourceFetch=(url,opts)=>fetchPage(url,opts,source);
+    const cachedFetch=conditionalFetcher((url,opts)=>fetchPage(url,opts,source),{directory:path.join(home,'page-cache'),enabled:c.discovery?.conditional_requests!==false,fullRefreshHours:source.incremental?.full_refresh_hours??168});
+    const sourceFetch=(url,opts)=>cachedFetch(url,opts,source);
    if(task.kind==='api')result=await readApiPage(source,task,{fetchPage:sourceFetch,credentials:credentials.get(source.name)});
    else{
     if(observed){
@@ -195,13 +197,14 @@ await write(path.join(home,'robots-cache.json'),[...robotsCache]);
 await transaction(store=>{
  const rulesHash=hash(JSON.stringify({include:c.include_keywords,roles:c.role_keywords,exclude:c.exclude_keywords,aliases:c.keyword_aliases,sources:[...sourceMap.values()].map(s=>({name:s.name,include:s.include_keywords,roles:s.role_keywords,exclude:s.exclude_keywords,aliases:s.keyword_aliases}))}));
  if(store.discoveryRulesHash!==rulesHash){
-  for(const job of store.jobs.filter(j=>j.discoveryOnly&&['discovered','possible-duplicate'].includes(j.state))){const signals=relevance(job,c,sourceMap.get(job.portal)||{});job.discoverySignals=signals;job.discoveryDisposition=signals.matches?'candidate':'review';}
+   for(const job of store.jobs.filter(j=>j.discoveryOnly&&['discovered','possible-duplicate'].includes(j.state)&&j.triage?.method!=='manual')){const signals=relevance(job,c,sourceMap.get(job.portal)||{});job.discoverySignals=signals;job.discoveryDisposition=signals.matches?'candidate':'review';if(job.triage?.status==='excluded')job.triage.status='pending';}
   store.discoveryRulesHash=rulesHash;
  }
  for(const task of tasks.filter(t=>selected(t)&&t.completed&&!t.incrementalStopped&&t.currentKeys)){
   const seen=new Set(task.currentKeys);
   for(const job of store.jobs){
-   if(!(job.observations||[]).some(o=>o.taskId===task.id)||[job.url,...(job.urlAliases||[])].some(url=>seen.has(normalizeUrl(url))))continue;
+    if(job.liveness?.result==='expired')continue;
+    if(!expandObservations(job.observations||[]).some(o=>o.taskId===task.id||o.taskIds?.includes(task.id))||[job.url,...(job.urlAliases||[])].some(url=>seen.has(normalizeUrl(url))))continue;
    const signals=new Map((job.absenceSignals||[]).map(s=>[s.taskId,s]));signals.set(task.id,{taskId:task.id,observedAt:task.finishedAt,reason:'absent_from_complete_snapshot'});job.absenceSignals=[...signals.values()];
    // Missing from a search snapshot requests verification, never an expiry transition.
    if(Date.parse(job.lastSeenAt)<=Date.parse(task.finishedAt))job.possiblyClosed=true;
@@ -211,6 +214,6 @@ await transaction(store=>{
  store.scans=[...store.scans.map(summary),summary(report)].slice(-100);
 },{onDiscovery:changes=>{for(const result of changes)report[result.duplicate?'duplicates':'added'].push(result);}});
 await write(path.join(home,'last-scan.json'),report);
-await write(path.join(home,'scan-agent-task.md'),`Read search-queue.json and the Skill workflow discover-jobs.md. Handle every pending web-search/career-discovery task and listing/API task needing Agent access. Retry-wait tasks resume automatically after nextRetryAt; do not bypass robots exclusions or access challenges. Choose public HTTP, an isolated Playwright browser, or an available interactive browser according to site behavior; use Agent WebSearch for open-web search. API success only parks explicitly configured fallback tasks; independent discovery remains active. Follow actual next pages/load-more until observed end; capture pagination URLs. Import arbitrary published detail links with scan --import FILE --import-only. Add employer career sites with scan --sources FILE. Replay observed lists with scan --listing-capture FILE. Persist outcomes with scan --task-results FILE --import-only (id, status: completed/partial/blocked, capturedAt, evidence, optional cursor). Do not mark partial or blocked searches completed. Keep predictions, training advertisements and search summaries separate from published vacancies; Review leads require cheap triage before process-job; candidate leads proceed to full JD/liveness and candidate gates in process-job.md. Configured budgets preserve pending tasks; scan --resume continues them. Pending tasks: ${report.coverage.pending}.\n`);
+await write(path.join(home,'scan-agent-task.md'),`Read search-queue.json and the Skill workflow discover-jobs.md. Handle every pending web-search/career-discovery task and listing/API task needing Agent access. Retry-wait tasks resume automatically after nextRetryAt; do not bypass robots exclusions or access challenges. Choose public HTTP, an isolated Playwright browser, or an available interactive browser according to site behavior; use Agent WebSearch for open-web search. API success only parks explicitly configured fallback tasks; independent discovery remains active. Follow actual next pages/load-more until observed end; capture pagination URLs. Import arbitrary published detail links with scan --import FILE --import-only. Add employer career sites with scan --sources FILE. Replay observed lists with scan --listing-capture FILE. Persist outcomes with scan --task-results FILE --import-only (id, status: completed/partial/blocked, capturedAt, evidence, optional cursor). Do not mark partial or blocked searches completed. Keep predictions, training advertisements and search summaries separate from published vacancies; Run triage --list-review and triage --list-closed, then triage --run to inspect complete JDs without candidate analysis. Persist observed decisions using triage --decisions FILE; incomplete or blocked reviews remain actionable. Candidate leads proceed to full JD/liveness and candidate gates in process-job.md. Configured budgets preserve pending tasks; scan --resume continues them. Pending tasks: ${report.coverage.pending}.\n`);
 await exportList();console.log(JSON.stringify(report,null,2));
 }finally{if(scanLock)await scanLock.close();}

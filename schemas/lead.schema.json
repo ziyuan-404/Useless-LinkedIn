@@ -130,6 +130,44 @@
           "count": {
             "type": "integer",
             "minimum": 1
+          },
+          "contexts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "capturedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "taskId": {
+                  "type": "string"
+                },
+                "query": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                },
+                "pageUrl": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "firstSeenAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "lastSeenAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
           }
         }
       }
@@ -358,6 +396,55 @@
         "evidence": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    },
+    "triage": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "candidate",
+            "excluded",
+            "expired",
+            "retry-wait",
+            "blocked",
+            "needs-agent"
+          ]
+        },
+        "method": {
+          "enum": [
+            "rules",
+            "manual"
+          ]
+        },
+        "checkedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "nextRetryAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "captureFile": {
+          "type": "string"
+        },
+        "captureHash": {
+          "type": "string"
+        },
+        "rulesHash": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 1
         }
       }
     }

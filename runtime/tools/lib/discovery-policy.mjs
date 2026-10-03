@@ -1,3 +1,4 @@
+import robotsParser from 'robots-parser';
 // Network errors and access gates require different recovery paths.
 export function httpFailure(raw){
  const status=raw.status;
@@ -20,23 +21,8 @@ export function failureDisposition(error,{attempt=1,now=Date.now(),baseSeconds=3
 }
 
 export function robotsPolicy(body,url,agent='UselessLinkedIn'){
- const groups=[];let group=null,hasRules=false;
- for(const line of String(body).split(/\r?\n/)){
-  const match=/^\s*([\w-]+)\s*:\s*(.*?)\s*$/.exec(line.replace(/#.*$/,''));if(!match)continue;
-  const key=match[1].toLowerCase(),value=match[2];
-  if(key==='user-agent'){
-   if(!group||hasRules){group={agents:[],rules:[],delay:0};groups.push(group);hasRules=false;}
-   group.agents.push(value.toLowerCase());
-  }else if(group){hasRules=true;if(['allow','disallow'].includes(key)&&value)group.rules.push({allow:key==='allow',path:value});if(key==='crawl-delay'&&Number.isFinite(Number(value)))group.delay=Math.max(0,Number(value));}
- }
- const score=g=>Math.max(-1,...g.agents.map(a=>a==='*'?0:agent.toLowerCase().includes(a)?a.length:-1));
- const best=Math.max(-1,...groups.map(score)),chosen=groups.filter(g=>score(g)===best&&best>=0);
- const parsed=new URL(url),target=parsed.pathname+parsed.search;
- const matches=chosen.flatMap(g=>g.rules).filter(rule=>{
-  const end=rule.path.endsWith('$'),literal=end?rule.path.slice(0,-1):rule.path;
-  return new RegExp('^'+literal.split('*').map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('.*')+(end?'$':'')).test(target);
- }).sort((a,b)=>b.path.replace(/[*$]/g,'').length-a.path.replace(/[*$]/g,'').length||Number(b.allow)-Number(a.allow));
- return {allowed:matches[0]?.allow!==false,delaySeconds:Math.max(0,...chosen.map(g=>g.delay))};
+ const parser=robotsParser(new URL('/robots.txt',url).href,String(body));
+ return {allowed:parser.isAllowed(url,agent)!==false,delaySeconds:Math.max(0,parser.getCrawlDelay(agent)||0)};
 }
 
 export function createDiscoveryFetcher({request,beforeRequest,cache=new Map(),minIntervalMs=500,respectRobots=true,now=()=>Date.now(),sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))}){

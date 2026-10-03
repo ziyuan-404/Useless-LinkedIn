@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {lookup} from 'node:dns/promises';
 import {isIP} from 'node:net';
-import {root,toolsRoot,pythonCommand} from '../runtime.mjs';
+import {root,toolsRoot,pythonCommand,dependency} from '../runtime.mjs';
 import {normalizeUrl,fingerprintText,similarity,classifyLiveness} from './job-signals.mjs';
 import {validateLead} from './schema.mjs';
 import {acquireFileLock} from './file-lock.mjs';
@@ -42,10 +42,13 @@ export async function assertPublicUrl(url){
  return href;
 }
 export async function request(url,opts={}){
- let current=url,options={...opts,headers:{...opts.headers}};
+ const {httpClient='native',...init}=opts;
+ if(!['native','impit'].includes(httpClient))throw Error('Unknown HTTP client');
+ const client=httpClient==='impit'?new (dependency('impit').Impit)({browser:'chrome',timeout:18000}):null;
+ let current=url,options={...init,headers:{...init.headers}};
  for(let redirects=0;redirects<=5;redirects++){
   current=await assertPublicUrl(current);
-  const r=await fetch(current,{...options,redirect:'manual',signal:AbortSignal.timeout(18000),headers:{'user-agent':'UselessLinkedIn/1.0 (public job discovery)',...options.headers}});
+  const r=await (client?client.fetch.bind(client):fetch)(current,{...options,redirect:'manual',signal:AbortSignal.timeout(18000),headers:{'user-agent':'UselessLinkedIn/1.0 (public job discovery)',...options.headers}});
   if([301,302,303,307,308].includes(r.status)){
    const location=r.headers.get('location');if(!location)throw Error('Redirect without location');
    const next=new URL(location,current).href;
@@ -73,22 +76,35 @@ export async function transaction(fn,{onDiscovery}={}){
  try{
   const store=await read(path.join(home,'leads.json'),{version:1,jobs:[],scans:[]});if(store.version!==1||!Array.isArray(store.jobs)||!Array.isArray(store.scans))throw Error('Invalid lead store');
   const before=new Map(store.jobs.map(j=>[j.id,JSON.stringify(j)])),pending=await pendingDiscovery(home);let receipt=store.discoveryReceipt||0;const changes=[];
-  if(store.observationVersion!==2){for(const job of store.jobs)if(job.observations)job.observations=compactObservations(job.observations);store.observationVersion=2;}
+  if(store.observationVersion!==3){for(const job of store.jobs)if(job.observations)job.observations=compactObservations(job.observations);store.observationVersion=3;}
   for(const batch of pending){if(batch.sequence<=receipt)continue;for(const job of batch.jobs)changes.push(add(store,job));receipt=batch.sequence;}
   onDiscovery?.(changes);const result=await fn(store);if(pending.length)store.discoveryReceipt=receipt;
   for(const job of store.jobs)if(before.get(job.id)!==JSON.stringify(job))await validateLead(job);
-  await write(path.join(home,'leads.json'),store);if(pending.length)acknowledgeDiscovery(home,receipt);return result;
+  await write(path.join(home,'leads.json'),store);if(pending.length)await acknowledgeDiscovery(home,receipt);return result;
  }finally{await lock.close();}
 }
 export function compactObservations(rows){
  const observations=new Map();
- for(const row of rows){
+ for(const row of expandObservations(rows)){
   const key=JSON.stringify([row.source,normalizeUrl(row.url),row.query||'',row.location||'',row.layer]),old=observations.get(key),first=row.firstSeenAt||row.capturedAt,last=row.lastSeenAt||row.capturedAt;
   if(!old)observations.set(key,{...row,firstSeenAt:first,lastSeenAt:last,count:row.count||1});
-  else{const firstSeenAt=[old.firstSeenAt,first].sort()[0],lastSeenAt=[old.lastSeenAt,last].sort().at(-1);observations.set(key,{...old,...row,firstSeenAt,lastSeenAt,capturedAt:lastSeenAt,count:old.count+(row.count||1)});}
+  else{const firstSeenAt=[old.firstSeenAt,first].sort()[0],lastSeenAt=[old.lastSeenAt,last].sort().at(-1),taskIds=[...new Set([...(old.taskIds||[]),old.taskId,...(row.taskIds||[]),row.taskId].filter(Boolean))];observations.set(key,{...old,...row,firstSeenAt,lastSeenAt,capturedAt:lastSeenAt,count:old.count+(row.count||1),...(taskIds.length>1?{taskIds}:{})});}
  }
- return [...observations.values()];
+ const grouped=new Map();
+ for(const row of observations.values()){
+  const key=JSON.stringify([row.source,normalizeUrl(row.url),row.layer]);
+  if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(row);
+ }
+ return [...grouped.values()].map(group=>{
+  if(group.length===1)return group[0];
+  const last=[...group].sort((a,b)=>a.lastSeenAt.localeCompare(b.lastSeenAt)).at(-1);
+  const base={...(last.source===undefined?{}:{source:last.source}),url:last.url,layer:last.layer,capturedAt:last.capturedAt,firstSeenAt:group.map(o=>o.firstSeenAt).sort()[0],lastSeenAt:last.lastSeenAt,count:group.reduce((n,o)=>n+o.count,0)};
+  base.contexts=group.map(row=>{const context={...row};for(const key of ['source','url','layer'])delete context[key];if(context.capturedAt===base.capturedAt)delete context.capturedAt;if(context.firstSeenAt===(context.capturedAt||base.capturedAt))delete context.firstSeenAt;if(context.lastSeenAt===(context.capturedAt||base.capturedAt))delete context.lastSeenAt;if(context.count===1)delete context.count;return context;});
+  return base;
+ });
 }
+// Shared source/URL fields are stored once; every query, task, date and count remains recoverable.
+export function expandObservations(rows){return rows.flatMap(row=>row.contexts?row.contexts.map(context=>({source:row.source,url:row.url,layer:row.layer,...context,capturedAt:context.capturedAt||row.capturedAt,firstSeenAt:context.firstSeenAt||context.capturedAt||row.capturedAt,lastSeenAt:context.lastSeenAt||context.capturedAt||row.capturedAt,count:context.count||1})):[row]);}
 const indexes=new WeakMap();
 const verifiedKey=job=>job.verifiedIdentity&&job.identityEvidence?.url&&Number.isFinite(Date.parse(job.identityEvidence.capturedAt))&&String(job.identityEvidence.evidence||'').trim()?job.verifiedIdentity:null;
 function jobIndex(store){
@@ -107,12 +123,15 @@ export function add(store,job){const key=normalizeUrl(job.url);if(!key)throw Err
  // Prefer an explicitly verified employer URL; an ID/title guess cannot merge sources.
  if(verified&&job.employerOriginal===true&&!old.submitted&&!old.historyMatch){old.url=job.url;old.key=key;old.employerOriginal=true;}
  if(verified){old.verifiedIdentity=verified;old.identityEvidence=job.identityEvidence;index.verified.set(verified,old);}
- if(old.discoveryDisposition==='review'&&job.discoveryDisposition==='candidate'){old.discoveryDisposition='candidate';old.discoverySignals=job.discoverySignals;}
+ if(old.discoveryDisposition==='review'&&job.discoveryDisposition==='candidate'&&old.triage?.method!=='manual'){old.discoveryDisposition='candidate';old.discoverySignals=job.discoverySignals;delete old.triage;}
  old.possiblyClosed=false;if(old.absenceSignals)for(const signal of old.absenceSignals)signal.resolvedAt=old.lastSeenAt;
  // Enrich empty discovery fields without overwriting assessed/submitted records.
  for(const field of ['company','location','requisitionId','publishedAt'])if(!old[field]&&job[field])old[field]=job[field];
  return {duplicate:true,id:old.id};}
  const id=hash(key).slice(0,16),fp=fingerprintText(job.jd||'');const possible=fp||job.company?store.jobs.filter(x=>(fp&&x.fingerprint&&similarity(fp,x.fingerprint)>=.92)||(job.company&&x.company===job.company&&x.title===job.title&&x.location===job.location)).map(x=>x.id):[];
  const created={...job,observations:compactObservations(job.observations||[]),id,key,fingerprint:fp,possibleDuplicates:possible,sources:[job.portal||job.url],createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString(),state:possible.length?'possible-duplicate':'discovered',dashboardSynced:false,submitted:false};store.jobs.push(created);index.urls.set(key,created);if(verified)index.verified.set(verified,created);return {id,possibleDuplicates:possible};}
-export async function exportList(){const store=await read(path.join(home,'leads.json'),{jobs:[]});const escape=s=>String(s||'').replace(/\|/g,'/').replace(/\n/g,' ');await write(path.join(home,'list.md'),'# 自动发现岗位与流程阶段（机器状态；历史申请以 Dashboard 数据库及成功凭证核对）\n\n| ID | 公司 | 岗位 | 来源 | 状态 | 优先级 | URL |\n|---|---|---|---|---|---|---|\n'+store.jobs.map(x=>`| ${x.id} | ${escape(x.company)} | ${escape(x.title)} | ${escape(x.portal)} | ${x.state} | ${x.priority||''} | ${x.url} |`).join('\n')+'\n');}
+export async function exportList(){
+ const store=await read(path.join(home,'leads.json'),{jobs:[]});const escape=s=>String(s||'').replace(/\|/g,'/').replace(/\n/g,' ');
+ await write(path.join(home,'list.md'),'# 自动发现岗位与流程阶段（历史申请以 Dashboard 数据库及成功凭证核对）\n\n待分拣：`triage --list-review`；消失复核：`triage --list-closed`；批量检查：`triage --run`。\n\n| ID | 公司 | 岗位 | 来源 | 搜索分拣 | 分拣结果 | 消失复核 | 状态 | 优先级 | URL |\n|---|---|---|---|---|---|---|---|---|---|\n'+store.jobs.map(x=>`| ${x.id} | ${escape(x.company)} | ${escape(x.title)} | ${escape(x.portal)} | ${x.discoveryDisposition||''} | ${x.triage?.status||(x.discoveryDisposition==='review'?'pending':'')} | ${x.possiblyClosed?'possibly_closed':x.liveness?.result==='expired'?'expired':''} | ${x.state} | ${x.priority||''} | ${x.url} |`).join('\n')+'\n');
+}
 export {normalizeUrl};

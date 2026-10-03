@@ -18,10 +18,10 @@ export function relevance(job,config,source={}){
  const text=norm([job.title,job.description,job.jd,job.contract].filter(Boolean).join(' '));
  const rules={...config,...source};
  const groups=[['intern','internship','internships','stage','stages','stagiaire','stagiaires'],['alternance','alternant','alternante','alternants','apprentissage','apprenti','apprentie','apprentice','apprenticeship','work study','dual study'],['vie','volontariat international en entreprise']];
- const boundary=value=>new RegExp('(?<![\\p{L}\\p{N}])'+value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])','u').test(text);
- const hits=key=>(rules[key]||[]).filter(word=>{
-  const value=norm(word),aliases=[value,...(rules.keyword_aliases?.[word]||[]).map(norm),...(key==='include_keywords'?groups.find(g=>g.includes(value))||[]:[])];return aliases.some(boundary);
- });
+ const boundary=(value,scope=text)=>new RegExp('(?<![\\p{L}\\p{N}])'+value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![\\p{L}\\p{N}])','u').test(scope);
+ const hits=key=>[...new Set((rules[key]||[]).flatMap(word=>{
+  const value=norm(word),aliases=[value,...(rules.keyword_aliases?.[word]||[]).map(norm),...(key==='include_keywords'?groups.find(g=>g.includes(value))||[]:[])];return aliases.filter(alias=>boundary(alias,key==='exclude_keywords'&&rules.exclude_scope!=='full-jd'?norm(job.title):text));
+ }))];
  const included=hits('include_keywords'),roles=hits('role_keywords'),excluded=hits('exclude_keywords');
  return {contractHits:included,roleHits:roles,excludeHits:excluded,needsFullJd:!job.jd,
   matches:(!(rules.include_keywords||[]).length||included.length>0)&&(!(rules.role_keywords||[]).length||roles.length>0)&&!excluded.length};
@@ -34,6 +34,7 @@ export function validateDiscoveryConfig(config){
   if(entry!==config&&(typeof entry.name!=='string'||!entry.name.trim()))throw Error('Source requires a name');
   for(const key of ['queries','web_queries','locations','include_keywords','role_keywords','exclude_keywords','search_urls','allowed_hosts'])if(entry[key]!==undefined&&(!Array.isArray(entry[key])||entry[key].some(x=>typeof x!=='string')))throw Error(`${entry.name||'global'}: ${key} must be a string array`);
   if(entry.renderer&&!['http','auto','playwright','agent'].includes(entry.renderer))throw Error('renderer must be http, auto, playwright or agent');
+  if(entry.http_client&&!['native','impit'].includes(entry.http_client))throw Error('http_client must be native or impit');
   if(entry.listing_mode&&!['independent','fallback','disabled'].includes(entry.listing_mode))throw Error('listing_mode must be independent, fallback or disabled');
   for(const [key,value] of Object.entries(entry.keyword_aliases||{}))if(!Array.isArray(value)||value.some(x=>typeof x!=='string'))throw Error(`keyword_aliases.${key} must be a string array`);
   for(const [key,value] of Object.entries(entry.incremental||{}))if(key==='full_refresh_hours'&&(!Number.isFinite(value)||value<0))throw Error('incremental.full_refresh_hours must be nonnegative');

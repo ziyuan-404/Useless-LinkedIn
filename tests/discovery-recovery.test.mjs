@@ -135,13 +135,14 @@ test('robots longest path and agent rules, crawl-delay pacing, and 429 classific
  assert.equal(failureDisposition(Object.assign(Error('Timeout'),{name:'TimeoutError'})).status,'retry-wait');
 });
 
-test('review triage skips pipeline history rebuild, full-JD request and candidate profile reads',async()=>{
+test('unresolved review triage skips expensive history and candidate profile processing',async()=>{
+ const app=await server((req,res)=>{res.statusCode=403;res.end('Access denied');});
  const dir=await workspace({include_keywords:['alternance'],role_keywords:['data']});
  try{
-  await fs.writeFile(path.join(dir,'import.json'),JSON.stringify([{url:'https://example.org/jobs/123',title:'Interne en pharmacie'}]));await run(dir,'--import','import.json','--import-only');
-  const job=(await leads(dir))[0],result=await command(dir,'pipeline',['--id',job.id]);assert.equal(result.skipped,true);assert.equal(result.triage,'review');
+  await fs.writeFile(path.join(dir,'import.json'),JSON.stringify([{url:app.url+'/jobs/123',title:'Interne en pharmacie'}]));await run(dir,'--import','import.json','--import-only');
+  const job=(await leads(dir))[0],result=await command(dir,'pipeline',['--id',job.id,'--config','config.json']);assert.equal(result.skipped,true);assert.equal(result.triage,'blocked');
   assert.equal(await fs.stat(data(dir,'tracker.sqlite')).then(()=>true,()=>false),false);assert.equal((await leads(dir))[0].directory,undefined);
- }finally{await fs.rm(dir,{recursive:true,force:true});}
+ }finally{await app.close();await fs.rm(dir,{recursive:true,force:true});}
 });
 
 test('API priority is explicit and duplicate locations create no duplicate tasks',()=>{
