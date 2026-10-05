@@ -1,4 +1,5 @@
 import robotsParser from 'robots-parser';
+import {serialQueue} from './async-pool.mjs';
 // Network errors and access gates require different recovery paths.
 export function httpFailure(raw){
  const status=raw.status;
@@ -27,12 +28,15 @@ export function robotsPolicy(body,url,agent='UselessLinkedIn'){
 }
 
 export function createDiscoveryFetcher({request,beforeRequest,cache=new Map(),minIntervalMs=500,respectRobots=true,now=()=>Date.now(),sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))}){
- const slots=new Map();
- const reserve=async(url,delay=minIntervalMs)=>{
-  const origin=new URL(url).origin,wait=Math.max(0,(slots.get(origin)||0)-now());
+ const slots=new Map(),reservations=new Map(),robotsPending=new Map();
+ const reserve=(url,delay=minIntervalMs)=>{
+  const origin=new URL(url).origin;if(!reservations.has(origin))reservations.set(origin,serialQueue());
+  return reservations.get(origin)(async()=>{
+  const wait=Math.max(0,(slots.get(origin)||0)-now());
   if(wait>1000)throw Object.assign(Error('host_crawl_delay'),{deferredUntil:new Date(now()+wait).toISOString()});
   if(wait)await sleep(wait);
   beforeRequest();slots.set(origin,now()+delay);
+  });
  };
  const raw=async(url,opts,delay)=>{await reserve(url,delay);return request(url,opts);};
  const fetcher=async(url,opts={},source={})=>{
@@ -40,10 +44,13 @@ export function createDiscoveryFetcher({request,beforeRequest,cache=new Map(),mi
   if((source.respect_robots??respectRobots)!==false){
    const origin=new URL(url).origin;let entry=cache.get(origin);
    if(!entry||now()-entry.at>86400000){
+    if(!robotsPending.has(origin))robotsPending.set(origin,(async()=>{
     const response=await raw(origin+'/robots.txt');
     if(response.status===429||response.status>=500)httpFailure(response);
     if(response.status===401||response.status===403)throw Object.assign(Error('robots_access_gate'),{blocked:true});
-    entry={at:now(),body:response.status===404||response.status===410?'':response.body};cache.set(origin,entry);
+    const value={at:now(),body:response.status===404||response.status===410?'':response.body};cache.set(origin,value);return value;
+    })().finally(()=>robotsPending.delete(origin)));
+    entry=await robotsPending.get(origin);
    }
    policy=robotsPolicy(entry.body,url);
    if(!policy.allowed)throw Object.assign(Error('robots_disallowed'),{blocked:true});

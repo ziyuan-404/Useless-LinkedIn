@@ -7,6 +7,7 @@ import {renderListing} from './rendered-listing.mjs';
 import {assertTransition} from './state-machine.mjs';
 import fs from 'node:fs/promises';
 import {acquireFileLock} from './file-lock.mjs';
+import {captureAtsJd} from './ats-jd.mjs';
 
 export const triageRulesHash=(config,source)=>hash(JSON.stringify([config.include_keywords,config.role_keywords,config.exclude_keywords,config.keyword_aliases,config.exclude_scope,source.include_keywords,source.role_keywords,source.exclude_keywords,source.keyword_aliases,source.exclude_scope]));
 export function needsTriage(job,config,source={}){
@@ -41,6 +42,8 @@ async function performTriage(job,config,{fetchPage,noBrowser,decision}){
    if(!Array.isArray(captured.applyControls)||!captured.applyControls.length||captured.applyControls.some(c=>!captured.bodyText.includes(c)))throw Error('Decision requires observed application controls');
    const {classifyLiveness}=await import('./job-signals.mjs');captured.liveness=classifyLiveness({status:captured.status||0,requestedUrl:job.url,finalUrl:captured.finalUrl||job.url,bodyText:captured.bodyText,applyControls:captured.applyControls});
   }else{
+   try{captured=await captureAtsJd(job.url,{fetchPage:(url,options)=>fetchPage(url,{...options,httpClient:source.http_client},source)});}catch(error){if(error.budget||error.deferredUntil||error.blocked)throw error;}
+   if(!captured){
    let raw=await fetchPage(job.url,{httpClient:source.http_client},source);
    if(![404,410].includes(raw.status))httpFailure(raw);
    captured=extract(raw,job.url,'HTTP');
@@ -48,6 +51,7 @@ async function performTriage(job,config,{fetchPage,noBrowser,decision}){
     raw=await renderListing(job.url,{beforeNavigation:()=>fetchPage.beforeNavigation(job.url,source)});
     if(![404,410].includes(raw.status))httpFailure(raw);
     captured=extract({...raw,visibleControls:raw.visibleLinks.map(l=>l.title)},job.url,'Playwright');
+   }
    }
   }
   if(captured.liveness.result==='active'&&![job.url,...(job.urlAliases||[])].some(url=>normalizeUrl(url)===normalizeUrl(captured.finalUrl||captured.url)))captured.liveness={result:'uncertain',code:'posting_redirect_requires_verification',reason:'Detail URL redirected to an unverified posting identity'};

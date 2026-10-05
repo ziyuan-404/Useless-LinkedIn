@@ -42,3 +42,4 @@ details > :not(summary) { transform-origin: top; }
 html.motion-language .topbar { z-index:10001; }
 html.workspace-content-card,html.workspace-content-card body{background:transparent!important}
 html.workspace-content-card main{background:#f5f7fa}
+.workspace-card-surface{position:fixed;pointer-events:none;background:#f5f7fa;transform-origin:50% 50%;will-change:transform}

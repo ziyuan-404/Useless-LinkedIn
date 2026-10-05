@@ -96,7 +96,7 @@ export function installLanguageLayout({variants, root=document} = {}) {
   if(scheduled) return;
   scheduled=true; scheduledFrame=requestAnimationFrame(()=>{scheduled=false;scheduledFrame=null;reserve();});
  }
- const decoration=node=>node===probe||probe.contains(node)||!!node.closest?.('.ui-selection-glow,.motion-veil,.motion-glow,.motion-source-label,.motion-source-paint,.save-particle-burst');
+ const decoration=node=>node===probe||probe.contains(node)||!!node.closest?.('.ui-selection-glow,.motion-veil,.motion-glow,.motion-source-label,.motion-source-paint,.save-particle-burst,.workspace-card-surface');
  observer=new MutationObserver(records=>{
   if(records.some(record=>!decoration(record.target)&&!(record.type==='childList'&&[...record.addedNodes,...record.removedNodes].length&&[...record.addedNodes,...record.removedNodes].every(decoration)))) schedule();
  });

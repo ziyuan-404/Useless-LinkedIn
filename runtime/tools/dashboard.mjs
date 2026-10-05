@@ -3,11 +3,14 @@ import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {root,args,toolsRoot,pythonCommand} from './runtime.mjs';
-import {fields,openDashboard,insertRecord,summary,dbPath,syncSubmittedLead} from './lib/dashboard-db.mjs';
+import {fields,openDashboard,insertRecord,updateRecord,summary,dbPath,syncSubmittedLead} from './lib/dashboard-db.mjs';
 import {home,read,transaction} from './lib/core.mjs';
+import {jobDirectory} from './lib/storage-paths.mjs';
+import {validateMatchReview} from './lib/match-review.mjs';
+import {synchronizeDashboard} from './lib/dashboard-sync.mjs';
 
 const a=args();
-if(a.help){console.log('dashboard --init | --import-xlsx PATH | --relocate-source PATH | --restore-source-text | --sync-submitted LEAD_ID | --verify | --serve [--port PORT]');process.exit(0);}
+if(a.help){console.log('dashboard --init | --import-xlsx PATH | --relocate-source PATH | --restore-source-text | --sync --id LEAD_ID | --sync --ids FILE [--dry-run] [--out FILE] | --sync-submitted LEAD_ID | --review-match LEAD_ID --review FILE | --verify | --serve [--port PORT]');process.exit(0);}
 if(a.serve){await import('./dashboard-server.mjs');}
 else if(a['import-xlsx']){
  const source=path.resolve(root,a['import-xlsx']);
@@ -30,13 +33,29 @@ else if(a['import-xlsx']){
    }catch(e){db.exec('ROLLBACK');throw e;}
   }
  }finally{db.close();}
-}else if(a['sync-submitted']){
- const leads=await read(path.join(home,'leads.json'),{jobs:[]});const job=leads.jobs.find(x=>x.id===a['sync-submitted']);if(!job)throw Error('Unknown lead ID');
- const receipt=JSON.parse(job.submissionEvidence||'null');if(!receipt?.artifactPath||!receipt?.artifactSha256)throw Error('Lead has no structured receipt');
- const artifact=path.resolve(root,receipt.artifactPath);if(!artifact.startsWith(root+path.sep))throw Error('Receipt artifact outside workspace');
- if(createHash('sha256').update(fs.readFileSync(artifact)).digest('hex')!==receipt.artifactSha256)throw Error('Receipt artifact changed');
- const db=openDashboard(root);let saved;try{saved=syncSubmittedLead(db,job);}finally{db.close();}
- await transaction(s=>{s.jobs.find(x=>x.id===job.id).dashboardSynced=true;});console.log(JSON.stringify({recordId:saved.id,submissionVerified:true}));
+}else if(a['review-match']){
+ const leads=await read(path.join(home,'leads.json'),{jobs:[]}),job=leads.jobs.find(x=>x.id===a['review-match']);if(!job)throw Error('Unknown lead ID');
+ if(typeof a.review!=='string')throw Error('--review FILE required');const file=path.resolve(root,a.review);if(!file.startsWith(root+path.sep))throw Error('Review must be inside workspace');
+ const dir=await jobDirectory(root,home,job),review=await validateMatchReview(await read(file),{workspace:root,job,dir});
+ await transaction(s=>{const current=s.jobs.find(x=>x.id===job.id);current.matchLevel=review.matchLevel;current.matchReview=review;current.events=[...(current.events||[]),{at:review.reviewedAt,from:current.state,to:current.state,reason:'match-review',matchLevel:review.matchLevel,evidence:review.reason}];});
+ const db=openDashboard(root);try{const row=db.prepare('SELECT * FROM applications WHERE id=? OR job_url=?').get(job.id,job.url);if(row&&!row.archived_at)updateRecord(db,row.id,{version:row.version,match_level:review.matchLevel});}finally{db.close();}
+ console.log(JSON.stringify({id:job.id,matchLevel:review.matchLevel,reviewedAt:review.reviewedAt}));
+}else if(a.sync||a['sync-submitted']){
+ const leads=await read(path.join(home,'leads.json'),{jobs:[]});
+ const ids=a.ids?await read(path.resolve(root,a.ids)):[a.id||a['sync-submitted']];
+ if(!Array.isArray(ids)||!ids.length||ids.some(id=>typeof id!=='string'||!id))throw Error('--id ID or --ids FILE containing a nonempty ID array required');
+ if(ids.length>100)throw Error('At most 100 IDs per batch');
+ const jobs=[...new Set(ids)].map(id=>{const job=leads.jobs.find(x=>x.id===id);if(!job)throw Error('Unknown lead ID: '+id);return job;});
+ const results=[];
+ for(const job of jobs){try{
+  if(a['sync-submitted']&&(job.state!=='submitted'||job.submitted!==true))throw Error('Only a confirmed submitted lead can be synced');
+  const result=await synchronizeDashboard(root,home,job,{dryRun:!!a['dry-run']});results.push(result);
+  if(!a['dry-run'])await transaction(s=>{const current=s.jobs.find(x=>x.id===job.id);current.dashboardSynced=!result.archived&&result.complete;current.dashboardSync={complete:result.complete,missing:result.missing,recordId:result.recordId};});
+ }catch(error){results.push({id:job.id,error:error.message});if(!a['dry-run'])await transaction(s=>{const current=s.jobs.find(x=>x.id===job.id);current.dashboardSynced=false;current.dashboardSync={complete:false,error:error.message};});}}
+ const report={dryRun:!!a['dry-run'],results,changed:results.filter(r=>r.changed).length,incomplete:results.filter(r=>r.complete===false).length,errors:results.filter(r=>r.error).length};
+ if(a.out){const file=path.resolve(root,a.out);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,JSON.stringify(report,null,2));}
+ const output=a.out?{...report,results:results.map(({issues,...result})=>({...result,issueCount:issues?.length||0})),report:path.resolve(root,a.out)}:report;
+ console.log(JSON.stringify(output));if(report.errors)process.exitCode=2;
 }else if(a['relocate-source']){
  const source=path.resolve(a['relocate-source']);const actualHash=createHash('sha256').update(fs.readFileSync(source)).digest('hex');
  const db=openDashboard(root);try{const imported=db.prepare('SELECT * FROM imports').all();if(imported.length!==1||imported[0].source_sha256!==actualHash)throw Error('Archive does not match the imported workbook');db.prepare('UPDATE imports SET source_path=? WHERE source_sha256=?').run(source,actualHash);console.log(JSON.stringify({archivedSource:source,sha256:actualHash}));}finally{db.close();}

@@ -2,6 +2,8 @@
 
 **A job-search Skill for France: find jobs, prepare documents, apply and follow up using natural language.**
 
+Discovery uses a model-free local scanner with 102 public provider adapters, API-first full descriptions, bounded concurrency and recovery. Optional independent Ollama/Gemini/OpenAI-compatible evaluation retains source-checked drafts for review. See [integration configuration](references/career-ops-integration.md).
+
 [中文](README.md) · English · [Français](README.fr.md)
 
 Share your CV and goals. The agent checks job availability, duplicates and essential requirements, prepares CVs, cover letters and application answers, submits within your authorization, and updates a local application dashboard. Configure roles, contract types, locations and start dates to suit your search.

@@ -30,9 +30,9 @@ const icons = {
  calendar: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="5" width="13" height="12" rx="2"/><path d="M6.5 3v4m7-4v4M4 9h12"/></svg>'
 };
 const copy = {
- zh: {selected:'当前选择', empty:'请选择', date:'选择日期', today:'今天', clear:'清除', previous:'上个月', next:'下个月'},
- en: {selected:'Selected', empty:'Choose an option', date:'Choose a date', today:'Today', clear:'Clear', previous:'Previous month', next:'Next month'},
- fr: {selected:'Sélection actuelle', empty:'Choisir une option', date:'Choisir une date', today:"Aujourd’hui", clear:'Effacer', previous:'Mois précédent', next:'Mois suivant'}
+ zh: {selected:'当前选择', empty:'请选择', date:'选择日期', dateTime:'选择日期和时间', hour:'小时', minute:'分钟', apply:'确定', today:'今天', clear:'清除', previous:'上个月', next:'下个月'},
+ en: {selected:'Selected', empty:'Choose an option', date:'Choose a date', dateTime:'Choose a date and time', hour:'Hour', minute:'Minute', apply:'Apply', today:'Today', clear:'Clear', previous:'Previous month', next:'Next month'},
+ fr: {selected:'Sélection actuelle', empty:'Choisir une option', date:'Choisir une date', dateTime:'Choisir une date et une heure', hour:'Heure', minute:'Minute', apply:'Valider', today:"Aujourd’hui", clear:'Effacer', previous:'Mois précédent', next:'Mois suivant'}
 };
 const language = () => document.documentElement.lang.split('-')[0] in copy ? document.documentElement.lang.split('-')[0] : 'fr';
 const words = () => copy[language()];
@@ -40,8 +40,27 @@ const locale = () => ({zh:'zh-CN',en:'en-GB',fr:'fr-FR'})[language()];
 const node = (tag, className, text) => { const el = document.createElement(tag); if(className) el.className=className; if(text!=null) el.textContent=text; return el; };
 const iso = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const parse = value => /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(+value.slice(0,4),+value.slice(5,7)-1,+value.slice(8,10)) : null;
-const dateText = value => value ? new Intl.DateTimeFormat(locale(),{year:'numeric',month:'2-digit',day:'2-digit'}).format(parse(value)) : words().date;
-const selectedText = state => state.color ? state.native.value.toUpperCase() : state.date ? dateText(state.native.value) : state.native.selectedOptions[0]?.textContent || words().empty;
+const dateLabel = state => state.datetime ? words().dateTime : words().date;
+const dateText = (value,datetime=false) => value ? new Intl.DateTimeFormat(locale(),{year:'numeric',month:'2-digit',day:'2-digit'}).format(parse(value.slice(0,10)))+(datetime&&value.length>10?` ${value.slice(11,16)}`:'') : datetime?words().dateTime:words().date;
+const selectedText = state => state.color ? state.native.value.toUpperCase() : state.date ? dateText(state.native.value||state.native.dataset?.dateOnly,state.datetime) : state.native.selectedOptions[0]?.textContent || words().empty;
+const calendarDate = state => state.datetime ? state.draftDate : state.native.value;
+const dayUnavailable = (state,value) => !!((state.native.min && value<state.native.min.slice(0,10))||(state.native.max && value>state.native.max.slice(0,10)));
+function datetimeDraft(state) {
+ if(state.native.dataset?.dateOnly!==undefined&&state.draftDate&&!state.hour&&!state.minute)return state.draftDate;
+ if(!state.draftDate || !/^\d{1,2}$/.test(state.hour) || !/^\d{1,2}$/.test(state.minute) || +state.hour>23 || +state.minute>59)return '';
+ const value=`${state.draftDate}T${state.hour.padStart(2,'0')}:${state.minute.padStart(2,'0')}`;
+ // Reuse native date/time bounds and step validation without changing the form.
+ const check=state.native.cloneNode(false);check.value=value;
+ return check.validity.valid ? value : '';
+}
+function syncTime(state) {
+ const value=datetimeDraft(state);state.apply.disabled=!value;
+ state.header?.querySelector('.ui-selected-value')?.replaceChildren(dateText(value,true));
+}
+function chooseDate(state,value) {
+ if(!state.datetime){commit(state,value);return;}
+ state.draftDate=value;state.focusDate=value;render(state);
+}
 const rect = el => { const r=el.getBoundingClientRect(); return {left:r.left,top:r.top,width:r.width,height:r.height}; };
 const layoutAnimations = new WeakMap();
 // FLIP only the displaced surfaces: the flex/grid layout remains responsive,
@@ -80,15 +99,15 @@ function refresh(state) {
  if(state.color)state.button.style.setProperty('--control-color',state.native.value);
  state.cachedValue=state.native.value;
  state.button.disabled=state.native.disabled;
- state.button.setAttribute('aria-required',String(state.native.required));
- if(state.date) state.popup.setAttribute('aria-label',words().date);
+ state.button.setAttribute('aria-required',String(state.native.required||state.native.dataset.dateOnly!==undefined));
+ if(state.date) state.popup.setAttribute('aria-label',dateLabel(state));
  const labelled=state.native.getAttribute('aria-labelledby');
  if(labelled) state.button.setAttribute('aria-labelledby',labelled);
  else {
   const label=state.native.labels?.[0];
   if(label && !label.id) label.id=`ui-control-label-${++nextId}`;
   if(label) state.button.setAttribute('aria-labelledby',label.id);
-  else state.button.setAttribute('aria-label',state.native.getAttribute('aria-label') || (state.date ? words().date : words().empty));
+  else state.button.setAttribute('aria-label',state.native.getAttribute('aria-label') || (state.date ? dateLabel(state) : words().empty));
  }
  if(current===state && !state.closing) {if(state.color)syncColor(state);else render(state);}
 }
@@ -124,7 +143,11 @@ function renderColor(state){
  hex.addEventListener('change',()=>{if(/^#[0-9a-f]{6}$/i.test(hex.value)){state.native.value=hex.value;state.native.dispatchEvent(new Event('input',{bubbles:true}));state.native.dispatchEvent(new Event('change',{bubbles:true}));hex.removeAttribute('aria-invalid');}else hex.setAttribute('aria-invalid','true');});palette.append(label);return palette;
 }
 function commit(state,value) {
- state.native.value=value;
+ if(state.datetime&&state.native.dataset.dateOnly!==undefined){
+  state.native.dataset.dateOnly=value.slice(0,10);
+  state.native.value=value.length>10?value:'';
+  state.native.setCustomValidity(value?'':words().dateTime);
+ }else state.native.value=value;
  state.native.dispatchEvent(new Event('input',{bubbles:true}));
  state.native.dispatchEvent(new Event('change',{bubbles:true}));
  refresh(state); close(state);
@@ -173,16 +196,16 @@ function renderCalendar(state) {
  for(let day=0;day<7;day++) grid.append(node('span','ui-weekday',new Intl.DateTimeFormat(locale(),{weekday:'narrow'}).format(new Date(2024,0,1+day))));
  const offset=(state.month.getDay()+6)%7;
  const start=new Date(state.month.getFullYear(),state.month.getMonth(),1-offset);
- const focus=state.focusDate || state.native.value || iso(new Date());
+ const focus=state.focusDate || calendarDate(state) || iso(new Date());
  for(let day=0;day<42;day++) {
   const date=new Date(start.getFullYear(),start.getMonth(),start.getDate()+day), value=iso(date);
   const cell=node('button','ui-day',date.getDate()); cell.type='button'; cell.dataset.date=value; cell.setAttribute('role','gridcell');
   cell.setAttribute('aria-label',new Intl.DateTimeFormat(locale(),{dateStyle:'full'}).format(date));
-  cell.setAttribute('aria-selected',String(value===state.native.value));
+  cell.setAttribute('aria-selected',String(value===calendarDate(state)));
   if(value===iso(new Date())) cell.setAttribute('aria-current','date');
   if(date.getMonth()!==state.month.getMonth()) cell.classList.add('outside-month');
-  cell.disabled=!!((state.native.min && value<state.native.min)||(state.native.max && value>state.native.max));
-  cell.tabIndex=value===focus ? 0 : -1; cell.addEventListener('click',()=>commit(state,value)); grid.append(cell);
+  cell.disabled=dayUnavailable(state,value);
+  cell.tabIndex=value===focus ? 0 : -1; cell.addEventListener('click',()=>chooseDate(state,value)); grid.append(cell);
  }
  if(!grid.querySelector('button[tabindex="0"]:not(:disabled)')) {const first=grid.querySelector('button:not(:disabled):not(.outside-month)'); if(first) first.tabIndex=0;}
  grid.addEventListener('keydown',event=>{
@@ -193,13 +216,27 @@ function renderCalendar(state) {
   else if(event.key==='PageUp' || event.key==='PageDown') next=new Date(date.getFullYear(),date.getMonth()+(event.key==='PageUp'?-1:1),1);
   else if(event.key==='Home') next=new Date(date.getFullYear(),date.getMonth(),date.getDate()-(date.getDay()+6)%7);
   else if(event.key==='End') next=new Date(date.getFullYear(),date.getMonth(),date.getDate()+6-(date.getDay()+6)%7);
-  if(next) {event.preventDefault();const value=iso(next);if((state.native.min && value<state.native.min)||(state.native.max && value>state.native.max)) return;state.focusDate=value;state.month=new Date(next.getFullYear(),next.getMonth(),1);render(state);state.popup.querySelector(`[data-date="${value}"]`)?.focus({preventScroll:true});}
+  if(next) {event.preventDefault();const value=iso(next);if(dayUnavailable(state,value)) return;state.focusDate=value;state.month=new Date(next.getFullYear(),next.getMonth(),1);render(state);state.popup.querySelector(`[data-date="${value}"]`)?.focus({preventScroll:true});}
  });
  calendar.append(grid);
+ if(state.datetime) {
+  const time=node('div','ui-time-fields');
+  for(const [key,max] of [['hour',23],['minute',59]]) {
+   if(key==='minute'){const separator=node('span','ui-time-separator',':');separator.setAttribute('aria-hidden','true');time.append(separator);}
+   const label=node('label','ui-time-field'),input=node('input','ui-time-input');label.append(node('span','',words()[key]));
+   input.type='number';input.min='0';input.max=String(max);input.step='1';input.required=state.native.dataset?.dateOnly===undefined;input.inputMode='numeric';input.value=state[key];input.setAttribute('aria-label',words()[key]);
+   input.addEventListener('input',()=>{state[key]=input.value;syncTime(state);});
+   input.addEventListener('change',()=>{if(input.validity.valid)input.value=state[key]=input.value.padStart(2,'0');syncTime(state);});
+   input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();const value=datetimeDraft(state);if(value)commit(state,value);}});
+   label.append(input);time.append(label);
+  }
+  calendar.append(time);
+ }
  const actions=node('div','ui-calendar-actions'); const today=node('button','',words().today); today.type='button';
- const todayValue=iso(new Date()); today.disabled=!!((state.native.min && todayValue<state.native.min)||(state.native.max && todayValue>state.native.max));
- today.addEventListener('click',()=>commit(state,todayValue));actions.append(today);
+ const todayValue=iso(new Date()); today.disabled=dayUnavailable(state,todayValue);
+ today.addEventListener('click',()=>chooseDate(state,todayValue));actions.append(today);
  if(!state.native.required) {const clear=node('button','',words().clear);clear.type='button';clear.addEventListener('click',()=>commit(state,''));actions.append(clear);}
+ if(state.datetime){const apply=node('button','ui-time-apply',words().apply);apply.type='button';apply.addEventListener('click',()=>{const value=datetimeDraft(state);if(value)commit(state,value);});state.apply=apply;actions.append(apply);}
  calendar.append(actions); return calendar;
 }
 function render(state) {
@@ -210,12 +247,14 @@ function render(state) {
  const content=node('div','ui-choice-content');content.append(state.color ? renderColor(state) : state.date ? renderCalendar(state) : renderSelect(state));
  state.popup.append(header,content); state.content=content; state.header=header;
  if(state.color)syncColor(state);
+ if(state.datetime)syncTime(state);
 }
 async function open(state) {
  if(state.native.disabled || current===state) return;
  if(current) await close(current,false);
  refresh(state); state.closing=false; state.serial=(state.serial||0)+1;
- state.month=parse(state.native.value) || new Date();state.focusDate=state.native.value;
+ if(state.datetime){const fallback=state.native.dataset.dateOnly;state.draftDate=state.native.value.slice(0,10)||fallback||'';state.hour=state.native.value.slice(11,13)||(fallback===undefined?'00':'');state.minute=state.native.value.slice(14,16)||(fallback===undefined?'00':'');}
+ state.month=parse(state.native.value.slice(0,10)||state.native.dataset.dateOnly) || new Date();state.focusDate=calendarDate(state);
  render(state); current=state; const popup=state.popup;
  const start=rect(state.button),scrolls=[];
  for(let ancestor=state.button.parentElement;ancestor;ancestor=ancestor.parentElement)scrolls.push([ancestor,ancestor.scrollTop,ancestor.scrollLeft]);
@@ -234,6 +273,10 @@ async function open(state) {
  const below=innerHeight-start.top, above=start.top+start.height;
  const top=below>=height+12 || below>=above ? Math.min(start.top,innerHeight-height-12) : Math.max(12,start.top+start.height-height);
  const end={left:Math.min(Math.max(12,start.left),viewportWidth-width-12),top:Math.max(12,top),width,height};
+ // Lay out content at its final size; the animated outer surface clips it.
+ // A temporary height restriction must not create a scrollbar and reflow text.
+ popup.style.setProperty('--choice-content-height',`${height-state.header.getBoundingClientRect().height-parseFloat(popupStyle.borderTopWidth)-parseFloat(popupStyle.borderBottomWidth)}px`);
+ popup.style.setProperty('--choice-content-width',`${width-parseFloat(popupStyle.borderLeftWidth)-parseFloat(popupStyle.borderRightWidth)}px`);
  Object.assign(popup.style,{left:`${end.left}px`,top:`${end.top}px`,height:`${end.height}px`});
  state.button.setAttribute('aria-expanded','true');state.button.classList.add('ui-control-open');
  if(!reduced.matches) {
@@ -278,13 +321,13 @@ async function close(state,focus=true) {
 }
 function adapt(native) {
  if(adapted.has(native) || native.multiple || (native.tagName==='SELECT' && native.size>1)) return;
- const button=node('button','ui-control');button.type='button';const date=native.type==='date',color=native.type==='color';if(color)button.classList.add('ui-color-control');
+ const button=node('button','ui-control');button.type='button';const datetime=native.type==='datetime-local',date=native.type==='date'||datetime,color=native.type==='color';if(color)button.classList.add('ui-color-control');
  const label=node('span','ui-control-value');const icon=node('span','ui-control-icon');icon.innerHTML=date ? icons.calendar : icons.chevron;button.append(label,icon);
  const popup=node('div',`ui-choice-popup${date?' ui-date-popup':''}${native.dataset.popupWrap==='true'?' ui-choice-wrap':''}`);popup.popover='manual';popup.hidden=true;
  popup.id=`ui-choice-${++nextId}`;button.setAttribute('role','combobox');button.setAttribute('aria-readonly','true');button.setAttribute('aria-controls',date ? popup.id : `${popup.id}-list`);button.setAttribute('aria-haspopup',date?'dialog':'listbox');button.setAttribute('aria-expanded','false');
- if(date||color) {popup.setAttribute('role','dialog');popup.setAttribute('aria-label',color?(native.labels?.[0]?.textContent||'Color'):words().date);button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls',popup.id);}
+ if(date||color) {popup.setAttribute('role','dialog');popup.setAttribute('aria-label',color?(native.labels?.[0]?.textContent||'Color'):dateLabel({datetime}));button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls',popup.id);}
  native.classList.add('ui-native-control');native.tabIndex=-1;native.setAttribute('aria-hidden','true');native.insertAdjacentElement('afterend',button);(native.closest('dialog') || document.body).append(popup);
- const state={native,button,label,popup,date,color,listId:`${popup.id}-list`,animations:[]};adapted.set(native,state);states.add(state);
+ const state={native,button,label,popup,date,datetime,color,listId:`${popup.id}-list`,animations:[]};adapted.set(native,state);states.add(state);
  button.addEventListener('click',event=>{event.preventDefault();current===state ? close(state) : open(state);});
  button.addEventListener('keydown',event=>{if(['ArrowDown','ArrowUp','Enter',' '].includes(event.key) && current!==state){event.preventDefault();open(state);}});
  native.addEventListener('change',()=>refresh(state));native.addEventListener('invalid',event=>{event.preventDefault();button.setAttribute('aria-invalid','true');button.focus();});native.addEventListener('input',()=>button.removeAttribute('aria-invalid'));
@@ -294,6 +337,11 @@ function adapt(native) {
   if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close(state);}
   else if(event.key==='Tab') {
    event.preventDefault();
+   if(state.datetime){
+    const fields=[...popup.querySelectorAll('button,input,[tabindex]')].filter(el=>!el.disabled&&el.tabIndex>=0);
+    const next=fields[fields.indexOf(document.activeElement)+(event.shiftKey?-1:1)];
+    if(next){next.focus({preventScroll:true});return;}
+   }
    const scope=native.closest('dialog')||document;
    const targets=[...scope.querySelectorAll('a[href],button,input,select,textarea,[tabindex]')].filter(el=>el===button||(!el.closest('.ui-choice-popup')&&!el.disabled&&el.tabIndex>=0&&el.getBoundingClientRect().width>0&&getComputedStyle(el).visibility!=='hidden'&&!el.classList.contains('ui-native-control')));
    const next=targets[targets.indexOf(button)+(event.shiftKey?-1:1)]||button;
@@ -304,14 +352,15 @@ function adapt(native) {
 }
 export function installControls() {
  if(installed) return;installed=true;
- const scan=root=>{if(root instanceof Element && root.matches('select,input[type="date"],input[type="color"]')) adapt(root);root.querySelectorAll?.('select,input[type="date"],input[type="color"]').forEach(adapt);};
+ const controlSelector='select,input[type="date"],input[type="datetime-local"],input[type="color"]';
+ const scan=root=>{if(root instanceof Element && root.matches(controlSelector)) adapt(root);root.querySelectorAll?.(controlSelector).forEach(adapt);};
  scan(document);
  new MutationObserver(records=>{
   const refreshSet=new Set();
   for(const record of records) {
    if(record.type==='childList') {record.addedNodes.forEach(scan);const select=record.target.closest?.('select');if(select && adapted.has(select)) refreshSet.add(adapted.get(select));}
    else if(record.target===document.documentElement) states.forEach(state=>refreshSet.add(state));
-   else {const native=record.target.closest?.('select,input[type="date"],input[type="color"]');if(native && adapted.has(native)) refreshSet.add(adapted.get(native));}
+   else {const native=record.target.closest?.(controlSelector);if(native && adapted.has(native)) refreshSet.add(adapted.get(native));}
   }
   refreshSet.forEach(refresh);states.forEach(state=>{if(!state.native.isConnected){state.popup.remove();states.delete(state);if(current===state){cancelAnimations(state);current=null;}}});
  }).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['lang','disabled','required','value','selected','min','max','aria-labelledby','aria-label']});

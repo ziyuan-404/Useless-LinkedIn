@@ -2,6 +2,8 @@
 
 **法国求职 Skill：用自然语言找岗位、准备材料、投递和跟进。**
 
+岗位发现默认由本地零 Token 扫描器处理，支持 102 个公开平台适配器、API 全文优先、受限并发和断点恢复；可选独立 Ollama/Gemini/OpenAI 兼容评估，模型结果仍需来源与语义复核。[配置与工作流](references/career-ops-integration.md)。
+
 中文 · [English](README.en.md) · [Français](README.fr.md)
 
 提供自己的简历和求职目标，Agent 会检查岗位有效性、重复记录与硬门槛，准备 CV、动机信和申请问答，在你的授权范围内提交，并更新本地投递看板。岗位方向、合同类型、地区和开始时间均按你的条件配置。

@@ -13,6 +13,7 @@ const db=openDashboard(root);const publicDir=path.resolve(path.dirname(fileURLTo
 const companyKey=value=>String(value??'').normalize('NFD').replace(/\p{M}/gu,'').trim().toUpperCase();
 db.function('company_key',companyKey);
 db.function('company_initial',value=>{const first=companyKey(value).charAt(0);return /^[A-Z]$/.test(first)?first:'#';});
+db.function('submission_day',(day,stamp)=>stamp?localDate(new Date(stamp)):day);
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8'};
 function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));}
 function fail(res,error){const message=error instanceof Error?error.message:String(error);send(res,/not found/i.test(message)?404:/changed/i.test(message)?409:400,{error:message});}
@@ -22,7 +23,7 @@ function dailySubmissions(){
   const day=new Date(end);day.setUTCDate(end.getUTCDate()-20+index);
   return day.toISOString().slice(0,10);
  });
- const counts=db.prepare("SELECT date, count(*) AS total FROM applications WHERE archived_at='' AND status='已提交' AND date BETWEEN ? AND ? GROUP BY date").all(days[0],days.at(-1));
+ const counts=db.prepare("SELECT submission_day(date,submitted_at) AS date, count(*) AS total FROM applications WHERE archived_at='' AND status='已提交' AND submission_day(date,submitted_at) BETWEEN ? AND ? GROUP BY submission_day(date,submitted_at)").all(days[0],days.at(-1));
  const byDate=new Map(counts.map(row=>[row.date,row.total]));
  return days.map(date=>({date,count:byDate.get(date)||0}));
 }
@@ -39,7 +40,8 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='GET'&&url.pathname==='/api/deleted-applications'){send(res,200,db.prepare("SELECT id,company,role,version,archived_at FROM applications WHERE archived_at<>'' ORDER BY archived_at DESC").all());return;}
   if(req.method==='GET'&&url.pathname==='/api/applications'){
    const query=(url.searchParams.get('q')||'').slice(0,200),status=(url.searchParams.get('status')||'').slice(0,100),initial=url.searchParams.get('initial')||'',sort=url.searchParams.get('sort')||'date-desc',focus=url.searchParams.get('focus')||'';
-   const order={'date-desc':'date DESC, company_key(company) ASC, id ASC','date-asc':'date ASC, company_key(company) ASC, id ASC','company-asc':'company_key(company) ASC, date DESC, id ASC','company-desc':'company_key(company) DESC, date DESC, id ASC'}[sort];
+   const newest='submission_day(date,submitted_at) DESC, submitted_at DESC',oldest='submission_day(date,submitted_at) ASC, submitted_at ASC';
+   const order={'date-desc':`${newest}, company_key(company) ASC, id ASC`,'date-asc':`${oldest}, company_key(company) ASC, id ASC`,'company-asc':`company_key(company) ASC, ${newest}, id ASC`,'company-desc':`company_key(company) DESC, ${newest}, id ASC`}[sort];
    if(!order||initial&&!/^[A-Z#]$/.test(initial)||!['','due','waiting','verify','verified','missing-jd','conflicts'].includes(focus))throw Error('Invalid filter or sort');
    let sql="SELECT * FROM applications WHERE archived_at=''",params=[];
    if(query){sql+=' AND (id LIKE ? OR company LIKE ? OR role LIKE ? OR job_url LIKE ?)';params.push(...Array(4).fill(`%${query}%`));}
@@ -80,7 +82,7 @@ const server=http.createServer(async(req,res)=>{
   if(req.method!=='GET'){send(res,405,{error:'Method not allowed'});return;}
   const name=url.pathname==='/'?'workspace.html':url.pathname==='/app'?'index.html':url.pathname.slice(1);
   const shared=['workspace.html','workspace.js','workspace.css','workspace-card.js','workspace-genie.js','anchor-motion.js','language-layout.js','language-layout.css','motion.js','motion.css','motion-tokens.js','motion-boot.js','controls.js','controls.css','segmented.js','segmented.css'].includes(name);
-  if(!shared&&!['index.html','dashboard.js','dashboard-i18n.js','dashboard.css','dashboard-layout.css'].includes(name)){send(res,404,{error:'Not found'});return;}
+  if(!shared&&!['index.html','dashboard.js','dashboard-i18n.js','dashboard-datetime.js','dashboard.css','dashboard-layout.css'].includes(name)){send(res,404,{error:'Not found'});return;}
   const file=path.join(publicDir,shared?'../shared':'',name);let data=await fs.readFile(file);
   if(name==='workspace.html')data=data.toString('utf8').replace('__DEFAULT_VIEW__','dashboard').replace('__DASHBOARD_PORT__',String(port)).replace('__EDITOR_PORT__','8766');
   res.writeHead(200,{'Content-Type':mime[path.extname(file)],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; connect-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; frame-src 'self' http://127.0.0.1:8765 http://127.0.0.1:8766 http://localhost:8765 http://localhost:8766; base-uri 'none'; form-action 'self'"});res.end(data);

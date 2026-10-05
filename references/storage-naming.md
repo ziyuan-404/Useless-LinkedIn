@@ -3,7 +3,7 @@
 岗位工作目录：`个人资料/applications/automation/jobs/YYYY-MM-DD__公司__岗位/`。
 精投材料目录：`个人资料/CV/YYYY-MM-DD__公司__岗位/`。迁移已有材料时保留最终版本，例如 `__v03`，不累叠成 `-v2-v3`。
 
-例如：`2026-01-01__Example Demo__Software Developer__v03`。
+例如：`2026-09-26__Balyo__Alternance Ingénieur R&D – Software Integration & Test (H-F)__v03`。
 
 - 日期：岗位首次建立日期；材料使用生成日期。公司、岗位取已核实的台账字段，未知时明确写“公司待核实”或“岗位待核实”，不得猜测。
 - 保留法语重音和中文。Windows 禁用字符 `<>:"/\|?*` 替换为 `-`，连续空白合并，结尾点号和空格去掉；设备保留名加 `_` 前缀。
@@ -12,3 +12,5 @@
 - job ID、contextHash 和 payloadHash 仅保留在元数据中；岗位 `directory` 字段记录目录名，`output` 记录材料位置。业务 ID、投递状态和去重规则不受目录名影响。
 - 改名使用共享工具 `runtime/tools/rename-storage.mjs`，默认只输出计划，`--apply` 执行。先备份台账和数据库，逐文件核对 SHA-256；数据库只更新材料路径并新增路径变更事件。
 - `storage-path-map.json` 保存旧→新路径，流水线、生成器和审核兼容原引用。历史报告、来源引用、成功凭证、审核快照不重写。审核比较仍核验真实文件内容，目录改名不会作废已核实的内容摘要。
+
+2026-10-02 的迁移计划、完整映射、迁移前数据库和文件摘要位于 `个人资料/audits/motion-review-2026-10-02/round3/naming/`。测试用途的 General CV 目录本来可读，保留原名。

@@ -1,7 +1,7 @@
 // Shared motion for the Dashboard and material editor. No candidate data is stored here.
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 import {genieFrames} from './workspace-genie.js';
-import {cardFrames} from './workspace-card.js';
+import {cardFrames,cardViewport} from './workspace-card.js';
 import {followAnchor} from './anchor-motion.js';
 import {motion,springProgress,geometryFrames} from './motion-tokens.js';
 import {installControls} from './controls.js';
@@ -313,7 +313,7 @@ let workspaceMotionInstalled=false;
 function installWorkspaceMotion(){
  if(workspaceMotionInstalled)return introDone;workspaceMotionInstalled=true;
  let visible;introDone=new Promise(resolve=>{visible=resolve;});
- let animation=null,prepared=null,sequence=0,cardGeometry=null,headerAnimation=null,headerSerial=0,ownTitle=null;
+ let animation=null,surfaceAnimation=null,cardSurface=null,prepared=null,sequence=0,cardGeometry=null,headerAnimation=null,headerSerial=0,ownTitle=null;
  const main=document.querySelector('main');
  const send=(type,data,extra={})=>window.parent.postMessage({type,requestId:data.requestId,...extra},'*');
  const cleanupGenie=()=>{for(const key of ['transform-origin','clip-path','will-change'])main.style.removeProperty(key);};
@@ -330,14 +330,24 @@ function installWorkspaceMotion(){
  const prepareCard=data=>{
   cleanupGenie();main.style.removeProperty('transform');
   const box=main.getBoundingClientRect(),header=document.querySelector('.topbar').getBoundingClientRect();
-  const crop=Math.max(0,header.bottom-box.top),height=Math.max(1,Math.min(innerHeight-Math.max(0,header.bottom),box.height-crop));
-  const bottom=Math.max(0,box.height-crop-height);
+  const {left,top,width,height,crop,bottom}=cardViewport(box,header.bottom,innerHeight);
   main.style.transformOrigin=`50% ${crop+height/2}px`;main.style.willChange='transform';
+  surfaceAnimation?.cancel();cardSurface?.remove();
+  // A long page's own shadow is clipped away. Paint the same card surface
+  // behind its visible slice, without moving or duplicating page content.
+  cardSurface=document.createElement('div');cardSurface.className='workspace-card-surface';cardSurface.setAttribute('aria-hidden','true');
+  Object.assign(cardSurface.style,{left:`${left}px`,top:`${top}px`,width:`${width}px`,height:`${height}px`});
+  main.before(cardSurface);
   document.documentElement.classList.add('workspace-content-card');
   return cardGeometry={width:innerWidth,direction:data.view==='editor'?1:-1,crop,bottom};
  };
  const framesFor=phase=>cardFrames(phase,cardGeometry).map(({borderRadius,...frame})=>({...frame,clipPath:`inset(${cardGeometry.crop}px 0 ${cardGeometry.bottom}px 0 round ${borderRadius})`}));
- const playCard=async(phase,duration)=>{const previous=animation;animation=main.animate(framesFor(phase),{duration,easing:'linear',fill:'both'});previous?.cancel();await settled(animation);};
+ const animateCard=(phase,duration)=>{
+  const previous=animation,previousSurface=surfaceAnimation,options={duration,easing:'linear',fill:'both'};
+  animation=main.animate(framesFor(phase),options);surfaceAnimation=cardSurface.animate(cardFrames(phase,cardGeometry),options);
+  if(animation.startTime!==null)surfaceAnimation.startTime=animation.startTime;previous?.cancel();previousSurface?.cancel();
+ };
+ const playCard=async(phase,duration)=>{animateCard(phase,duration);await settled(animation);};
  const header=data=>{
   const context=document.querySelector('.brand-context'),group=document.querySelector('.workspace-links');
   if(ownTitle===null)ownTitle=context.textContent;
@@ -348,7 +358,7 @@ function installWorkspaceMotion(){
   headerAnimation=context.animate([{opacity:1,transform:'translateX(0)'},{opacity:0,transform:`translateX(${-direction*14}px)`}],{duration:180,easing:ease,fill:'both'});
   settled(headerAnimation).then(()=>{if(token!==headerSerial)return;context.textContent=data.title;headerAnimation.cancel();headerAnimation=context.animate([{opacity:0,transform:`translateX(${direction*14}px)`},{opacity:1,transform:'translateX(0)'}],{duration:310,easing:ease});});
  };
- const resetCard=()=>{document.documentElement.classList.remove('workspace-content-card');main.style.removeProperty('transform');};
+ const resetCard=()=>{surfaceAnimation?.cancel();surfaceAnimation=null;cardSurface?.remove();cardSurface=null;document.documentElement.classList.remove('workspace-content-card');main.style.removeProperty('transform');};
  const source=data=>({left:(data.origin?.x??.5)*innerWidth,top:(data.origin?.y??.04)*innerHeight,width:80,height:36});
  window.addEventListener('message',async event=>{
   if(event.source!==window.parent||!/^http:\/\/(127\.0\.0\.1|localhost):876[56]$/.test(event.origin))return;
@@ -357,7 +367,7 @@ function installWorkspaceMotion(){
   if(data.type==='workspace-visible'){++headerSerial;headerAnimation?.cancel();if(ownTitle!==null){document.querySelector('.brand-context').textContent=ownTitle;ownTitle=null;}moveWorkspaceSegment(document.querySelector('.workspace-links'),document.querySelector('#dashboard-link')?'editor':'dashboard',false);resetCard();++sequence;animation?.cancel();animation=null;prepared=null;cleanupGenie();main.classList.remove('motion-route-prepared');visible();return;}
   if(data.type==='workspace-prepare'){
    ++sequence;animation?.cancel();prepared=data;
-   if(data.contentCardTransition){prepareCard(data);if(!reduce.matches){animation=main.animate(framesFor('in'),{duration:motion.popover,easing:'linear',fill:'both'});animation.pause();animation.currentTime=0;}send('workspace-prepared',data,{headerHeight:Math.max(0,document.querySelector('.topbar').getBoundingClientRect().bottom),title:document.querySelector('.brand-context').textContent});return;}
+   if(data.contentCardTransition){prepareCard(data);if(!reduce.matches){animateCard('in',motion.popover);animation.pause();animation.currentTime=0;surfaceAnimation.pause();surfaceAnimation.currentTime=0;}send('workspace-prepared',data,{headerHeight:Math.max(0,document.querySelector('.topbar').getBoundingClientRect().bottom),title:document.querySelector('.brand-context').textContent});return;}
    if(data.genieTransition){const geometry=prepareGenie(data);if(!reduce.matches){animation=main.animate(genieFrames(geometry,true),{duration:motion.routeIn,easing:'linear',fill:'both'});animation.pause();animation.currentTime=0;}send('workspace-prepared',data,{headerHeight:document.querySelector('.topbar').getBoundingClientRect().bottom});return;}
    if(data.cardTransition){animation=null;main.classList.remove('motion-route-prepared');send('workspace-prepared',data);return;}
    const geometry=sourceGeometry(main,source(data));
@@ -375,7 +385,7 @@ function installWorkspaceMotion(){
   }else if(data.type==='workspace-card-out'){const token=++sequence;if(!reduce.matches)await playCard('out',motion.popover);if(token===sequence)send('workspace-card-out-done',data);
   }else if(data.type==='workspace-enter'){
    const token=++sequence;main.classList.remove('motion-route-prepared');
-   if(data.contentCardTransition){if(!reduce.matches){animation.play();await settled(animation);await playCard('expand',motion.routeIn);}if(token===sequence){animation?.cancel();animation=null;prepared=null;cleanupGenie();resetCard();send('workspace-entered',data);visible();}return;}
+   if(data.contentCardTransition){if(!reduce.matches){animation.play();surfaceAnimation.play();if(animation.startTime!==null)surfaceAnimation.startTime=animation.startTime;await settled(animation);await playCard('expand',motion.routeIn);}if(token===sequence){animation?.cancel();animation=null;prepared=null;cleanupGenie();resetCard();send('workspace-entered',data);visible();}return;}
    if(data.genieTransition&&!reduce.matches){if(!animation){animation=main.animate(genieFrames(prepareGenie(data),true),{duration:motion.routeIn,easing:'linear',fill:'both'});}else animation.play();await settled(animation);}
    if(!reduce.matches&&!data.cardTransition&&!data.genieTransition){
     if(!animation||prepared?.requestId!==data.requestId){animation?.cancel();animation=main.animate(routeFrames(sourceGeometry(main,source(data))),{duration:motion.routeIn,fill:'both'});}

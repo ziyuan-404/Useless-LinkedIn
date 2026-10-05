@@ -42,7 +42,7 @@ export async function assertPublicUrl(url){
  return href;
 }
 export async function request(url,opts={}){
- const {httpClient='native',credentialBody=false,credentialHeaders=false,responseMode='text',timeoutMs=18000,maxResponseBytes=8*1024*1024,...init}=opts;
+ const {httpClient='native',credentialBody=false,credentialHeaders=false,responseMode='text',redirect='follow',timeoutMs=18000,maxResponseBytes=8*1024*1024,...init}=opts;
  if(!Number.isFinite(maxResponseBytes)||maxResponseBytes<=0)throw Error('maxResponseBytes must be positive');
  if(!['native','impit'].includes(httpClient))throw Error('Unknown HTTP client');
  const client=httpClient==='impit'?new (dependency('impit').Impit)({browser:'chrome',timeout:18000}):null;
@@ -50,7 +50,8 @@ export async function request(url,opts={}){
  for(let redirects=0;redirects<=5;redirects++){
   current=await assertPublicUrl(current);
   const r=await (client?client.fetch.bind(client):fetch)(current,{...options,redirect:'manual',signal:AbortSignal.timeout(timeoutMs),headers:{'user-agent':'UselessLinkedIn/1.0 (public job discovery)',...options.headers}});
-  if([301,302,303,307,308].includes(r.status)){
+  if(redirect==='error'&&r.status>=300&&r.status<400)throw Error('Redirect refused by caller');
+  if(redirect!=='manual'&&[301,302,303,307,308].includes(r.status)){
    const location=r.headers.get('location');if(!location)throw Error('Redirect without location');
    const next=new URL(location,current).href;
    if(new URL(next).origin!==new URL(current).origin&&(credentialBody&&options.body||credentialHeaders))throw Error('Authenticated request changed origin');
@@ -67,14 +68,16 @@ export async function request(url,opts={}){
  throw Error('Too many redirects');
 }
 function jobField(value){return typeof value==='string'?parse(value).text.trim():Array.isArray(value)?value.map(jobField).filter(Boolean).join('\n'):'';}
-export function extract(raw,url,layer){const p=parse(raw.body);const j=p.jobs[0];let jd=raw.visibleText||p.text;if(j?.description){jd=[jobField(j.description),jobField(j.qualifications),jobField(j.responsibilities),jobField(j.experienceRequirements),jobField(j.educationRequirements)].filter(Boolean).join('\n\n');}const title=j?.title||p.title;const company=j?.hiringOrganization?.name||'';const apply=(raw.visibleControls||p.links.filter(l=>l.url&&!/^(#|javascript:)/i.test(l.url)).map(l=>l.title)).filter(t=>/postuler|apply|candidater|envoyer.*candidature/i.test(t));
+export function extract(raw,url,layer){const p=parse(raw.body);const j=p.jobs[0];let jd=raw.visibleText||p.text;if(j?.description){jd=[jobField(j.description),jobField(j.qualifications),jobField(j.responsibilities),jobField(j.experienceRequirements),jobField(j.educationRequirements)].filter(Boolean).join('\n\n');}const title=j?.title||p.title;const company=j?.hiringOrganization?.name||'';const apply=(raw.visibleControls||p.links.filter(l=>l.url&&!/^(#|javascript:)/i.test(l.url)).map(l=>l.title)).filter(t=>/postuler|je postule\b|apply|candidater|envoyer.*candidature/i.test(t));
  let live=classifyLiveness({status:raw.status,requestedUrl:url,finalUrl:raw.finalUrl,bodyText:raw.visibleText||p.text,applyControls:apply});
  if(live.result==='active'&&(raw.status!==200||!j&&/Consent Management Platform|Personalize Your Options/i.test(jd)))live={result:'uncertain',code:'incomplete_or_consent_page',reason:'Posting content could not be verified'};
  if(j?.validThrough&&Date.parse(j.validThrough)<Date.now())live={result:'expired',code:'validThrough',reason:j.validThrough};
  if(live.code==='insufficient_content'||/captcha|verify you are human|access denied|sign in to|connexion pour/i.test(p.text))live={result:'uncertain',code:'blocked_or_incomplete',reason:'Insufficient posting or access gate'};
  if(live.result==='active'&&jd.length<300)live={result:'uncertain',code:'incomplete_jd',reason:'Apply control without complete JD'};
- return {url,finalUrl:raw.finalUrl,layer,status:raw.status,title,company,jd,bodyText:raw.visibleText||p.text,links:p.links,structuredJob:j||null,liveness:live,capturedAt:new Date().toISOString()};}
-export async function capture(url){const attempts=[];let best;for(const [layer,fn] of [['HTTP',request]]){try{const raw=await fn(url);const x=extract(raw,url,layer);attempts.push({layer,status:x.status,liveness:x.liveness});if(!best||x.jd.length>best.jd.length||x.liveness.result==='active')best=x;if(x.liveness.result==='active'||x.liveness.result==='expired')break;}catch(e){attempts.push({layer,error:e.message});}}
+ return {url,finalUrl:raw.finalUrl,layer,status:raw.status,title,company,jd,bodyText:raw.visibleText||p.text,links:p.links,applyControls:apply,structuredJob:j||null,liveness:live,capturedAt:new Date().toISOString()};}
+export async function capture(url){const attempts=[];let best;
+ try{const {captureAtsJd}=await import('./ats-jd.mjs');best=await captureAtsJd(url,{fetchPage:request});if(best){attempts.push({layer:'ATS-API',status:best.status,liveness:best.liveness});if(['active','expired'].includes(best.liveness.result))return {...best,attempts,searchNeeded:false};}}catch(error){attempts.push({layer:'ATS-API',error:error.message});}
+ for(const [layer,fn] of [['HTTP',request]]){try{const raw=await fn(url);const x=extract(raw,url,layer);attempts.push({layer,status:x.status,liveness:x.liveness});if(!best||x.jd.length>best.jd.length||x.liveness.result==='active')best=x;if(x.liveness.result==='active'||x.liveness.result==='expired')break;}catch(e){attempts.push({layer,error:e.message});}}
  return {...(best||{url,jd:'',liveness:{result:'uncertain',code:'fetch_failed',reason:'All fetch attempts failed'}}),attempts,searchNeeded:!best||best.liveness.result==='uncertain'};}
 export async function transaction(fn,{onDiscovery}={}){
  await fs.mkdir(home,{recursive:true});const lock=await acquireFileLock(path.join(home,'.lock'));

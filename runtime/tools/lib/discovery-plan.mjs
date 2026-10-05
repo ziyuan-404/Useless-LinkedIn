@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {careerProviderIds} from '../../vendor/career-ops/provider-ids.mjs';
 import {FT_SEARCH,LBA_SEARCH} from './official-job-apis.mjs';
 export const searchTaskStatuses=Object.freeze(['pending','standby','partial','retry-wait','blocked','needs-agent','completed','retired']);
 
@@ -71,6 +72,11 @@ export function buildDiscoveryPlan(config){
   if(source.provider==='wttj')for(const query of source.wttj?.queries?.length?source.wttj.queries:queries)push({kind:'api',portal:source.name,provider:'wttj',query,location:'',url:source.search_url?renderSearchUrl(source.search_url,{query,location:locations[0]}):'https://www.welcometothejungle.com/fr/jobs'});
   else if(source.provider==='france-travail')for(const query of queries)for(const location of locations)push({kind:'api',portal:source.name,provider:source.provider,query,location,url:source.api_url||FT_SEARCH});
   else if(source.provider==='la-bonne-alternance')push({kind:'api',portal:source.name,provider:source.provider,query:'',location:'',url:source.api_url||(source.api?.mode==='export'?LBA_SEARCH.replace(/\/search$/,'/export'):LBA_SEARCH)});
+  else if(careerProviderIds.includes(source.provider)&&!['greenhouse','lever','ashby'].includes(source.provider)||source.career_ops?.enabled){
+   const url=source.career_url||source.search_url||source.api_url;
+   if(!url)throw Error(`${source.name}: career provider requires career_url/search_url/api_url`);
+   push({kind:'api',portal:source.name,provider:source.provider,query:'',location:'',url});
+  }
   else if(source.api_url||['greenhouse','lever','ashby'].includes(source.provider)){
    const template=source.api_url|| (source.provider==='greenhouse'?`https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(source.board_token||'')}/jobs${source.include_description?'?content=true':''}`:source.provider==='ashby'?`https://api.ashbyhq.com/posting-api/job-board/${encodeURIComponent(source.site||'')}`:`https://api${source.region==='eu'?'.eu':''}.lever.co/v0/postings/${encodeURIComponent(source.site||'')}?mode=json`);
    if(source.provider==='greenhouse'&&!source.board_token||['lever','ashby'].includes(source.provider)&&!source.site)throw Error(`${source.name}: missing ATS board_token/site`);

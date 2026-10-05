@@ -2,6 +2,7 @@ import {searchWttjPage} from './wttj-search.mjs';
 import {renderSearchUrl} from './discovery-plan.mjs';
 import {httpFailure} from './discovery-policy.mjs';
 import {franceTravailPage,lbaPage} from './official-job-apis.mjs';
+import {careerProviderIds,careerProviderPage} from './career-providers.mjs';
 
 export function field(object,path){return path===''?object:String(path||'').split('.').reduce((value,key)=>value?.[key],object);}
 const text=value=>typeof value==='string'?value:typeof value==='number'?String(value):'';
@@ -27,6 +28,8 @@ export async function readApiPage(source,task,{fetchPage,credentials}){
  const transport=fetchPage;fetchPage=(url,opts={})=>transport(url,{maxResponseBytes:source.api?.max_response_bytes??128*1024*1024,...opts});
  if(source.provider==='france-travail')return franceTravailPage(source,task,{fetchPage});
  if(source.provider==='la-bonne-alternance')return lbaPage(source,task,{fetchPage});
+ if(careerProviderIds.includes(source.provider)&&!['wttj','greenhouse','lever','ashby'].includes(source.provider))return careerProviderPage(source,task,{fetchPage});
+ if(source.career_ops?.enabled&&careerProviderIds.includes(source.provider))return careerProviderPage(source,task,{fetchPage});
  const cursor=task.cursor||{};
  if(source.provider==='wttj'){
   const result=await searchWttjPage(source,{query:task.query,page:cursor.page??0,credentials,

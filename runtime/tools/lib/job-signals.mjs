@@ -60,6 +60,6 @@ export function classifyLiveness({status=0,requestedUrl='',finalUrl='',bodyText=
   if(/stelle (?:ist )?(?:nicht mehr verfügbar|bereits besetzt)|position (?:ist )?bereits besetzt|oferta (?:ya no está disponible|cerrada)|puesto (?:ya )?cubierto|posizione (?:non è più disponibile|chiusa)|vaga (?:encerrada|não está mais disponível)|职位已关闭|岗位已下线/i.test(bodyText))return {result:'expired',code:'localized_closed',reason:'Applications closed'};
   const id=new URL(requestedUrl||'https://example.invalid').searchParams.get('jk');
   if(id&&finalUrl&&!finalUrl.includes(id))return {result:'uncertain',code:'redirected_off_posting',reason:'Posting identifier missing after redirect'};
-  if(applyControls.some(x=>/postuler|apply|candidater|envoyer.*candidature/i.test(x)))return {result:'active',code:'apply_control_visible',reason:'Visible apply control'};
+  if(applyControls.some(x=>/postuler|je postule\b|apply|candidater|envoyer.*candidature/i.test(x)))return {result:'active',code:'apply_control_visible',reason:'Visible apply control'};
   return {result:'uncertain',code:bodyText.trim().length<200?'insufficient_content':'no_apply_control',reason:'Posting status needs review'};
 }

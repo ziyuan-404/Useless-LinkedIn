@@ -12,16 +12,22 @@ import {acquireFileLock} from './lib/file-lock.mjs';
 import {validateLead} from './lib/schema.mjs';
 import {credentialsReady} from './lib/official-job-apis.mjs';
 import {anySearchSuggestions} from './lib/optional-web-search.mjs';
+import {enrichCareerSources} from './lib/career-providers.mjs';
+import {loadBlacklist,blacklistMatch} from './lib/blacklist.mjs';
+import {mapBounded,mapPriorityBounded,serialQueue} from './lib/async-pool.mjs';
 
 const a=args();
-if(a.help){console.log('scan [--config FILE] [--portal NAME] [--plan] [--resume] [--max-requests N] [--max-pages N] [--import FILE --import-only] [--listing-capture FILE] [--sources FILE] [--task-results FILE] [--retry-agent]\n0 = unlimited. --no-browser disables rendered-page fallback. Transient retries honor nextRetryAt.');process.exit(0);}
+if(a.help){console.log('scan [--config FILE] [--portal NAME] [--plan] [--resume] [--max-requests N] [--max-pages N] [--import FILE --import-only] [--listing-capture FILE] [--sources FILE] [--task-results FILE] [--retry-agent] [--zero-token] [--concurrency 4]\n0 = unlimited. --no-browser disables rendered-page fallback. Transient retries honor nextRetryAt.');process.exit(0);}
 const loadArray=async(file,label)=>{if(!file)return [];const data=JSON.parse(await fs.readFile(file,'utf8'));if(!Array.isArray(data))throw Error(`${label} expects an array`);return data;};
 const c=await config(a.config);
+const blacklist=await loadBlacklist();
 const registered=await read(path.join(home,'discovered-sources.json'),[]),newSources=await loadArray(a.sources,'sources');
 const sourceMap=new Map([...registered,...c.portals,...newSources].map(p=>[p.name,p]));c.portals=[...sourceMap.values()];
+await enrichCareerSources(c);
 if(a.portal&&!c.portals.some(p=>p.name===a.portal))throw Error(`Unknown source: ${a.portal}`);
 const limit=(flag,key)=>{const value=Number(a[flag]??c.discovery?.[key]??0);if(!Number.isInteger(value)||value<0)throw Error(`${flag} must be a nonnegative integer`);return value||Infinity;};
 const maxRequests=limit('max-requests','max_requests_per_run'),maxPages=limit('max-pages','max_pages_per_task');
+const concurrency=Number(a.concurrency??c.discovery?.concurrency??(a['zero-token']?4:1));if(!Number.isInteger(concurrency)||concurrency<1||concurrency>16)throw Error('concurrency must be 1..16');
 if(!a.plan)await fs.mkdir(home,{recursive:true});
 const lockPath=path.join(home,'.scan.lock');
 const scanLock=a.plan?null:await acquireFileLock(lockPath);
@@ -29,7 +35,7 @@ try{
 const previous=await read(path.join(home,'search-queue.json'),[]);
 const tasks=mergeTasks(buildDiscoveryPlan(c),previous,{resume:!!a.resume,refreshHours:c.discovery?.refresh_hours??24});
 const selected=task=>!task.retired&&task.status!=='standby'&&(!a.portal||task.portal===a.portal);
-if(a.plan){console.log(JSON.stringify({version:2,sources:c.portals.length,taskCount:tasks.filter(selected).length,limits:{requests:Number.isFinite(maxRequests)?maxRequests:null,pagesPerTask:Number.isFinite(maxPages)?maxPages:null},tasks:tasks.filter(selected)},null,2));process.exit(0);}
+if(a.plan){const plan={version:2,sources:c.portals.length,taskCount:tasks.filter(selected).length,limits:{requests:Number.isFinite(maxRequests)?maxRequests:null,pagesPerTask:Number.isFinite(maxPages)?maxPages:null},tasks:tasks.filter(selected)};if(a.summary){const file=path.join(home,'scan-plan.json');await write(file,plan);console.log(JSON.stringify({file,sources:plan.sources,taskCount:plan.taskCount,limits:plan.limits}));}else console.log(JSON.stringify(plan,null,2));process.exit(0);}
 const capturesRaw=a['listing-capture']?JSON.parse(await fs.readFile(a['listing-capture'],'utf8')):[];
 const captures=Array.isArray(capturesRaw)?capturesRaw:[capturesRaw];
 for(const x of captures){
@@ -50,10 +56,11 @@ if(c.max_results_per_portal!==undefined)report.warnings.push('Deprecated max_res
 const logs=new Map(c.portals.map(p=>[p.name,{name:p.name,attempts:[],found:0,filtered:0,review:0,rejected:0}]));
 const getLog=name=>{if(!logs.has(name))logs.set(name,{name,attempts:[],found:0,filtered:0,review:0,rejected:0});return logs.get(name);};
 const registeredMap=new Map(registered.map(p=>[p.name,p]));for(const p of newSources)registeredMap.set(p.name,p);
-async function persist(){
+const persistSerial=serialQueue();
+async function persist(){return persistSerial(async()=>{
  await write(path.join(home,'search-queue.json'),tasks);
  await write(path.join(home,'discovered-sources.json'),[...registeredMap.values()]);
-}
+});}
 function registerSource(entry){
  if(!entry||sourceMap.has(entry.name))return;
  // The same ATS board may be observed under a different employer/source label.
@@ -69,6 +76,7 @@ async function collect(rows,source,observation,{observedJob=true}={}){
   if(!j){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:row.url||'',title:row.title||'',reason:'Not a published posting, invalid URL/title, or explicit source restriction'});continue;}
   try{publicUrl(j.url);}catch(e){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:j.url,reason:e.message});continue;}
   const signals=relevance(j,c,source);
+  const blocked=blacklistMatch(j,blacklist);if(blocked){log.rejected++;report.rejected.push({portal:source.name,url:j.url,title:j.title,reason:'blacklist: '+blocked.reason});continue;}
   const record=JSON.parse(JSON.stringify({...j,discoveryContentHash:hash(JSON.stringify([j.title,j.description||j.jd||'',j.contract||'',j.location||'',j.updatedAt||''])),discoverySignals:signals,discoveryDisposition:signals.matches?'candidate':'review',observations:[{...observation,pageUrl:j.sourceUrl||observation.pageUrl,capturedAt:j.capturedAt||observation.capturedAt,source:source.name,url:j.url}]}));
   const at=new Date().toISOString();
   try{await validateLead({...record,id:'pending',key:normalizeUrl(record.url),state:'discovered',createdAt:at,lastSeenAt:at});}catch(e){invalid++;log.rejected++;report.rejected.push({portal:source.name,url:j.url,reason:e.message});continue;}
@@ -110,22 +118,24 @@ activateFallbacks();
 let progress=true;
 while(progress&&!a['import-only']){
  progress=false;
- for(const task of [...tasks].sort((left,right)=>(Date.parse(left.updatedAt)||0)-(Date.parse(right.updatedAt)||0)||taskPriority(left)-taskPriority(right))){
-  if(!selected(task)||task.completed||!['api','listing'].includes(task.kind))continue;
-  const source=sourceMap.get(task.portal);if(source?.enabled===false)continue;if(!source){task.status='needs-agent';task.reason='source_not_configured';continue;}
+ const ordered=[...tasks].sort((left,right)=>(Date.parse(left.updatedAt)||0)-(Date.parse(right.updatedAt)||0)||taskPriority(left)-taskPriority(right));
+ const visit=concurrency===1?(items,n,priority,fn)=>mapBounded(items,n,fn):mapPriorityBounded;
+ await visit(ordered,concurrency,taskPriority,async task=>{
+  if(!selected(task)||task.completed||!['api','listing'].includes(task.kind))return;
+  const source=sourceMap.get(task.portal);if(source?.enabled===false)return;if(!source){task.status='needs-agent';task.reason='source_not_configured';return;}
   const pages=pagesThisRun.get(task.id)||0;
-  if(pages>=maxPages){task.status='partial';task.reason='configured_page_budget';continue;}
+  if(pages>=maxPages){task.status='partial';task.reason='configured_page_budget';return;}
   const currentUrl=task.cursor?.urls?.[0]||task.cursor?.url||task.url;
   const observed=task.kind==='listing'?captures.find(x=>(x.taskId===task.id||!x.taskId)&&(x.url===currentUrl||x.pageUrl===currentUrl)&&!usedCaptures.has(x)):null;
   if(pages===0&&a['retry-agent']&&task.status==='needs-agent'){task.seenPages=[];task.currentPages={};task.currentKeys=[];delete task.hasUnusableRecords;}
-  if(source.renderer==='agent'&&!observed){task.status='needs-agent';task.reason='interactive_browser_selected';activateFallbacks();continue;}
+  if(source.renderer==='agent'&&!observed){task.status='needs-agent';task.reason='interactive_browser_selected';activateFallbacks();return;}
   // Upgrade old temporary failures rather than permanently parking them as Agent work.
   if(task.status==='needs-agent'&&/HTTP (?:408|425|429|5\d\d)|access_(?:429|5\d\d)|fetch failed|timeout|connection refused/i.test(task.reason||''))task.status='retry-wait';
   if(task.failureClass==='credentials-missing'&&credentialsReady(source)){task.status='pending';delete task.failureClass;delete task.reason;}
-  if(!observed&&(['blocked','needs-agent'].includes(task.status)&&!a['retry-agent']||Date.parse(task.nextRetryAt||'')>Date.now()||attemptedFailures.has(task.id)))continue;
+  if(!observed&&(['blocked','needs-agent'].includes(task.status)&&!a['retry-agent']||Date.parse(task.nextRetryAt||'')>Date.now()||attemptedFailures.has(task.id)))return;
   // Offline replay never launches unrelated public requests.
-  if(a['listing-capture']&&!observed)continue;
-  if(!observed&&report.requests>=maxRequests){task.status='partial';task.reason='configured_request_budget';continue;}
+  if(a['listing-capture']&&!observed)return;
+  if(!observed&&report.requests>=maxRequests){task.status='partial';task.reason='configured_request_budget';return;}
   const log=getLog(source.name);
   try{
    let result;
@@ -161,6 +171,7 @@ while(progress&&!a['import-only']){
    task.cursor=incremental?null:result.nextCursor;task.completed=!task.hasUnusableRecords&&(incremental||!!result.complete&&!repeated);task.reason=task.hasUnusableRecords&&!result.nextCursor?'unusable_posting_records':incremental?'incremental_unchanged_page':repeated?'repeated_page':result.reason;
    task.incrementalStopped=incremental||!!result.unchangedSnapshot;task.attempts=0;delete task.nextRetryAt;delete task.failureClass;
    task.status=task.completed?'completed':result.nextCursor&&!repeated?'partial':'needs-agent';
+   if(result.providerFailure){Object.assign(task,failureDisposition(result.providerFailure,{attempt:(task.attempts||0)+1,baseSeconds:c.discovery?.retry_base_seconds??30,maxSeconds:c.discovery?.retry_max_seconds??1800}));task.completed=false;attemptedFailures.add(task.id);}
    if(task.completed&&!incremental)task.lastFullScanAt=new Date().toISOString();
    task.updatedAt=new Date().toISOString();if(task.completed)task.finishedAt=task.updatedAt;
    if(repeated)task.cursor=null;
@@ -175,10 +186,10 @@ while(progress&&!a['import-only']){
    attemptedFailures.add(task.id);activateFallbacks();
    log.attempts.push({taskId:task.id,layer:task.kind==='api'?'API':'HTTP',url:currentUrl,error:e.message});await persist();
   }
- }
+ });
 }
 // Optional open-web retrieval supplies suggestions, never unverified job leads.
-if(c.discovery?.web_backend==='anysearch'&&!a['import-only']&&!a['listing-capture'])for(const task of tasks.filter(t=>selected(t)&&!t.completed&&t.kind==='web-search')){
+if(!a['zero-token']&&c.discovery?.web_backend==='anysearch'&&!a['import-only']&&!a['listing-capture'])for(const task of tasks.filter(t=>selected(t)&&!t.completed&&t.kind==='web-search')){
  const settings=c.discovery.anysearch||{};
  if(task.failureClass==='credentials-missing'&&credentialsReady({api_token_env:settings.api_token_env}))task.status='pending';
  if(['blocked','needs-agent'].includes(task.status)&&!a['retry-agent']||Date.parse(task.nextRetryAt||'')>Date.now())continue;
@@ -232,6 +243,8 @@ await transaction(store=>{
  store.scans=[...store.scans.map(summary),summary(report)].slice(-100);
 },{onDiscovery:changes=>{for(const result of changes)report[result.duplicate?'duplicates':'added'].push(result);}});
 await write(path.join(home,'last-scan.json'),report);
+const machineReport={version:1,startedAt:report.startedAt,finishedAt:report.finishedAt,modelCalls:0,modelTokens:0,concurrency,requests:report.requests,coverage:report.coverage,added:report.added.length,duplicates:report.duplicates.length,complete:report.complete,limitations:'Model-free API/HTTP/local browser scan. Unresolved web-search and access gates remain queued; starting this CLI or reading its summary in an agent conversation still uses conversation tokens.'};
+await write(path.join(home,'zero-token-scan.json'),machineReport);
 await write(path.join(home,'scan-agent-task.md'),`Read search-queue.json and the Skill workflow discover-jobs.md. Handle every pending web-search/career-discovery task and listing/API task needing Agent access. Retry-wait tasks resume automatically after nextRetryAt; do not bypass robots exclusions or access challenges. Choose public HTTP, an isolated Playwright browser, or an available interactive browser according to site behavior; use Agent WebSearch for open-web search. API success only parks explicitly configured fallback tasks; independent discovery remains active. Follow actual next pages/load-more until observed end; capture pagination URLs. Import arbitrary published detail links with scan --import FILE --import-only. Add employer career sites with scan --sources FILE. Replay observed lists with scan --listing-capture FILE. Persist outcomes with scan --task-results FILE --import-only (id, status: completed/partial/blocked, capturedAt, evidence, optional cursor). Do not mark partial or blocked searches completed. Keep predictions, training advertisements and search summaries separate from published vacancies; Run triage --list-review and triage --list-closed, then triage --run to inspect complete JDs without candidate analysis. Persist observed decisions using triage --decisions FILE; incomplete or blocked reviews remain actionable. Candidate leads proceed to full JD/liveness and candidate gates in process-job.md. Configured budgets preserve pending tasks; scan --resume continues them. Pending tasks: ${report.coverage.pending}.\n`);
-await exportList();console.log(JSON.stringify(report,null,2));
+await exportList();console.log(JSON.stringify(a.summary?{file:path.join(home,'last-scan.json'),complete:report.complete,requests:report.requests,coverage:report.coverage,added:report.added.length,duplicates:report.duplicates.length}:report,null,2));
 }finally{if(scanLock)await scanLock.close();}

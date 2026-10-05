@@ -13,7 +13,7 @@
 .ui-choice-selected { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 44px; min-height: 44px; padding: 9px 11px; border-bottom: 1px solid #e3eaf3; color: #2368b8; font-weight: 600; }
 .ui-choice-selected .ui-choice-icon { transform: rotate(180deg); }
 .ui-date-popup .ui-choice-icon { transform: none; }
-.ui-choice-content { overflow: auto; max-height: calc(100% - var(--choice-selected-height,44px)); }
+.ui-choice-content { overflow: auto; width: var(--choice-content-width,100%); max-height: var(--choice-content-height,calc(100% - var(--choice-selected-height,44px))); }
 .ui-option-list { padding: 6px; }
 .ui-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 40px; padding: 9px 11px; border: 0; border-radius: 8px; background: transparent; color: #172334; font: inherit; text-align: start; cursor: pointer; }
 .ui-option-text { overflow-wrap: anywhere; min-width: 0; }
@@ -38,6 +38,13 @@
 .ui-day:focus-visible, .ui-month:focus-visible, .ui-calendar-actions button:focus-visible { outline: 2px solid #2368b8; outline-offset: -2px; }
 .ui-calendar-actions { display: flex; justify-content: space-between; gap: 8px; padding-top: 9px; margin-top: 7px; border-top: 1px solid #e3eaf3; }
 .ui-calendar-actions button { padding: 6px 10px; border: 0; border-radius: 7px; background: #edf4fd; color: #2368b8; font: inherit; font-size: 13px; cursor: pointer; }
+.ui-time-fields { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:end; gap:12px; padding-top:12px; margin-top:9px; border-top:1px solid #e3eaf3; }
+.ui-time-field { display:grid; gap:7px; min-width:0; color:#536780; font-size:13px; }
+.ui-time-field .ui-time-input { width:100%; min-width:0; min-height:44px; padding:8px 10px; border:1px solid #bfcbd9; border-radius:8px; background:#fff; color:#172334; font:inherit; font-size:18px; font-variant-numeric:tabular-nums; text-align:center; }
+.ui-time-separator { display:grid; place-items:center; height:44px; color:#65778d; font-size:20px; }
+.ui-calendar-actions .ui-time-apply { margin-left:auto; background:#2368b8; color:#fff; }
+.ui-calendar-actions button:disabled { opacity:.45; cursor:default; }
+.ui-time-input:focus-visible { outline:2px solid #2368b8; outline-offset:2px; }
 @keyframes ui-check-draw { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
 .save-particle-burst { position: fixed; z-index: 10000; width: 0; height: 0; pointer-events: none; }
 .save-particle-burst i { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #4e9fe4; box-shadow: 0 0 6px #acd8ff99; }

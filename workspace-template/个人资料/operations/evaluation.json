@@ -1,0 +1,12 @@
+{
+ "version":1,
+ "backend":"ollama",
+ "model":null,
+ "base_url":"http://127.0.0.1:11434",
+ "max_calls_per_run":10,
+ "max_prompt_bytes":120000,
+ "max_output_tokens":9000,
+ "timeout_ms":120000,
+ "precision_min_score":4,
+ "review_min_score":3.5
+}

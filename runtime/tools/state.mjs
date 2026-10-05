@@ -6,7 +6,9 @@ import {toolsRoot,args,root} from './runtime.mjs';
 import {transaction,exportList,home,read} from './lib/core.mjs';
 import {assertTransition,leadStates} from './lib/state-machine.mjs';
 import {currentSnapshot,snapshotMatches} from './lib/approval.mjs';
-import {openDashboard,syncSubmittedLead} from './lib/dashboard-db.mjs';
+import {syncDashboardStage} from './lib/dashboard-stage.mjs';
+import {jobDirectory} from './lib/storage-paths.mjs';
+import {matchLevels,validateMatchReview} from './lib/match-review.mjs';
 
 const a=args();
 if (a.help) { console.log('state.mjs --id ID --to STATE [--evidence TEXT] [--receipt FILE for submitted] [--reason TEXT] | --list-states'); process.exit(0); }
@@ -48,7 +50,12 @@ if (['submitting','submitted'].includes(a.to)) {
 const values={state:a.to};
 if (a.to==='needs-decision') values.reason=a.reason;
 if (a.to==='approved') values.reviewEvidence=a.evidence;
-if (a.to==='approved') values.approvalSnapshot=await currentSnapshot(job,a.evidence);
+if (a.to==='approved'){
+ const dir=await jobDirectory(root,home,job),assessment=await read(path.join(dir,'assessment.json'));
+ if(assessment.assessmentType==='user-selected-application')values.matchReview=await validateMatchReview({jobId:job.id,matchLevel:assessment.matchLevel,reason:assessment.matchReason,sources:assessment.matchSources},{workspace:root,job,dir});
+ if(matchLevels.includes(assessment.matchLevel))values.matchLevel=assessment.matchLevel;
+ values.approvalSnapshot=await currentSnapshot(job,a.evidence);
+}
 if (a.to==='submitted') { values.submitted=true; values.submissionEvidence=submissionEvidence;values.dashboardSynced=false; }
 await transaction(s=>{
   const j=s.jobs.find(x=>x.id===a.id);if (!j) throw Error('Unknown job ID');
@@ -56,11 +63,8 @@ await transaction(s=>{
   j.events=[...(j.events||[]),{at:new Date().toISOString(),from:j.state,to:a.to,evidence:a.to==='submitted'?submissionEvidence:a.evidence||null,authorizationGrantIds}];
   Object.assign(j,values);
 });
-if(a.to==='submitted'){
-  const db=openDashboard(root);try{syncSubmittedLead(db,{...job,...values});}finally{db.close();}
-  await transaction(s=>{s.jobs.find(x=>x.id===a.id).dashboardSynced=true;});
-}
+const dashboardSync=await syncDashboardStage(a.id,{strict:a.to==='submitted'});
 await exportList();
 const rebuild=spawnSync(process.execPath,[path.join(toolsRoot,'tracker.mjs'),'--rebuild'],{encoding:'utf8'});
 if (rebuild.status!==0) throw Error('Tracker rebuild failed: '+rebuild.stderr);
-console.log(JSON.stringify({id:a.id,state:a.to}));
+console.log(JSON.stringify({id:a.id,state:a.to,dashboardSync}));
