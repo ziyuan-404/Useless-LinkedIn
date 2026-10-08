@@ -25,7 +25,7 @@ test('complete sync recovers full JD, reviewed CV and letter, assessment and met
  const f=await fixture();try{
   insertRecord(f.db,{id:f.job.id,date:'2026-10-05',company:'Example',role:'Developer',job_url:f.job.url,resume_path:f.output,match_level:'中'});
   const result=await synchronizeDashboard(f.workspace,f.home,f.job,{db:f.db});assert.equal(result.complete,true);const row=f.db.prepare('SELECT * FROM applications').get();
-  assert.equal(row.jd,f.jd);assert.equal(row.resume_path,path.join(f.output,'Example-CV.pdf'));assert.equal(row.letter_path,path.join(f.output,'Example-Lettre.pdf'));assert.equal(row.mode,'precision');assert.equal(row.knockout,'MARGINAL');assert.equal(row.requisition_id,'REQ-1');assert.equal(row.channel,'Fictional ATS');assert.match(row.role_analysis,/Fictional role analysis/);assert.match(row.company_info,/尚未提供独立公司研究/);assert.equal(row.match_level,'中','existing human judgement must survive');assert.equal(row.last_contact,'');
+  assert.equal(row.jd,f.jd);assert.equal(row.resume_path,path.join(f.output,'Example-CV.pdf'));assert.equal(row.letter_path,path.join(f.output,'Example-Lettre.pdf'));assert.equal(row.mode,'precision');assert.equal(row.knockout,'MARGINAL');assert.equal(row.requisition_id,'REQ-1');assert.equal(row.channel,'Fictional ATS');assert.match(row.role_analysis,/Fictional role analysis/);assert.match(row.company_info,/研究状态：尚未研究/);assert.equal(row.match_level,'中','existing human judgement must survive');assert.equal(row.last_contact,'');
   const events=f.db.prepare('SELECT count(*) n FROM application_events').get().n,metadata=f.db.prepare('SELECT * FROM application_sync').get();
   const second=await synchronizeDashboard(f.workspace,f.home,f.job,{db:f.db});assert.equal(second.changed,false);assert.equal(second.version,row.version);assert.equal(f.db.prepare('SELECT count(*) n FROM application_events').get().n,events);assert.deepEqual(f.db.prepare('SELECT * FROM application_sync').get(),metadata);
  }finally{f.db.close();}
@@ -81,4 +81,16 @@ test('blocked executor results are recorded without a submitted flag',async()=>{
 });
 test('missing analysis is reported and an approved stage does not reuse a generation instruction',async()=>{
  const f=await fixture({state:'approved'});try{await fs.unlink(path.join(f.dir,'assessment.json'));let result=await synchronizeDashboard(f.workspace,f.home,f.job,{db:f.db});assert.equal(result.complete,false);assert.ok(result.missing.includes('role_analysis'));assert.equal(f.db.prepare('SELECT next_action FROM applications').get().next_action,'执行投递并保存成功凭证');}finally{f.db.close();}
+});
+
+test('reviewed company cache replaces the generated status and remains idempotent while preserving human edits',async()=>{
+ const {collectCompany,companyRecord,reviewCompany}=await import('../runtime/tools/lib/company-research.mjs'),f=await fixture();
+ try{
+  await synchronizeDashboard(f.workspace,f.home,f.job,{db:f.db});
+  const url='https://example.org/about',text='Example builds developer tools for teams. '.repeat(10);
+  await collectCompany(f.workspace,f.home,'Example',[url],{fetchPage:async()=>({status:200,finalUrl:url,body:text}),parsePage:body=>({text:body})});
+  const record=await companyRecord(f.workspace,f.home,f.job);await reviewCompany(f.workspace,f.home,f.job,{sourceHash:record.sha256,facts:[{text:'Builds developer tools',sourceUrl:url,quote:'Example builds developer tools for teams.'}]});
+  const sync=await synchronizeDashboard(f.workspace,f.home,f.job,{db:f.db});assert.equal(sync.companyResearchStatus,'researched');const row=f.db.prepare('SELECT * FROM applications').get();assert.match(row.company_info,/已完成公司研究/);assert.match(row.company_info,/Builds developer tools/);assert.doesNotMatch(row.company_info,/尚未提供/);assert.equal((await synchronizeDashboard(f.workspace,f.home,f.job,{db:f.db})).changed,false);
+  updateRecord(f.db,row.id,{version:row.version,company_info:'Human research retained'});await synchronizeDashboard(f.workspace,f.home,f.job,{db:f.db});assert.equal(f.db.prepare('SELECT company_info FROM applications').get().company_info,'Human research retained');
+ }finally{f.db.close();}
 });

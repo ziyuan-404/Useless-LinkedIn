@@ -1,6 +1,7 @@
 import {request,parse} from './core.mjs';
 import {inferCareerSource} from './discovery-sources.mjs';
 import {normalizeUrl} from './job-signals.mjs';
+export {postingIdentityMismatch} from './job-signals.mjs';
 export const actionTitle=value=>/^(?:voir (?:l['’]offre|le poste|plus)|view (?:job|details)|read more|learn more|apply(?: now)?|postuler|candidater|en savoir plus|details|détails|next|suivant(?:e)?)\s*[›»→.!]*$/i.test(String(value||'').trim());
 export function mergePostingLinks(rows){
  const jobs=new Map();
@@ -13,14 +14,6 @@ export function mergePostingLinks(rows){
  return [...jobs.values()].filter(j=>!actionTitle(j.title));
 }
 
-export function postingIdentityMismatch(listed,captured){
- const tokens=s=>new Set(String(s||'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').split(' ').filter(x=>x.length>2&&!['alternance','stage','pour','avec','the','and','les','des','une','vous','hfm'].includes(x)));
- const left=tokens(listed.title),right=tokens(captured.title);
- const titleMismatch=left.size>=2&&right.size>=2&&![...left].some(x=>right.has(x));
- const listedCompany=tokens(listed.company),capturedCompany=tokens(captured.company);
- const companyMismatch=listedCompany.size&&capturedCompany.size&&![...listedCompany].some(x=>capturedCompany.has(x));
- return titleMismatch||Boolean(companyMismatch);
-}
 
 export function posting(link,portal={},base,{observedJob=false}={}){
  try{

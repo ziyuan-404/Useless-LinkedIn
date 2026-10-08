@@ -56,10 +56,24 @@ export function classifyLiveness({status=0,requestedUrl='',finalUrl='',bodyText=
   if(status>=500)return {result:'uncertain',code:'server_error',reason:`HTTP ${status}`};
   if(status===404||status===410)return {result:'expired',code:'http_gone',reason:`HTTP ${status}`};
   if(/les candidatures ne sont plus accept[ée]es|n.accept[eé] plus de candidatures|offre (?:n.est plus|plus) disponible/i.test(bodyText))return {result:'expired',code:'fr_closed',reason:'Applications closed'};
-  if(/job (?:is )?no longer available|this job has expired|position has been filled|applications? (?:are|is) closed/i.test(bodyText))return {result:'expired',code:'closed',reason:'Applications closed'};
+  if(/(?:this )?(?:job|position) (?:is )?no longer (?:available|accepting applications)|this job has expired|position has been filled|applications? (?:are|is) closed/i.test(bodyText))return {result:'expired',code:'closed',reason:'Applications closed'};
   if(/stelle (?:ist )?(?:nicht mehr verfügbar|bereits besetzt)|position (?:ist )?bereits besetzt|oferta (?:ya no está disponible|cerrada)|puesto (?:ya )?cubierto|posizione (?:non è più disponibile|chiusa)|vaga (?:encerrada|não está mais disponível)|职位已关闭|岗位已下线/i.test(bodyText))return {result:'expired',code:'localized_closed',reason:'Applications closed'};
   const id=new URL(requestedUrl||'https://example.invalid').searchParams.get('jk');
   if(id&&finalUrl&&!finalUrl.includes(id))return {result:'uncertain',code:'redirected_off_posting',reason:'Posting identifier missing after redirect'};
   if(applyControls.some(x=>/postuler|je postule\b|apply|candidater|envoyer.*candidature/i.test(x)))return {result:'active',code:'apply_control_visible',reason:'Visible apply control'};
   return {result:'uncertain',code:bodyText.trim().length<200?'insufficient_content':'no_apply_control',reason:'Posting status needs review'};
+}
+
+export function commercialDeveloper(title){
+ const text=String(title||'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
+ return /\b(?:business|bussines[s]?)\s+develop(?:er|ment)|\bdeveloppeu(?:r|se)\s+commercial(?:e)?\b/.test(text);
+}
+
+export function postingIdentityMismatch(listed,captured){
+ const tokens=s=>new Set(String(s||'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').split(' ').filter(x=>x.length>2&&!['alternance','stage','pour','avec','the','and','les','des','une','vous','hfm'].includes(x)));
+ const left=tokens(listed.title),right=tokens(captured.title);
+ const titleMismatch=left.size>=2&&right.size>=2&&![...left].some(x=>right.has(x));
+ const listedCompany=tokens(listed.company),capturedCompany=tokens(captured.company);
+ const companyMismatch=listedCompany.size&&capturedCompany.size&&![...listedCompany].some(x=>capturedCompany.has(x));
+ return titleMismatch||Boolean(companyMismatch);
 }

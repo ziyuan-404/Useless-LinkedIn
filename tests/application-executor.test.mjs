@@ -36,7 +36,7 @@ before(async()=>{
 after(async()=>{await browser?.close();await new Promise(resolve=>server.close(resolve));});
 function bind(page){
   const wrap=locator=>new Proxy(locator,{get(target,key){const value=target[key];if(typeof value!=='function')return value;return (...args)=>{const last=args.at(-1);if(last&&typeof last==='object'&&'timeoutMs' in last){args[args.length-1]={...last,timeout:last.timeoutMs};delete args[args.length-1].timeoutMs;}return value.apply(target,args);};}});
-  return {url:()=>page.url(),playwright:{evaluate:(fn,arg)=>page.evaluate(fn,arg),domSnapshot:()=>page.locator('body').innerText(),locator:s=>wrap(page.locator(s)),getByLabel:(s,o)=>wrap(page.getByLabel(s,o)),getByRole:(s,o)=>wrap(page.getByRole(s,o)),waitForEvent:(name,o)=>page.waitForEvent(name,{timeout:o.timeoutMs})}};
+  return {url:()=>page.url(),playwright:{evaluate:(fn,arg)=>page.evaluate(fn,arg),domSnapshot:()=>{throw Error('Full page snapshots are disabled in this workflow');},locator:s=>wrap(page.locator(s)),getByLabel:(s,o)=>wrap(page.getByLabel(s,o)),getByRole:(s,o)=>wrap(page.getByRole(s,o)),waitForEvent:(name,o)=>page.waitForEvent(name,{timeout:o.timeoutMs})}};
 }
 async function fixture(target=url){
   const workspace=await fs.mkdtemp(path.join(process.env.USELESS_LINKEDIN_TEST_ARTIFACTS||os.tmpdir(),'application-fixture-'));
@@ -83,8 +83,19 @@ test('IAB-compatible executor fills, uploads, verifies and records one confirmed
   assert.equal(JSON.parse(await fs.readFile(f.leads)).jobs[0].state,'submission-unconfirmed');const permit=JSON.parse(await fs.readFile(JSON.parse(arm.stdout).permit));
   const result=await executeIabPlan(tab,plan,{permit});assert.equal(result.status,'success-observed',JSON.stringify(result));assert.equal(result.metrics.alreadyCorrect,4);assert.equal(await page.evaluate(()=>window.submissions),1);
   await save(resultFile,result);const record=run(f.workspace,'apply','--id','job-1','--record',resultFile);assert.equal(record.status,0,record.stderr);assert.equal(JSON.parse(await fs.readFile(f.leads)).jobs[0].state,'submitted');
+  const evidence=JSON.parse(JSON.parse(await fs.readFile(f.leads)).jobs[0].submissionEvidence);assert.equal(evidence.kind,'platform-status');assert.match(evidence.artifactPath,/\.json$/);assert.equal(result.evidence.artifactHtml,undefined);
   const again=run(f.workspace,'apply','--id','job-1','--arm','--result',resultFile);assert.notEqual(again.status,0);
   const packet=run(f.workspace,'batch','--stage','submit');assert.equal(JSON.parse(packet.stdout).count,0);await page.close();
+});
+
+test('connector email reconciliation confirms once without browser snapshots or repeat submission',async()=>{
+ const f=await fixture(),page=await browser.newPage();await page.goto(url);const {tab,plan}=await prepare(f,page),ready=await executeIabPlan(tab,plan),file=path.join(f.workspace,'ready.json');await save(file,ready);
+ const arm=run(f.workspace,'apply','--id','job-1','--arm','--result',file);assert.equal(arm.status,0,arm.stderr);
+ const mail={id:'controlled-confirmation',label_ids:['INBOX'],payload:{headers:[{name:'From',value:'noreply@example.org'},{name:'To',value:'candidate@example.org'},{name:'Date',value:new Date().toUTCString()},{name:'Subject',value:'Application received: Developer at Example'}],parts:[{mime_type:'text/plain',body:{content:'We received your application for Developer at Example.'}}]}};
+ const email=path.join(f.workspace,'email.json');await save(email,{structuredContent:mail});
+ const result=run(f.workspace,'receipt','--id','job-1','--email',email,'--commit');assert.equal(result.status,0,result.stderr);
+ const job=JSON.parse(await fs.readFile(f.leads)).jobs[0],evidence=JSON.parse(job.submissionEvidence),bytes=await fs.readFile(path.join(f.workspace,evidence.artifactPath));assert.equal(job.state,'submitted');assert.equal(evidence.kind,'confirmation-email');assert.equal(await page.evaluate(()=>window.submissions),0,'reconciliation never clicks Submit');
+ const repeat=spawnSync(process.execPath,[cli,'receipt','--id','job-1','--email','-','--commit'],{cwd:f.workspace,env:{...process.env,USELESS_LINKEDIN_WORKSPACE:f.workspace,PYTHONUTF8:'1'},input:JSON.stringify(mail)+'\n',encoding:'utf8',timeout:10000});assert.equal(repeat.status,0,repeat.stderr);assert.deepEqual(await fs.readFile(path.join(f.workspace,evidence.artifactPath)),bytes,'stdin reconciliation cannot overwrite the hashed original receipt');await page.close();
 });
 test('a conditional question stops at the changed structure without submitting',async()=>{
   const target=url+'?mode=conditional',f=await fixture(target),page=await browser.newPage();await page.goto(target);const {tab,plan}=await prepare(f,page);
@@ -149,9 +160,20 @@ test('a terminal gate skips long analysis, but cannot bypass PASS assessment',as
   const f=await fixture('https://example.org/job/1'),store=JSON.parse(await fs.readFile(f.leads));store.jobs[0].state='awaiting-agent';await save(f.leads,store);
   const prepared=run(f.workspace,'pipeline','--id','job-1');assert.equal(prepared.status,0,prepared.stderr);
   const context=JSON.parse(await fs.readFile(path.join(f.dir,'context.json')));const gate={assessmentType:'gate',contextHash:context.contextHash,company:'Example',role:'Developer',ko:{status:'FAIL',items:keys.map(key=>({key,result:key==='contract'?'FAIL':'PASS',reason:'Observed fixture criterion',jdQuote:key==='contract'?'Developer alternance responsibilities':''}))},decision:{route:'skip',gaps:['contract'],nextAction:'Skip',owner:'agent'},questions:[]};const file=path.join(f.workspace,'gate.json');await save(file,gate);
+  await save(file,{...gate,draft:true,reviewRequired:true});const unreviewed=run(f.workspace,'pipeline','--id','job-1','--assessment',file);assert.notEqual(unreviewed.status,0);assert.match(unreviewed.stderr,/draft must be reviewed/);assert.equal(JSON.parse(await fs.readFile(f.leads)).jobs[0].state,'awaiting-agent');await save(file,gate);
   const p=run(f.workspace,'pipeline','--id','job-1','--assessment',file);assert.equal(p.status,0,p.stderr);assert.equal(JSON.parse(await fs.readFile(f.leads)).jobs[0].state,'rejected');assert.doesNotMatch(await fs.readFile(path.join(f.dir,'report.md'),'utf8'),/## A/);
   gate.ko.status='PASS';gate.ko.items[0].result='PASS';await save(file,gate);const reject=run(f.workspace,'pipeline','--id','job-1','--assessment',file);assert.notEqual(reject.status,0);
 });
+test('the original login/captcha interruption resumes with its approved snapshot; unconfirmed submission cannot restart',async()=>{
+  const f=await fixture();assert.equal(run(f.workspace,'state','--id','job-1','--to','submitting').status,0);
+  for(const block of ['blocked-login','blocked-captcha']){
+    const paused=run(f.workspace,'state','--id','job-1','--to',block);assert.equal(paused.status,0,paused.stderr);
+    const resumed=run(f.workspace,'state','--id','job-1','--to','submitting');assert.equal(resumed.status,0,resumed.stderr);
+  }
+  assert.equal(run(f.workspace,'state','--id','job-1','--to','submission-unconfirmed').status,0);
+  const repeated=run(f.workspace,'state','--id','job-1','--to','submitting');assert.notEqual(repeated.status,0);assert.match(repeated.stderr,/requires reconciliation/);
+});
+
 test('bounded assessment batches reuse a common packet and retain remaining jobs',async()=>{
   const f=await fixture('https://example.org/job/1'),store=JSON.parse(await fs.readFile(f.leads));store.jobs[0].state='awaiting-agent';store.jobs.push({...store.jobs[0],id:'job-2',url:'https://example.org/job/2',key:'https://example.org/job/2',directory:'2026-10-03__Example__Developer2'});await save(f.leads,store);const dir=path.join(path.dirname(f.dir),store.jobs[1].directory);await fs.mkdir(dir,{recursive:true});const context=JSON.parse(await fs.readFile(path.join(f.dir,'context.json')));context.url=store.jobs[1].url;context.captured.url=store.jobs[1].url;await save(path.join(dir,'context.json'),context);
   const p=run(f.workspace,'batch','--stage','assess','--limit','1');assert.equal(p.status,0,p.stderr);const summary=JSON.parse(p.stdout);assert.equal(summary.count,1);assert.equal(summary.remaining,1);const manifest=JSON.parse(await fs.readFile(summary.manifest));assert.equal(manifest.factsFiles.length,1);assert.ok(manifest.items[0].agentContext);assert.ok(p.stdout.length<1000);

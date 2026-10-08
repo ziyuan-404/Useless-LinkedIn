@@ -39,6 +39,14 @@ test('all queries, additive matrix and locations enter independent API/listing/w
  assert.equal(relevance({title:'Graduate Engineer'},{include_keywords:['alternance'],role_keywords:['data']}).matches,false);
 });
 
+test('employer prospecting stays in career discovery without vacancy collection tasks',()=>{
+ const source={name:'Prospects',search_domain:'prospects.example.org',discovery_kind:'career-discovery',listing_mode:'disabled'};
+ const plan=buildDiscoveryPlan({...baseConfig,portals:[source]});
+ assert.equal(plan.length,5);
+ assert.ok(plan.every(t=>t.kind==='career-discovery'&&t.portal==='Prospects'&&t.query.startsWith('site:prospects.example.org ')));
+ assert.throws(()=>buildDiscoveryPlan({...baseConfig,portals:[{...source,discovery_kind:'api'}]}),/discovery_kind/);
+});
+
 test('config rejects invalid dimensions and explicit empty keyword arrays match broadly',()=>{
  assert.throws(()=>buildDiscoveryPlan({...baseConfig,queries:'bad'}),/string array/);
  assert.throws(()=>buildDiscoveryPlan({...baseConfig,portals:[{name:'x'},{name:'x'}]}),/unique/);

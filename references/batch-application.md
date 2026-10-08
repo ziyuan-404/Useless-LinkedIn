@@ -4,11 +4,11 @@
 
 ## 采集与判断
 
-用 scan --plan --summary、scan --summary、triage --run --summary。完整报告写在返回的路径，模型只看数量、异常和本批 ID。未完成覆盖及 review 队列不会被截断。
+先用 research --run --scope FILE 完成本批扫描、全文初筛和历史查重；仅独立诊断才分别运行 scan/triage。完整报告留在磁盘，模型只看当前卡片、异常和必要完整 JD，不预读后续阶段/实现。未完成覆盖及 review 队列不被截断。
 
 用 batch --stage assess --limit 10 获取本批 manifest 和 task。读取 agent-context.json 和其 factsFile，共用包每批读一次。完整 JD 保留；经历索引只用于检索，实际判断和写作前读取相关经历原文。context.json 是完整审计快照，不默认读整份。
 
-先完成全部14项 KO。FAIL/MARGINAL 可按 gate.schema.json 输出简版，不生成 A–G、问答或材料；PASS 仍按 assessment.schema.json 完整评估和路由。海投必须选已经核验的简历；池为空时保留待决定，不假定存在材料。保存每条 assessment 和状态后继续其他岗位。
+先完成全部14项 KO。batch assess / pipeline 返回当前 gate-draft.json，填判断及原文证据，审核完成才解除 draft/reviewRequired 标记；不要复制其他公司文件或默认 PASS。FAIL/MARGINAL 用简版，不生成 A–G、问答或材料；PASS 仍按 assessment.schema.json 完整评估和路由。海投必须选已经核验的简历；池为空时保留待决定，不假定存在材料。保存每条 assessment 和状态后继续其他岗位。用 batch --stage assess --commit FILE（[{id,file}]）可逐项校验保存，失败项明确返回，整体退出非零；批量大小和剩余项由返回结果控制。
 
 新的阶段会话可直接读取交接文件，不需要原聊天历史。命令不会自动删除上下文或创建聊天，“忘记前文”也不保证缩小输入。独立会话用于阶段交接，不逐字段新开会话。
 
@@ -22,8 +22,8 @@
 6. 对未知问题按原文、选项和 profile 核实。复用答案用 apply --answers FILE 注册数组，条目为 `{questions:["完整问题及已核验别名"],answer:"答案"或布尔值,status:"confirmed",sources:[{path:"个人资料/profile/...",quote:"完整原文"}]}`。记录只引用事实；引用文件改变后失效。许可、现在/未来 sponsorship 和否定句不模糊合并。未知身份声明不得猜测。
 7. 未识别按钮由 Agent 根据实际页面判断后，用 --action next|submit --control 完整按钮名选择。工具拒绝未观察到或不唯一的控件；同结构复用绑定。iframe、特殊 autocomplete 及未知日期/数字格式保留给 Agent。
 8. ready-to-submit 结果落盘后，紧接着 apply --id ID --arm --result FILE。重新核对事实、材料、答案和授权，先保存唯一 attempt 并进入 submission-unconfirmed，返回5分钟有效的 permit.json。这是持久化和质量核对，不要求用户逐岗位批准。
-9. 运行 `await applicationExecutor.executeIabPlan(tab, plan, {permit})`，最终按钮只点击一次。结果保存后 apply --id ID --record FILE。只有本次新增明确成功文字、同源原始 DOM 凭证和对应 attempt，才由原 state 工具进入 submitted 并同步 Dashboard。成功区过大或跨域时另保存截图/确认邮件，使用既有 receipt 流程。
-10. batch --stage reconcile 只处理未核验尝试。先读平台状态、成功页或批量查询 Gmail 确认邮件；不再次点击提交。发生中断，即使不确定是否点击也先核验。
+9. 运行 `await applicationExecutor.executeIabPlan(tab, plan, {permit})`，最终按钮只点击一次。每次结果保存后 apply --id ID --record FILE，统一记录 metrics。只接受本次新增、同源且与 attempt 绑定的明确确认文字，保存最小结构化平台凭证；不调用 domSnapshot、不保存截图/整页 HTML，也不输出截图 Base64。确认区不明确或跨域则保持待确认并查邮件。
+10. batch --stage reconcile 只处理未核验尝试。运行 receipt --id ID --plan 返回当前尝试后的 Gmail 查询；由连接器读取匹配的原始邮件，将 structuredContent 保存到文件（通过工具存储传递，不打印整封邮件/附件给模型），再 receipt --id ID --email FILE --commit。脚本校验时间、公司/岗位或 URL、明确确认语句，保存原始结构化邮件及散列、更新状态与看板。要求点击验证链接的邮件不代表提交完成；先在 IAB 完成验证，再核验最终结果。邮件尚未到达时保留 submission-unconfirmed，不再次点击提交。邮件投递路线的已发邮件须使用 --sent --recipient 已核实邮箱，核对实际岗位页入口与审核附件。
 
 ## 修复与指标
 
@@ -38,11 +38,15 @@ IAB 可能省略 FileList/原生 validity 属性，文件用选择器完成事�
 
 ## 搜索、核实与初筛
 
-默认用统一入口 `research --run --limit 10 --max-requests 40 --triage-requests 40`。它顺序调用本地 scan 和完整 JD triage，保留原有公开接口、分页、去重、robots、退避、条件请求、覆盖记录及请求预算；stdout 只返回数量和文件路径。40 是本轮请求预算，不是永久截断岗位数量；预算用完的任务保留待续跑。`research --screen-only` 处理已发现线索，不重复扫描列表；无 run/screen-only 时仅生成已有证据交接。
+默认用统一入口 `research --run --scope FILE --limit 10 --max-requests 40 --triage-requests 40`；用户没有指定岗位目标时可省略 scope。零 Token 扫描器始终启用，本次 role_keywords/include_keywords/keyword_aliases 决定全文分拣和交接队列；标题直接命中优先，非匹配项保留在磁盘。执行 manifest.executionPolicy 中的续批/发现续跑命令，仅异常交 Agent；不重复搜索整个历史队列。保留公开接口、分页、去重、robots、退避、条件请求、覆盖及预算，stdout 只返回数量和文件路径。40 是本轮请求预算，不是永久岗位上限。已有线索用 research --screen-only；无 run/screen-only 时仅生成已有证据交接。公司缓存与连接器邮件输入见 [共享交接](company-cache-and-receipts.md)。
 
 manifest 含本批卡片、准确 JD 原文提示、完整 JD 文件、capture 来源和散列、coverage 各状态数量、remaining/nextOffset。下一批用 `--offset N`；全部队列和原始证据留在磁盘。卡片提示只帮助检索，不是资格判定；候选岗位仍读取完整 JD、最小事实包、相关经历原文并完成全部14项 KO。没有足够证据的硬条件保持 UNKNOWN/MARGINAL。FAIL/MARGINAL 的简版 gate 与 PASS 的完整 A–G 约束保持。
 
 完整候选详情默认复用24小时内散列未变的 capture；过期/被修改/消失信号会重新核验。已被阻挡或内容不完整的检查默认保留24小时，返回给 Agent 处理，不反复碰同一个门槛，也不当成有效或失效。显式 `research --screen-only --retry-agent` 可重试当前阻挡；临时网络错误仍按 nextRetryAt，不绕过退避。真实提交前仍用 IAB 当前页面核验，24小时缓存不证明提交时仍开放。
+
+搜索条件在首次 scan 前生成同一配置，续跑从 manifest 继承，不自行重建。仅初筛规则变化保持 task ID 和 cursor；真正的 URL/过滤器变化重建相应任务。合同未知和明确冲突分层，冲突/未匹配保留 deferred；默认每批只初筛当前 IDs。卡片原文提示最多每类一条短引文，完整 JD 不裁剪。后备任务与回写输入见 [搜索运行交接](research-handoff.md)。
+
+本地 research 自动查重；需要独立核对历史时用 `leads --ids FILE --check-history`，结果文件字段是 items/history。它只读身份与凭证散列，不刷新全部 Dashboard，也不自动证明新提交成功。只对不一致/缺失凭证查原始邮件，标题相似仍是疑似重复。脚本运行中每次等待30–60秒，不每几秒触发模型轮询。
 
 用 `leads --query 公司 --limit 10` 查询当前公司，多个词按字面 AND 匹配公司/岗位/URL；不会把布尔判断拼成字符串。`leads --id ID` 是精确查询。默认有界输出，完整选中记录保存到 queries 文件；不打印全部台账。用 `leads --ids FILE --sync-submitted` 同步本批已提交岗位，每条仍走 dashboard 成功凭证文件/散列核验，绝不推断成功。
 

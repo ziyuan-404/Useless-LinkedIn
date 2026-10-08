@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {identityUrls} from './posting-identity.mjs';
+import {normalizeUrl} from './job-signals.mjs';
 
 export const digest=value=>createHash('sha256').update(typeof value==='string'?value:JSON.stringify(value)).digest('hex');
 export function selectLeads(jobs,{id,ids,query,state,limit=10,offset=0}={}){
@@ -17,7 +19,7 @@ export async function verifiedCapture(workspace,job,dir,{now=Date.now(),maxAgeHo
    const file=await fs.realpath(candidate.file),base=await fs.realpath(workspace);if(!file.startsWith(base+path.sep))continue;
    const capture=JSON.parse(await fs.readFile(file,'utf8'));
    if(candidate.hash&&digest(capture)!==candidate.hash)continue;
-   if(capture.url!==job.url||typeof capture.jd!=='string'||capture.jd.length<300||!Number.isFinite(Date.parse(capture.capturedAt))||Math.abs(now-Date.parse(capture.capturedAt))>maxAgeHours*3600000)continue;
+   if(!identityUrls(job).includes(normalizeUrl(capture.url))||typeof capture.jd!=='string'||capture.jd.length<300||!Number.isFinite(Date.parse(capture.capturedAt))||Math.abs(now-Date.parse(capture.capturedAt))>maxAgeHours*3600000)continue;
    if(job.contextHash&&job.jd&&job.jd!==capture.jd)continue;
    return {capture,file,sha256:digest(capture)};
   }catch(error){if(!['ENOENT','ENOTDIR'].includes(error.code)&&!(error instanceof SyntaxError))throw error;}

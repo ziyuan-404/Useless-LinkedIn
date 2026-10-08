@@ -377,6 +377,23 @@
         }
       }
     },
+    "postingLinks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fromUrl", "toUrl", "sourceId", "targetId", "evidenceFile", "evidenceSha256", "capturedAt", "action"],
+        "properties": {
+          "fromUrl": {"type": "string", "format": "uri"},
+          "toUrl": {"type": "string", "format": "uri"},
+          "sourceId": {"type": "string"},
+          "targetId": {"type": "string"},
+          "evidenceFile": {"type": "string"},
+          "evidenceSha256": {"type": "string", "minLength": 64},
+          "capturedAt": {"type": "string", "format": "date-time"},
+          "action": {"enum": ["apply-link", "redirect"]}
+        }
+      }
+    },
     "identityEvidence": {
       "type": "object",
       "required": [

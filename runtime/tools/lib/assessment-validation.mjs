@@ -4,7 +4,9 @@ import {resolveStoragePath} from './storage-paths.mjs';
 import {root} from '../runtime.mjs';
 import {validateAssessment,validateSchema} from './schema.mjs';
 
-const keys=['contract','rhythm','location','remote','start','education','experience','technology','french','english','permit','salary','credentials','duplicate'];
+import {koKeys} from './gate-draft.mjs';
+export {koKeys,gateDraft} from './gate-draft.mjs';
+const keys=koKeys;
 
 export async function checkSources(items,allowed){
  for(const item of items){
@@ -19,6 +21,7 @@ export async function checkSources(items,allowed){
 }
 
 export async function validateDecision(result,{captured,dir,contextHash,allowModelDraft=false}){
+ if(result.draft||result.reviewRequired)throw Error('Assessment draft must be reviewed; remove draft/reviewRequired only after checking all JD and candidate evidence');
  if(result.evaluation?.reviewRequired&&!allowModelDraft)throw Error('Standalone model assessment requires semantic/source review before pipeline adoption');
  if(result.assessmentType==='gate')await validateSchema('gate.schema.json',result);
  else await validateAssessment(result);

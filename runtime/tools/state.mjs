@@ -9,6 +9,7 @@ import {currentSnapshot,snapshotMatches} from './lib/approval.mjs';
 import {syncDashboardStage} from './lib/dashboard-stage.mjs';
 import {jobDirectory} from './lib/storage-paths.mjs';
 import {matchLevels,validateMatchReview} from './lib/match-review.mjs';
+import {checkApplicationHistory} from './lib/application-history.mjs';
 
 const a=args();
 if (a.help) { console.log('state.mjs --id ID --to STATE [--evidence TEXT] [--receipt FILE for submitted] [--reason TEXT] | --list-states'); process.exit(0); }
@@ -23,12 +24,21 @@ if(a.to==='submitted'){
   if(Date.parse(receipt.observedAt)>Date.now()+300000)throw Error('Receipt observation time is in the future');
   const artifact=path.resolve(root,receipt.artifactPath);if(!artifact.startsWith(root+path.sep))throw Error('Receipt artifact must be inside workspace');
   const stat=await fs.stat(artifact);if(!stat.isFile()||stat.size<100)throw Error('Receipt artifact must be a nonempty saved file');
-  if(!/\.(png|jpe?g|pdf|html?|eml)$/i.test(artifact))throw Error('Receipt artifact format must be PNG, JPEG, PDF, HTML or EML');
+  if(!/\.(png|jpe?g|pdf|html?|eml|json)$/i.test(artifact))throw Error('Unsupported receipt artifact format');
+  if(/\.json$/i.test(artifact)){
+   const original=JSON.parse(await fs.readFile(artifact,'utf8'));
+   if(original.schema!=='application-confirmation/v1'||original.jobId!==a.id||!['email','platform'].includes(original.type)||original.type==='email'&&(!original.email?.messageId||!original.email.body)||original.type==='platform'&&(!original.pageUrl||!original.text))throw Error('Structured receipt must identify the original email/platform observation and this job');
+  }
   const artifactSha256=createHash('sha256').update(await fs.readFile(artifact)).digest('hex');
   submissionEvidence=JSON.stringify({kind:receipt.kind,observedAt:receipt.observedAt,description:receipt.description.trim(),artifactPath:path.relative(root,artifact),artifactSha256,sourceUrl:receipt.sourceUrl||''});
 }
 const store=await read(path.join(home,'leads.json'),{jobs:[]});
 const job=store.jobs.find(x=>x.id===a.id);if(!job)throw Error('Unknown job ID');
+if(a.to==='submitting'){
+ const history=(await checkApplicationHistory(root,store.jobs,{ids:[job.id]}))[0];
+ const resumeOwnBlock=['blocked-login','blocked-captcha'].includes(job.state)&&!job.submitted&&!job.submissionEvidence&&history?.matches.every(m=>m.id===job.id);
+ if(history?.disposition==='existing-application'&&!resumeOwnBlock)throw Error('Existing application or linked posting requires reconciliation; do not submit again');
+}
 let authorizationGrantIds=[];
 if(['submitting','submitted'].includes(a.to)&&!await snapshotMatches(job)){
   await transaction(s=>{const j=s.jobs.find(x=>x.id===a.id);if(j.state==='approved'){

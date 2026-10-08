@@ -10,6 +10,8 @@ import {acquireFileLock} from './lib/file-lock.mjs';
 import {validateAnswer,loadAnswers,answerFor} from './lib/form-answers.mjs';
 import {formSignature} from './lib/iab-application.mjs';
 import {syncDashboardStage} from './lib/dashboard-stage.mjs';
+import {successStatement,failedStatement} from './lib/email-receipt.mjs';
+import {checkApplicationHistory} from './lib/application-history.mjs';
 
 const a=args();
 if(a.help){console.log('apply --id ID --prepare --form FILE | --arm --result FILE | --record FILE | --answers FILE | --iab-script\nUse the shared IAB script once per session. Unknown required fields pause this job. Arm only after ready-to-submit, and reconcile an unconfirmed attempt before any retry.');process.exit(0);}
@@ -29,6 +31,7 @@ try{
   await write(registry,{version:1,answers});console.log(JSON.stringify({registered:records.length,total:answers.length}));
  }else{
   const store=await read(path.join(home,'leads.json'),{jobs:[]}),job=store.jobs.find(j=>j.id===a.id);if(!job)throw Error('Valid --id required');
+  if(a.prepare||a.arm){const history=(await checkApplicationHistory(root,store.jobs,{ids:[job.id]}))[0];if(history?.disposition==='existing-application'&&(a.prepare||history.matches.some(m=>m.id!==job.id))){console.log(JSON.stringify({id:job.id,action:'reconcile-existing-attempt',history}));process.exit(2);}}
   const dir=await jobDirectory(root,home,job),applyDir=path.join(dir,'apply');await fs.mkdir(applyDir,{recursive:true});
   const planFile=path.join(applyDir,'plan.json'),attemptFile=path.join(applyDir,'attempt.json');
   const invoke=(command,flags)=>{const result=spawnSync(process.execPath,[path.join(toolsRoot,command+'.mjs'),...flags],{cwd:root,encoding:'utf8'});if(result.status!==0)throw Error(result.stderr||result.stdout);return result.stdout;};
@@ -83,7 +86,7 @@ try{
       steps.sort((x,y)=>Number(y.kind==='upload')-Number(x.kind==='upload'));
       const plan={version:1,jobId:job.id,approvalSnapshotId:job.approvalSnapshot.id,answersVersion:answers.version,form,signature:formSignature(form),steps,unresolved,action,templateId,templateReused,createdAt:new Date().toISOString()};plan.planHash=hash(JSON.stringify(plan));await write(planFile,plan);
       await write(templateFile,{version:1,host,signature:templateSignature,fields:form.fields.map(({key,label,type,locator})=>({key,label,type,locator})),action,observedAt:form.capturedAt,uses:(cached?.uses||0)+1});
-      console.log(JSON.stringify({id:job.id,plan:planFile,steps:steps.length,unresolved:unresolved.map(({key,reason,required})=>({key,reason,required})),templateId,templateReused}));
+      console.log(JSON.stringify({id:job.id,plan:planFile,steps:steps.length,unresolved:unresolved.map(({key,reason,required})=>({key,reason,required})),templateId,templateReused,next:{executor:'Load apply --iab-script once; call applicationExecutor.executeIabPlan(tab,plan). Do not rewrite field loops.',arm:`apply --id ${job.id} --arm --result FILE`,record:`apply --id ${job.id} --record FILE`,receipt:`receipt --id ${job.id} --plan`}}));
     }
   }else if(a.arm){
     if(job.state!=='approved'||await read(attemptFile,null))throw Error('An existing attempt must be reconciled; cannot arm again');await check();
@@ -101,11 +104,11 @@ try{
     if(result.jobId!==job.id||result.planHash!==plan.planHash)throw Error('Result belongs to a different plan/job');
     await write(path.join(applyDir,'last-result.json'),result);
     if(result.status==='success-observed'){
-      if(!attempt||result.attemptId!==attempt.attemptId||!Number.isFinite(Date.parse(result.observedAt))||Date.parse(result.observedAt)<Date.parse(attempt.issuedAt)||Date.parse(result.observedAt)>Date.now()+300000||!result.evidence?.artifactHtml||result.evidence.requiresScreenshot)throw Error('Independent success artifact and current attempt required; save screenshot/email receipt if needed');
-      if(new URL(result.pageUrl).origin!==new URL(plan.form.pageUrl).origin||!parse(result.evidence.artifactHtml).text.includes(result.evidence.text))throw Error('Success statement must be present in the observed same-origin artifact');
-      if(!/application (?:has been |was )?(?:submitted|sent)|thank you for applying|candidature (?:a (?:bien )?été |a ete )?(?:envoyée|envoyee|transmise)|merci (?:pour|de).*candidature/i.test(result.evidence.text))throw Error('No explicit success statement');
-      const artifact=path.join(applyDir,'success-'+attempt.attemptId+'.html');await fs.writeFile(artifact,result.evidence.artifactHtml);
-      const receipt=path.join(applyDir,'receipt.json');await write(receipt,{kind:'success-page',observedAt:result.observedAt,description:result.evidence.text,artifactPath:path.relative(root,artifact),sourceUrl:result.pageUrl});
+      if(!attempt||result.attemptId!==attempt.attemptId||!Number.isFinite(Date.parse(result.observedAt))||Date.parse(result.observedAt)<Date.parse(attempt.issuedAt)||Date.parse(result.observedAt)>Date.now()+300000||!result.evidence?.text||result.evidence.text.length>2000)throw Error('Independent success statement and current attempt required');
+      if(new URL(result.pageUrl).origin!==new URL(plan.form.pageUrl).origin||!(result.evidence.source==='iab-dom'||result.evidence.artifactHtml&&parse(result.evidence.artifactHtml).text.includes(result.evidence.text)))throw Error('Success statement must be observed on the same-origin application page');
+      if(failedStatement.test(result.evidence.text)||!successStatement.test(result.evidence.text))throw Error('No explicit success statement');
+      const artifact=path.join(applyDir,'success-'+attempt.attemptId+'.json');await write(artifact,{schema:'application-confirmation/v1',type:'platform',jobId:job.id,attemptId:attempt.attemptId,observedAt:result.observedAt,pageUrl:new URL(result.pageUrl).origin,applicationUrl:job.url,text:result.evidence.text,source:'iab-dom'});
+      const receipt=path.join(applyDir,'receipt.json');await write(receipt,{kind:'platform-status',observedAt:result.observedAt,description:result.evidence.text,artifactPath:path.relative(root,artifact),sourceUrl:job.url});
       invoke('state',['--id',job.id,'--to','submitted','--receipt',receipt]);await write(attemptFile,{...attempt,status:'confirmed'});
     }
     if(result.status!=='success-observed')await syncDashboardStage(job.id);

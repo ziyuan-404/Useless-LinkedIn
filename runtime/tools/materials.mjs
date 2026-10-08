@@ -10,12 +10,13 @@ import {validateMatchReview} from './lib/match-review.mjs';
 import {assertTransition} from './lib/state-machine.mjs';
 import {generateApplication} from './lib/material-generator.mjs';
 import {syncDashboardStage} from './lib/dashboard-stage.mjs';
+import {companyMaterialSources} from './lib/company-research.mjs';
 const a=args();if(a.help){console.log('materials --plan|--run --ids FILE [--limit 10] [--offset N]\nmaterials --compose --base FILE --tailoring FILE --out FILE\nSources remain authoritative; no automatic semantic/visual approval or submission.');process.exit(0);}
 if(a.compose){
  for(const key of ['base','tailoring','out'])if(typeof a[key]!=='string')throw Error('Recipe requires --base, --tailoring and --out');
  const output=path.resolve(root,a.out);if(!output.startsWith(root+path.sep))throw Error('Recipe output must be inside workspace');
  const payload=composePayload(await read(await resolveStoragePath(root,a.base)),await read(await resolveStoragePath(root,a.tailoring)));
- await checkSources(payload.cv,[path.join(root,'个人资料/profile')]);await checkSources(payload.letter,[path.join(root,'个人资料/profile'),path.join(home,'jobs')]);
+ await checkSources(payload.cv,[path.join(root,'个人资料/profile')]);await checkSources(payload.letter,[path.join(root,'个人资料/profile'),path.join(home,'jobs'),path.join(home,'company-research')]);
  await write(output,payload);console.log(JSON.stringify({payload:output,reviewRequired:true}));process.exit(0);
 }
 if(!a.ids||!a.plan&&!a.run)throw Error('Use --plan or --run with an IDs file');
@@ -47,7 +48,7 @@ try{
     if(!assessment.userOverride?.instruction?.trim())throw Error('Explicit user-selected instruction required');
     await validateMatchReview({jobId:job.id,matchLevel:assessment.matchLevel,reason:assessment.matchReason,sources:assessment.matchSources},{workspace:root,job,dir});
    }else if(await validateDecision(assessment,{captured:verified.capture,dir,contextHash})!=='PASS')throw Error('Only PASS or an evidenced user-selected application can generate materials');
-   await checkSources(assessment.payload.cv,[path.join(root,'个人资料/profile')]);await checkSources(assessment.payload.letter,[path.join(root,'个人资料/profile'),path.join(dir,'jd.txt')]);
+   await checkSources(assessment.payload.cv,[path.join(root,'个人资料/profile')]);await checkSources(assessment.payload.letter,[path.join(root,'个人资料/profile'),path.join(dir,'jd.txt'),...await companyMaterialSources(root,home,job)]);
    for(const selector of ['.subtitle','.profil-text','.skill-bullets','.availability','.course-list'])if(!assessment.payload.cv.some(x=>x.selector===selector))throw Error('Full customization requires '+selector);
    for(let index=0;index<4;index++)if(!assessment.payload.cv.some(x=>x.selector==='.item-bullets'&&x.index===index))throw Error('Missing sourced experience customization '+index);
    for(const selector of ['.item-date','.item-sub'])if(!assessment.payload.cv.some(x=>x.selector===selector&&x.index===4))throw Error('Education route must be explicitly customized');

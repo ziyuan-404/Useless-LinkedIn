@@ -15,14 +15,16 @@ import {anySearchSuggestions} from './lib/optional-web-search.mjs';
 import {enrichCareerSources} from './lib/career-providers.mjs';
 import {loadBlacklist,blacklistMatch} from './lib/blacklist.mjs';
 import {mapBounded,mapPriorityBounded,serialQueue} from './lib/async-pool.mjs';
+import {researchConfig} from './lib/research-queue.mjs';
 
 const a=args();
 if(a.help){console.log('scan [--config FILE] [--portal NAME] [--plan] [--resume] [--max-requests N] [--max-pages N] [--import FILE --import-only] [--listing-capture FILE] [--sources FILE] [--task-results FILE] [--retry-agent] [--zero-token] [--concurrency 4]\n0 = unlimited. --no-browser disables rendered-page fallback. Transient retries honor nextRetryAt.');process.exit(0);}
 const loadArray=async(file,label)=>{if(!file)return [];const data=JSON.parse(await fs.readFile(file,'utf8'));if(!Array.isArray(data))throw Error(`${label} expects an array`);return data;};
-const c=await config(a.config);
+let c=await config(a.config);
 const blacklist=await loadBlacklist();
 const registered=await read(path.join(home,'discovered-sources.json'),[]),newSources=await loadArray(a.sources,'sources');
 const sourceMap=new Map([...registered,...c.portals,...newSources].map(p=>[p.name,p]));c.portals=[...sourceMap.values()];
+if(c.research_scope){c=researchConfig(c,c.research_scope,{targeted:!!c.research_targeted});for(const source of c.portals)sourceMap.set(source.name,source);}
 await enrichCareerSources(c);
 if(a.portal&&!c.portals.some(p=>p.name===a.portal))throw Error(`Unknown source: ${a.portal}`);
 const limit=(flag,key)=>{const value=Number(a[flag]??c.discovery?.[key]??0);if(!Number.isInteger(value)||value<0)throw Error(`${flag} must be a nonnegative integer`);return value||Infinity;};

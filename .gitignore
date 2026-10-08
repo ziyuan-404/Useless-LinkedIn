@@ -60,3 +60,7 @@ __pycache__/
 !/tests/unified-submission-field.test.mjs
 !/tests/workflow.test.mjs
 !/tests/workspace.test.mjs
+
+!/tests/quota-flow.test.mjs
+!/tests/research-efficiency.test.mjs
+!/tests/research-repair.test.mjs

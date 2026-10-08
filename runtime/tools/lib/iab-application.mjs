@@ -105,15 +105,16 @@ export async function executeIabPlan(tab,plan,{permit}={}){
     }
     return result('next-page',{form:next});
   }
-  await tab.playwright.domSnapshot();
   const evidence=await tab.playwright.evaluate(()=>{
-    const success=/application (?:has been |was )?(?:submitted|sent)|thank you for applying|candidature (?:a (?:bien )?été |a ete )?(?:envoyée|envoyee|transmise)|merci (?:pour|de).*candidature/i;
+    const success=/application (?:has been |was )?(?:submitted|sent|received)|thank you for applying|candidature (?:a (?:bien )?été |a ete )?(?:envoyée|envoyee|transmise|validée|validee)|merci (?:pour|de).*candidature/i;
+    if(/confirm (?:your|my) application|verify your email|confirmer (?:ma|votre) candidature|pour finaliser votre candidature/i.test(document.body.innerText))return null;
+    const failed=/(?:application|candidature).{0,100}(?:not (?:been )?(?:submitted|sent|received)|could not|failed|n['’]a pas|n['’]est pas)/i;
     const candidates=[...document.querySelectorAll('main,[role="status"],[role="alert"],h1,h2,p,div')].filter(x=>x.getClientRects().length&&success.test(x.innerText||''));
     candidates.sort((a,b)=>a.innerText.length-b.innerText.length);let el=candidates[0];
-    if(!el||document.querySelector('form input:invalid'))return null;
-    const text=el.innerText;while(el.parentElement&&el.outerHTML.length<100)el=el.parentElement;
-    if(el.outerHTML.length>32000)return {text,requiresScreenshot:true};
-    return {text,artifactHtml:el.outerHTML};
+    if(!el||failed.test(el.innerText)||document.querySelector('form input:invalid'))return null;
+    // Only the explicit confirmation text is returned. No screenshot or whole-page snapshot.
+    if(el.innerText.length>2000)return null;
+    return {text:el.innerText,source:'iab-dom'};
   });
   const independent=evidence&&!successBefore.includes(evidence.text);
   return result(independent?'success-observed':'submission-unconfirmed',{attemptId:permit.attemptId,pageUrl:await tab.url(),evidence:independent?evidence:null});

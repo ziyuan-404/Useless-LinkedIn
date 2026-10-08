@@ -2,6 +2,8 @@ import path from 'node:path';
 import {resolveStoragePath} from './storage-paths.mjs';
 import {root} from '../runtime.mjs';
 import {capture,classifyLiveness,read,hash} from './core.mjs';
+import {identityUrls} from './posting-identity.mjs';
+import {normalizeUrl} from './job-signals.mjs';
 
 const fresh=value=>Number.isFinite(Date.parse(value))&&Math.abs(Date.now()-Date.parse(value))<=86400000;
 
@@ -16,7 +18,7 @@ export async function currentCapture({job,dir,webCapture,assessment}){
   if(context?.url===job.url&&(!job.jd||job.jd===saved?.jd)&&saved?.liveness?.result==='active'&&typeof saved.jd==='string'&&saved.jd.length>=300&&fresh(saved.capturedAt))return saved;
   if(!job.possiblyClosed&&job.triage?.captureFile){
     const triaged=await read(await resolveStoragePath(root,job.triage.captureFile),null);
-    if(triaged?.url===job.url&&hash(JSON.stringify(triaged))===job.triage.captureHash&&triaged.liveness?.result==='active'&&triaged.jd?.length>=300&&fresh(triaged.capturedAt))return triaged;
+    if(identityUrls(job).includes(normalizeUrl(triaged?.url))&&hash(JSON.stringify(triaged))===job.triage.captureHash&&triaged.liveness?.result==='active'&&triaged.jd?.length>=300&&fresh(triaged.capturedAt))return triaged;
   }
   return capture(job.url);
 }

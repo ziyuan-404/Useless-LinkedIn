@@ -7,16 +7,18 @@ import {createHash} from 'node:crypto';
 import {root,toolsRoot,args,slug,dependency,pythonCommand} from '../runtime.mjs';
 import {materialKey,cachedMaterial,cacheMaterial} from './material-cache.mjs';
 import {home} from './core.mjs';
+import {companyMaterialSources} from './company-research.mjs';
 export async function generateApplication(a,{sharedBrowser}={}){
 for(const k of ['company','role','claims'])if(typeof a[k]!=='string')throw Error(`Missing --${k}`);
 const basics=await fs.readFile(path.join(root,'个人资料/profile/basics.md'),'utf8');const candidateName=basics.match(/^-\s*姓名[:：]\s*(.+)$/m)?.[1]?.trim();if(!candidateName||/待填写|to complete/i.test(candidateName))throw Error('Configure a confirmed candidate name in the local profile');
 const payload=JSON.parse(await fs.readFile(await resolveStoragePath(root,a.claims),'utf8'));
+const companySources=await companyMaterialSources(root,home,{company:a.company});
 for(const [kind,allowed] of [['cv',['.subtitle','.profil-text','.contact-details','.lang-bullets','.skill-bullets','.profil-header-target','.availability','.item-title','.item-date','.item-sub','.item-loc','.item-bullets','.course-list']],['letter',['.subject','.letter','.personal-info']]]){
  if(!Array.isArray(payload[kind])||!payload[kind].length)throw Error(`${kind} replacements required`);
  for(const item of payload[kind]){
   if(!allowed.includes(item.selector)||typeof item.text!=='string'||!item.text.trim()||!Array.isArray(item.sources)||!item.sources.length)throw Error(`Invalid ${kind} replacement`);
   if(item.index!==undefined&&(!Number.isInteger(item.index)||item.index<0))throw Error('Invalid replacement index');
-  for(const source of item.sources){const p=await fs.realpath(await resolveStoragePath(root,source.path)),profile=await fs.realpath(path.join(root,'个人资料/profile'));const isFact=p.startsWith(profile+path.sep),isJd=p.startsWith(path.join(home,'jobs')+path.sep)&&path.basename(p)==='jd.txt';if(!isFact&&!(kind==='letter'&&isJd))throw Error('Material sources must be candidate facts or a letter JD');const text=await fs.readFile(p,'utf8');if(typeof source.quote!=='string'||source.quote.length<8||!text.includes(source.quote))throw Error(`Source quote missing: ${source.path}`);}
+  for(const source of item.sources){const p=await fs.realpath(await resolveStoragePath(root,source.path)),profile=await fs.realpath(path.join(root,'个人资料/profile'));const isFact=p.startsWith(profile+path.sep),isJd=p.startsWith(path.join(home,'jobs')+path.sep)&&path.basename(p)==='jd.txt';if(!isFact&&!(kind==='letter'&&(isJd||companySources.includes(p))))throw Error('Material sources must be candidate facts, a letter JD or reviewed company research');const text=await fs.readFile(p,'utf8');if(typeof source.quote!=='string'||source.quote.length<8||!text.includes(source.quote))throw Error(`Source quote missing: ${source.path}`);}
  }
  if(new Set(payload[kind].map(x=>JSON.stringify([x.selector,x.index??0]))).size!==payload[kind].length)throw Error('Duplicate replacement');
 }

@@ -32,6 +32,8 @@ description: "面向法国求职的单入口、多模块工作流：导入简历
 
 只完整读取当前任务需要的模块及其直接引用，不一次加载全部文件。
 
+搜索执行先读 workflows/discover-jobs.md 和 references/research-handoff.md，不预读底层运行配置或后续材料/提交模块。沿用 research 返回的当前命令、recordTemplate 与 gate-draft；已有完整且散列未变的抓取直接用 --capture --cached，任务按准确 query 回写，同岗用实际 posting-route 链接证据关联。需要诊断才读 references/discovery-runtime.md；不要为猜字段而加载运行源码。
+
 | 任务 | 必读入口 |
 |---|---|
 | 建档、导入母版、补充/深挖经历 | `modules/personal-career-os/MODULE.md` |
@@ -43,17 +45,27 @@ description: "面向法国求职的单入口、多模块工作流：导入简历
 
 ## 工作流路由
 
-按当前请求选择一个入口，跨阶段任务从 [每日循环](workflows/daily-cycle.md) 开始；只读取实际需要的后续文件。
+按当前请求选择一个入口。找岗位并投递先读 [发现岗位](workflows/discover-jobs.md)，找到可处理候选后再读判断、材料与提交阶段；不在搜索启动时预读所有后续模块。[每日循环](workflows/daily-cycle.md) 用于运营、跟进与定时循环。
 
 定时无人值守运行另读 [执行方案](workflows/unattended-run.md)，由 Agent 完成材料审查与提交，不请求逐岗位批准。
 
 多岗位默认按 [批次与 IAB 执行器](references/batch-application.md) 运行：scan/triage 使用 --summary，batch 输出有界交接文件；只读 agent-context.json 与共用事实索引。先做 KO，FAIL/MARGINAL 使用简版 gate；PASS 再完整评估。投递使用 apply 命令和 IAB 共享执行器，仅新问题及异常交 Agent。
 
-确定性操作先调用本地命令，禁止为查询、筛选队列、重写模板、PDF 压缩或台账同步逐次编写临时脚本。搜索从 `research --run` 开始（请求预算可配置），已有线索用 `research --screen-only`；只读返回的本批 manifest 和必要完整 JD，受阻/未完成来源保留。查某家公司用 `leads --query 公司 --limit 10`，查 ID 用 `leads --id ID`；不把整个 leads.json 或 tracker 全表送入模型。
+确定性操作先调用本地命令，禁止为查询、筛选队列、重写模板、PDF 压缩或台账同步逐次编写临时脚本。搜索从 `research --run` 开始（请求预算可配置），已有线索用 `research --screen-only`；只读返回的 handoff 和必要完整 JD，manifest 直接交给续跑命令，受阻/未完成来源保留。查某家公司用 `leads --query 公司 --limit 10`，查 ID 用 `leads --id ID`；不把整个 leads.json 或 tracker 全表送入模型。
+
+搜索必须调用 research --run 的零 Token 扫描器。指定目标时先写 --scope FILE，可含 queries/query_matrix/web_queries/locations 与 role_keywords/include_keywords/keyword_aliases；这些条件在首次抓取前应用，未显式给 queries 时由任务岗位/合同生成。按 manifest.executionPolicy 续批，不扩大 limit 来把全部历史卡片交给模型。脚本批量查本地历史和凭证散列，只对未知/不一致凭证查邮件；已有或未确认申请不能重投。合同未知保留供判断，明确合同/标题冲突和未匹配线索留在 deferred 文件，可用 --include-unmatched 核实，不删除或宣称 KO FAIL。queueFile、idsFile、historyFile、tasksFile 留给脚本，模型只读当前卡片和相关完整 JD。
+
+人工后备必须闭环：先 research --tasks --manifest MANIFEST 取最多5个未决任务，定点搜索默认短输出；新链接/完整JD/人工初筛/搜索完成记录统一 research --record FILE --manifest MANIFEST 回写。重复导入会复用，不重做已完成任务。缺凭据、robots、403 同类原因看 sourceIssues 汇总，不能逐条重新探测同一门槛。完整 JD 和未完成来源仍保留；日期/学历等候选人资格继续走简版 gate 或14项 KO。正常执行不读 runtime 源码/schema 来猜接口，不重新编写查询/字段循环，输入格式见 [搜索运行交接](references/research-handoff.md)。
+
+脚本运行超过一次工具等待时，每次等待30–60秒（最多60秒），只读最终短摘要；不要每几秒轮询、顺便读取大量源码。工具不能自动清空聊天；用保存的当前批次交接，不能以“忘记前文”保证省额度。
+
+准备企业定制材料前必须调用 company --plan --ids FILE。新公司先核实独立官网，再 company --id ID --collect --url URL（多来源用 --urls FILE），本地脚本采集正文并缓存30天；已有完整研究直接复用。Agent 仅对 collected 的来源做一次事实/推断审核，用 company --id ID --review FILE 保存有原文引用的 facts 与明确标记的 inferences。不同岗位复用公司事实，岗位贡献角度单独判断；过期、身份未决或散列改变必须重新核实。公司资料不能作为候选人经历证据。
 
 材料先 `materials --plan --ids FILE` 核实有效性、入口和学校绑定，再准备有来源的表述；共用联系方式、语言、学历、日期可用 `materials --compose --base FILE --tailoring FILE --out FILE` 合并，Agent 只写岗位取舍和定制文字。`materials --run --ids FILE` 批量生成与检查、复用未变成品，只返回摘要和审阅路径。读取 review.json 核对语义、review.png 检查最终 PDF；原始单页高清图按需放大。不因机器检查或缓存命中跳过事实与视觉审核。完整操作见批次参考。
 
 用户直接指定岗位也沿用以上交接和投递执行器；不能把搜索的完整输出延续到每个表单字段。共享执行器不支持的实际结构才人工处理，并保存具体回退原因。用户选择带未决条件的岗位时，不假写 KO PASS；简版 user-selected-application 仍须单独记录 matchLevel、matchReason、matchSources（JD 与人物事实原文引用），state approved 会核验这些字段。
+
+投递必须先 apply --iab-script 加载共享执行器，再 apply --prepare / executeIabPlan / apply --arm / apply --record；不得重写 inspectIabForm 或常规字段循环。仅执行器返回明确不支持的结构才回退，保存原因并继续其他岗位。结果确认优先 receipt --id ID --plan 查询连接器邮件，receipt --id ID --email FILE --commit 本地匹配、保存和同步；不要打开 Gmail 网页逐步搜索。默认不保存投递页面快照、截图、整页 HTML，不把 Base64/附件数据打印给模型。没有邮件时可接受共享执行器观察到的新增明确平台确认文字；两者都没有则保持 submission-unconfirmed，不能重投。完整 JD 正文、公司来源引用和材料 PDF 视觉审核仍保留。
 
 | 用户意图 | 工作流 |
 |---|---|
@@ -86,7 +98,7 @@ description: "面向法国求职的单入口、多模块工作流：导入简历
 - 对外上传的文件名只含姓名、材料类型、公司和岗位；不得带 `under3MB`、`under4MB`、压缩、测试或内部版本标记。选择已验证的小体积版本，用清洁文件名另存；保留来源和内容不变，不覆盖母版。
 - 优先雇主官网在线申请；只有线上流程确实受阻且邮箱投递已获授权，才改用已核实的招聘邮箱。不得为规避安全确认改走邮箱。
 - 法律条款、隐私政策、Cookie 弹窗及申请协议按当前用户授权和运行环境规则处理。
-- 浏览器与环境要求：按平台实际情况选择公开 API/HTTP、隔离的 Playwright 或可用交互浏览器（包括 IAB）；不强制单一浏览器。保留页面证据，不导入或公开个人 Cookie、会话及登录资料。
+- 浏览器与环境要求：按平台实际情况选择公开 API/HTTP、隔离的 Playwright 或可用交互浏览器（包括 IAB）；沿用用户指定浏览器。保留完整 JD 文本、来源和最小提交凭证，不默认保存页面快照或截图，不导入或公开个人 Cookie、会话及登录资料。
 - 可以读取公开岗位页、填写已确认的字段、选择文件、起草回答和记录结果。
 - 真实申请、上传个人文件、填写雇主筛选问答和最终提交已获用户常驻全局预授权，直接执行提交并核验成功凭证，无需反复向用户二次确认，不得借浏览器安全规则暂停。
 - 仅当遇到 CAPTCHA、Cloudflare 强阻断、未知登录密码/2FA 验证码、付费或与事实库冲突的身份/签证硬条件时才交给用户处理。

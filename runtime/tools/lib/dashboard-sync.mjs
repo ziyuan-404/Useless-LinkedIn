@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {jobDirectory,resolveStoragePath} from './storage-paths.mjs';
 import {openDashboard,syncDashboardLead,dbPath} from './dashboard-db.mjs';
+import {companyRecord,companyDisplay} from './company-research.mjs';
 
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const text=value=>typeof value==='string'?value.trim():'';
@@ -68,8 +69,9 @@ export async function dashboardPacket(workspace,home,job){
   sources.submission_evidence={path:artifact,sha256:receipt.artifactSha256};
  }
  put('channel',receipt?.kind==='confirmation-email'?'邮件（确认邮件凭证）':job.portal,{leadId:job.id,field:'portal',receiptKind:receipt?.kind});
- put('company_info',job.company?`公司：${job.company}\n岗位来源：${job.url}${capture?.capturedAt?'\n采集时间：'+capture.capturedAt:''}\n尚未提供独立公司研究。`:'',{leadId:job.id,field:'company/url'});
- issues.push({field:'company_info',reason:'independent_company_research_not_provided',severity:'info'});
+ const company=await companyRecord(workspace,home,job);
+ put('company_info',job.company?companyDisplay(company)+'\n岗位来源：'+job.url:'',company.file?{path:company.file,sha256:company.sha256,status:company.status}:{leadId:job.id,field:'company/url',status:company.status});
+ if(company.status!=='researched')issues.push({field:'company_info',reason:'company_research_'+company.status,severity:'info'});
  // Paths come from the reviewed manifest, never an arbitrary first PDF in a folder.
  const candidates=[];
  for(const material of job.approvalSnapshot?.materials||[]){
@@ -123,6 +125,6 @@ export async function synchronizeDashboard(workspace,home,job,{db,dryRun=false}=
   if(saved.resume_path&&required.includes('resume_path')){try{if(!/\.pdf$/i.test(saved.resume_path)||!(await fs.stat(await inside(workspace,saved.resume_path))).isFile())missing.push('resume_path');}catch{missing.push('resume_path');}}
   const state=db.prepare('SELECT issues_json FROM application_sync WHERE application_id=?').get(saved.id||job.id);
   const reportIssues=state?JSON.parse(state.issues_json):packet.issues;
-  return {id:job.id,recordId:saved.id||job.id,dryRun,changed:!before||saved.version!==before.version,version:saved.version,submissionVerified:saved.submission_verified===1,archived:!!saved.archived_at,missing,issues:reportIssues,complete:missing.length===0&&!reportIssues.some(i=>i.severity!=='info'&&i.reason!=='existing_value_preserved')};
+  return {id:job.id,recordId:saved.id||job.id,dryRun,changed:!before||saved.version!==before.version,version:saved.version,submissionVerified:saved.submission_verified===1,companyResearchStatus:packet.sources.company_info?.status||'not-researched',archived:!!saved.archived_at,missing,issues:reportIssues,complete:missing.length===0&&!reportIssues.some(i=>i.severity!=='info'&&i.reason!=='existing_value_preserved')};
  }finally{if(ownedDb)db.close();}
 }
