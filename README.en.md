@@ -1,237 +1,169 @@
 # Useless LinkedIn
 
-**Let an AI agent find suitable jobs and handle the repetitive parts of applying.**
+**A job-search Skill for France: find jobs, prepare documents, apply and follow up using natural language.**
 
-[中文](README.md) · [Technical guide (Chinese)](docs/技术配置指南.md) · [Privacy](PRIVACY.md)
+Discovery uses a model-free local scanner with 102 public provider adapters, API-first full descriptions, bounded concurrency and recovery. Optional independent Ollama/Gemini/OpenAI-compatible evaluation retains source-checked drafts for review. See [integration configuration](references/career-ops-integration.md).
 
-Useless LinkedIn is an **AI agent job-search workflow / Skill**. Bring your CV and career goals; your agent helps discover vacancies, check requirements, prepare CVs and cover letters, and keep track of applications. Tell it what you need in everyday language—no scripting required.
+[中文](README.md) · English · [Français](README.fr.md)
 
-It is a skill pack rather than a separate website or a LinkedIn browser extension. The included search configuration focuses on **France and alternance (work-study apprenticeships)** across several job boards. Other regions require search adjustments.
+Share your CV and goals. The agent checks job availability, duplicates and essential requirements, prepares CVs, cover letters and application answers, submits within your authorization, and updates a local application dashboard. Configure roles, contract types, locations and start dates to suit your search.
 
-## Why use this skill?
+## About the project
 
-- **Four discovery layers instead of a single scraping method.** The workflow falls back through API → direct web-page reading → Playwright browser → agent web search across WTTJ, HelloWork, Indeed France, LinkedIn and La Bonne Alternance. Browser and search fallbacks require suitable agent tools; blocked access is reported honestly.
-- **Check that the job is still available before applying.** Availability checks, application-history deduplication and essential-requirement screening reduce effort spent on expired, duplicate or unsuitable vacancies.
-- **A–G analysis makes recommendations explainable.** Seven sections cover the role, experience evidence, application strategy, pay and demand, tailoring, interview preparation and truthfulness risks. The result is an explained 1–5 priority, with application-answer drafts in section H—not an invented precise match percentage.
-- **One verified experience library for every application.** CVs, cover letters and answers draw on the same confirmed facts, reducing conflicting dates, qualifications and project descriptions.
-- **Tailored applications and batch preparation in one workflow.** Customize materials for strong matches and select reviewed general CVs for other eligible jobs. Shared tools generate PDFs and check layout and size without a new script for every company.
-- **A continuous path from discovery to follow-up.** Connect job lists, documents, application records and next actions while keeping discovered, prepared and submitted statuses distinct.
+Useless LinkedIn brings scattered job-search activities into a recorded workflow that can be resumed. It focuses on France, with configurable roles and contract types, and discovers jobs across several boards rather than only LinkedIn. It installs as one Skill for an agent, with a local dashboard and document editor for visual interaction.
 
-### What did we learn from the four upstream projects?
+It addresses three recurring problems: repeating searches and screening across websites, preparing documents for different roles, and losing track of application outcomes and follow-ups.
 
-| Project | Design borrowed | How it is used here |
-|---|---|---|
-| [ApplyPilot](https://github.com/yvonnehe772/applypilot) | Agent-led onboarding, tailored/batch routing, application blockers and submission evidence | Configure rules conversationally, assist with forms and record actual outcomes. |
-| [Personal Career OS](https://github.com/Pluto-Mo/personal-career-os) | A unified experience library, experience exploration and JD-to-material workflows | Turn your CV into reusable facts and expand them without conflicting candidate profiles. |
-| [resume-builder](https://github.com/StoneLL1/resume-builder) | Fact provenance, separating writing from layout, templates and rendering previews | Verify content before generating and reviewing documents; preserve original CVs. |
-| [career-ops](https://github.com/career-ops-hq/career-ops) | scan, auto-pipeline and tracker designs; availability, deduplication, Knock-out and A–H analysis | Reuse selected code and adapt shared tools to connect discovery, assessment, preparation and tracking. |
+### Core capabilities
 
-These designs are combined and adapted behind **one skill entry point**, rather than installing four independent skills. The four-layer fallback is this project's integrated workflow; it is not wholly supplied by any single upstream project. See [versions and attribution](THIRD_PARTY_NOTICES.md).
-
-## What problems does it solve?
-
-| Your problem | How the workflow helps |
+| Capability | What the project provides |
 |---|---|
-| Switching between job boards every day | Searches public vacancies using your role, location and preferences, then builds a shortlist. |
-| Discovering that jobs are closed, duplicated or unsuitable | Checks availability, application history and essential requirements; explains recommendations. |
-| Rewriting your CV and cover letter for every company | Uses your confirmed experience to draft tailored documents and application answers. |
-| Preparing many applications without losing control | Screens batches of jobs, selects reviewed CVs and assists with application forms. |
-| Forgetting where you applied or when to follow up | Organizes statuses, next actions and follow-up suggestions, and helps review results. |
+| Job discovery and assessment | Falls back through APIs, page reading, the in-app browser and agent search; checks availability, duplicates and essential requirements, then gives evidence-based assessments. |
+| Experience and documents | Maintains one verified fact library; tailors CVs, cover letters and answers for priority roles, reuses reviewed general CVs for batches, and exports and checks PDFs. |
+| Applications and follow-up | Applies within authorization, distinguishes prepared documents, unconfirmed outcomes and submitted applications, and saves success evidence, next actions and follow-up dates. |
+| Visual management | A local dashboard shows overviews, trends and records; the editor adjusts existing documents. Both interfaces support Chinese, English and French. |
 
-**The goal is scheduled job-search and application automation after setup.** Configure your facts, documents, screening rules, account access and submission authorization first. An agent platform such as Codex can then run discovery → screening → preparation → submission within your explicitly approved scope → record updates on a schedule. New documents needing review, verification challenges and unknown essential facts go into a pending queue. Only confirmed success counts as submitted.
+### Design approach
 
-## How does it work?
+**Verify facts once, reuse them, and record each step.** Recommendations should come from job requirements and real experience; submission status should come from success evidence. Edited documents are reviewed again, and interrupted runs resume from persistent records to avoid duplicate applications or treating an attempted action as completion.
 
-```mermaid
-flowchart TD
-    A[Share your CV and job-search goals] --> B[Build a verified experience library and preferences]
-    B --> C{What would you like to do?}
-    C --> D[Ask the agent to find new jobs]
-    C --> E[Paste a job URL or description]
-    D --> F[Read the job · Check availability · Remove duplicates]
-    E --> F
-    F --> G[Check essential requirements and assess suitability]
-    G --> H{Suitable to apply?}
-    H -->|No| I[Record why it was skipped]
-    H -->|Unclear| J[Ask for missing information]
-    H -->|Yes| K{Choose an approach}
-    K -->|Tailored| L[Prepare CV · Cover letter · Answer drafts]
-    K -->|Batch preparation| M[Select a reviewed general CV]
-    L --> N[Review materials and define submission authorization]
-    M --> N
-    N --> O[Submit approved applications manually or on schedule]
-    O --> P[Update records · Follow up · Review strategy]
-```
+Tools and personal data live separately, so the Skill can be updated while retaining your profile, documents and ledger. The workflow connects **Career Memory → Job Intelligence → Application Engine → Pipeline**, adapting designs from several open-source projects; see [attribution and licenses](THIRD_PARTY_NOTICES.md). Website access, login and required information still determine which applications can complete automatically. The project does not guarantee employment.
 
-You can request just one step: “Only assess this job” or “Draft the cover letter first; do not apply yet.”
+## Usage workflow
 
-## First time? Follow these 4 steps
+**Check pending tasks → discover jobs or read a job description → screen → prepare and review documents → apply and verify evidence → update records and follow-up dates**. You can also request just one step.
 
-### 1. Choose an AI agent that can work with local files
+## 1. Installation and first setup
 
-Start with **the Codex desktop app**: install it, sign in, and create or open a dedicated job-search folder. This folder will hold your personal information and application materials.
-
-An agent here means an AI assistant that can read files, install skills and use web tools. A chat-only website without local file access cannot directly run this workflow. Other local agent platforms can use the download option below, but installation and browsing capabilities differ.
-
-### 2. Ask your agent to install the skill
-
-In Codex with skill installation available, paste:
+Use an agent with local file and web access, such as the Codex desktop app. Open a dedicated job-search folder and send:
 
 ```text
-Please install the Skill from the root of this GitHub repository:
-https://github.com/ziyuan-404/Useless-LinkedIn
-Use useless-linkedin as the installed skill name.
-Use the platform's skill installer and retain the entire skill pack and resources.
-Tell me whether I need to reopen the conversation to use it.
+Install the root Skill from the Test branch of
+https://github.com/ziyuan-404/Useless-LinkedIn as useless-linkedin.
+Keep the entire skill package and INSTALL.md.
+Tell me whether I need to reopen the conversation after installation.
 ```
 
-After installation, start a new turn or reopen the conversation as your agent advises. Invoke it with `$useless-linkedin` or ask it to use the Useless LinkedIn job-search skill.
+Without a skill installer, select **Test branch → Code → Download ZIP** on GitHub, extract it, and ask the agent to read the root `SKILL.md`.
 
-**No skill installer available?** Click the green **Code → Download ZIP** button on this page. Extract it into a new folder, open that folder in an agent with local file access, and send:
-
-```text
-Read SKILL.md at the root of this folder and follow the Useless LinkedIn workflow.
-Check the environment first, then help me initialize a separate job-search workspace.
-```
-
-This delegates installation and setup to your agent. There is currently no dedicated one-click installer button. You do not need to type technical commands yourself; ask the agent to explain any manual steps one at a time.
-
-### 3. Share your CV and configure your workflow
-
-Attach your own Word or PDF CV, then paste the following. Replace brackets with your details; say “unsure” where necessary.
+Attach your Word or PDF CV, then replace the brackets in this request:
 
 ```text
-Use $useless-linkedin to set up my job-search workflow from scratch.
-My job-search workspace is: [folder path]. My CV is attached.
+Use $useless-linkedin and follow SKILL.md and INSTALL.md for first setup.
+Personal workspace: [a separate folder outside the Skill installation directory].
+My CV is attached.
+Target roles: [roles]; locations: [French cities, remote work or commute limits].
+Contract type: [your choice]; start date: [date].
+Languages, education, work authorization and other constraints: [actual details;
+mark anything uncertain].
 
-Target roles: [for example, Python developer or data analyst].
-Target locations: [cities or countries].
-Contract type: [internship / alternance / permanent employment].
-Earliest start date: [date].
-Languages, commute limits, school schedule and other constraints: [your details].
-
-Check the environment and available capabilities. Copy the skill's public tools,
-rule templates and blank dashboard into this workspace without overwriting
-existing files or my original CV. Store personal facts only in this workspace,
-never in the skill installation folder.
-Check dependencies, install what you can, and guide me through any manual steps.
-
-Import my CV and organize education, work experience, projects, skills and contacts.
-Ask about conflicting dates or qualifications; do not invent missing information.
-Help configure searches, CV and cover-letter templates, application rules and records.
-Show me the facts summary and document previews for approval before using them.
-Finish by checking whether we can start searching and listing unavailable features.
+Install dependencies, initialize the workspace, configure searches and document
+templates, build one verified experience library, and check that the application
+dashboard and document editor start correctly.
+Keep my original CV and existing data. Ask about missing or conflicting facts.
+Test screening, document generation and record keeping with one job first.
 Do not submit applications or send messages yet.
 ```
 
-Your agent may ask several questions to clarify your criteria and verify your experience. You do not have to create profile files or edit configuration formats yourself.
+**The agent configures the dashboard automatically.** Following [INSTALL.md](INSTALL.md), it checks Node.js 24+ and Python 3.10+, installs dependencies, and runs the installer to create a blank ledger and launchers. No manual database creation or environment setup is needed; you still handle operating-system administrator prompts. Downloading the Skill does not run the installer or create a schedule.
 
-Excel updates depend on spreadsheet tooling provided by the platform. If unavailable, ask your agent to maintain the job list and an application summary, and explain that limitation. Full requirements are in the [technical guide (Chinese)](docs/技术配置指南.md).
+Tools stay in the Skill directory; CVs, personal facts, applications and generated documents belong in your separate workspace. Your profile still needs to be built from your real documents after installation.
 
-### 4. Try one job first
+## 2. Everyday use
 
-Start small to check that the screening and materials fit your needs:
+Invoke `$useless-linkedin` in your configured workspace and describe the task:
 
-```text
-Use $useless-linkedin to assess this job: [URL or full job description].
-Explain whether it suits me, which requirements I do not meet, and what needs checking.
-If suitable, prepare a CV, cover letter and drafts for common application questions.
-Show me the final materials; do not submit yet.
-```
+| Task | Example request |
+|---|---|
+| Find jobs | Find 10 new jobs in France using my criteria, check duplicates and rank them. |
+| Assess a job | Assess this URL or description. Check essential requirements, evidence from my experience and application history. Explain your recommendation. |
+| Prepare documents | Tailor my CV, cover letter and answers for this job, then show final PDF previews. |
+| Prepare a batch | Screen these jobs and select reviewed general CVs for eligible roles. |
+| Apply | Within my recorded authorization, check the final documents, apply, save success evidence and update the dashboard. |
+| Follow up and review | Check follow-ups due and unverified submissions, organize next actions and draft follow-up messages. |
 
-Once the agent can explain its recommendation, produce accurate documents without placeholders, and save a record, you can process batches. If it cannot read the full job description, it should identify the gap rather than guess.
+Tell the agent when preferences change: “Prioritize data analyst roles in Lyon” or “Use a one-page French CV focused on real projects.” Reinstallation is unnecessary.
 
-## Configure documents and workflow in everyday language
+If the description or an essential fact is missing, the agent should record what needs checking. **Clicking Submit or uploading a file is not proof of success.** A submission is recorded only after checking the success page, confirmation email or platform status. Emails and contact messages need their own authorization; drafts are not sent messages.
 
-You can change your preferences whenever you like, without reinstalling the skill.
+## 3. Application dashboard
 
-### Configure your CV
+### Launch and configuration
 
-```text
-Use French, a clean one-page layout, and emphasize Python and backend projects.
-Verify my experience first and keep dates and education status accurate.
-Create a general developer CV and a data-oriented version.
-Export previews for my review, then add approved versions to my batch-application CV pool.
-```
+After installation, double-click the launcher in your personal workspace:
 
-### Configure your cover letter
+- **Windows:** `打开Dashboard.cmd`
+- **macOS:** `打开Dashboard.command` (generated by the agent running the installer on a Mac)
 
-```text
-Write in French, within one page, in a natural and specific tone.
-Connect the job's needs to my real projects, without exaggerating or using generic filler.
-Show me an editable starting template, then tailor it to each company.
-```
+The launcher starts and monitors both services and opens the dashboard. Keep its window running; use the dashboard's top navigation to enter the editor.
 
-### Configure search and application strategy
+Default addresses: dashboard `http://127.0.0.1:8765/`, editor `http://127.0.0.1:8766/`. They listen only on your computer and require no separate account. The ledger lives at `个人资料/dashboard/applications.sqlite` in your workspace.
+
+For connection failures, a moved Skill or historical Excel imports, ask:
 
 ```text
-Prioritize Python developer alternance positions in Paris and within commuting distance.
-Search WTTJ, HelloWork, Indeed France, LinkedIn and La Bonne Alternance.
-Exclude senior and freelance roles and jobs clearly incompatible with my qualifications.
-Tailor materials for strong matches; use reviewed general CVs for other eligible jobs.
-When I start the workflow each day, show me 10 new jobs with recommendation reasons.
-Do not prepare duplicate applications for jobs I have already applied to.
-Prepare the batch first; assist with submitting only after I review and approve it.
+Follow INSTALL.md and the dashboard workflow to check this workspace.
+Repair dependencies, launcher paths or port conflicts. Rerun the installer
+to restore missing files if needed, preserving personal data and the ledger.
+If I provide an Excel history file, import it read-only, check the results,
+and keep the original.
 ```
 
-Once setup is complete, schedule the workflow daily or on weekdays. Installing the skill does not create the task itself; see below. Login walls or access restrictions may leave some steps pending for your help.
+### Using the page
 
-## After setup: schedule automated applications in Codex
+1. **Check the overview.** Select a count for follow-ups due, tasks waiting on you, unverified submissions or verified submissions. The last 21 days of trends stay expanded. Historical submitted records can be unverified; verified submissions are counted separately.
+2. **Find records.** Search company, role, URL or ID; filter by status or company initial and change sorting. Quick views highlight missing descriptions or conflicting stages. Choose 10, 20 or 50 records per page on the right.
+3. **Add or edit.** Enter job details, execution status, suitability, next action and follow-up date. Stage checkboxes allow at most one selection. Edits retain history; leaving with unsaved changes triggers a warning.
+4. **Verify evidence.** Entering an evidence description does not verify a submission; check the original receipt or platform result.
+5. **Delete and restore.** Undo a deletion immediately or recover a record from **Deleted records**. The form also stores company information and job analysis.
 
-Complete one manual end-to-end run first and check search results, documents and records. Then schedule the repeatable work.
+![Test-data demo: dashboard records and filtering](docs/media/dashboard.gif)
 
-1. Open your **personal job-search workspace** in the Codex desktop app and check the skill, files, documents and web tools.
-2. Ask Codex in your current conversation to create a scheduled task. Specify time, timezone, criteria, limits and submission authorization; review the task card before enabling it.
-3. Use **Scheduled** in the sidebar to review runs, edit or pause tasks. Some versions may label this **Automations**; follow the interface available to you.
-4. For local runs, keep the computer on, online and the app running, with workspace files and account access available. Scheduled tasks retain platform permissions.
+Both interfaces support **中文 / English / Français** and remember the selection after reload. Changing the interface language does not translate your application text or documents.
 
-Copy and adapt:
+The dashboard and editor share one workspace entry point. Switching at the top preserves the loaded page state, and language changes synchronize across both interfaces. Filters, forms and page switches provide motion feedback and respect the system’s reduced-motion preference.
+
+![Test-data demo: language switching](docs/media/interface-languages.gif)
+
+See the [dashboard workflow](references/dashboard-workflow.md) for field definitions and maintenance rules.
+
+## 4. Document editor
+
+Use it to adjust job-specific CVs and cover letters already generated by the agent. Prepare documents first; they belong in a job folder under `个人资料/CV/` in your workspace. The editor does not directly convert arbitrary uploaded Word or PDF files into editable documents.
+
+1. Open the editor from the dashboard, choose a job folder and document type, then select **Open document**.
+2. Click a component to select it, double-click text to edit, and drag components or their edges to move or resize them.
+3. Use **Add element** to insert a text box, shape, divider or image. Adjust text, position, dimensions, font size, colors, opacity and layering in the properties panel. Inspect the whole page for overlap or overflow.
+4. Select **Save and generate PDF**. A successful save updates the HTML, PDF and preview, keeping the previous version in the job folder's `work/editor-history/`. A failed save preserves the existing files and current edits.
+5. Ask the agent to recheck facts, PDF text and the full-page layout before applying. Changed files invalidate the previous material review.
+
+![Test-document demo: opening and editing](docs/media/document-editor.gif)
+
+*All GIFs use fictional companies, jobs and documents, with no real applications or personal CVs.*
+
+**Cancel** reloads the current document. Switching documents warns about unsaved edits. When returning to the dashboard, you can keep editing, retain the current page draft or save before returning. See the [editor workflow](references/editor-workflow.md) for details.
+
+## 5. Scheduled runs (optional)
+
+Complete one end-to-end run and record the permitted application scope first. Then ask an agent platform supporting local scheduled tasks to create a task, for example:
 
 ```text
-Create a scheduled task for this job-search workflow:
-Run every weekday at 9 AM, timezone Europe/Paris, continuing this conversation
-and using my personal job-search workspace. Use $useless-linkedin.
-
-Find up to 10 new jobs per run using my criteria. Check availability, duplicates
-and essential requirements, perform A–G analysis, and prepare suitable materials
-and application answers.
-
-Automatically submit applications whose materials I have reviewed and whose
-submission I have explicitly approved, within the approved jobs, documents
-and quantity limits. Suitability alone is not submission authorization.
-Queue new materials and applications outside that scope for review.
-Queue verification challenges, expired login and unknown essential identity
-facts for my attention; continue other workable jobs. Do not invent answers,
-duplicate applications or send unauthorized messages.
-
-Update records using actual success evidence and summarize submitted,
-pending-review and blocked applications with next actions after each run.
-Test the workflow once for my review before enabling the schedule.
+Create a scheduled task for this personal job-search workspace:
+weekdays at 9 AM, timezone Europe/Paris.
+Use $useless-linkedin to process up to 10 new jobs per run using my criteria.
+Handle unfinished tasks and follow-ups first, then check new jobs and prepare
+and review documents. Apply within my recorded authorization and update the
+dashboard after checking success evidence.
+Verification challenges, expired login and unknown essential facts block only
+the affected job; continue other workable jobs.
+Summarize submissions, blockers and next actions. Do not apply twice or send
+unauthorized messages.
 ```
 
-**Move from batch preparation to automated submission gradually:** review general CVs and screening rules, then review and approve the first batch of applications. Scheduled runs can execute those approved applications; newly tailored documents still follow the review workflow. Automation depends on platform and job-board capabilities and does not guarantee unattended completion on every website.
+Local runs require the computer to be on and online, with the platform and workspace available. The agent must check task creation, activation and run status; installing the Skill alone does not start applications. See the [daily cycle](workflows/daily-cycle.md) and [unattended execution plan](workflows/unattended-run.md).
 
-Use local workspace tasks for local files; web tasks cannot directly read folders on your computer. Availability and interface vary by version. See the [official OpenAI scheduled-task documentation](https://learn.chatgpt.com/docs/automations?surface=app).
+## Further reading
 
-## Everyday requests
-
-- **Find jobs:** “Find 10 new jobs that meet my criteria and rank them.”
-- **Assess a job:** “Is this URL worth applying to? Check hard requirements and my history first.”
-- **Prepare a batch:** “Screen these jobs and select my reviewed CVs for suitable positions.”
-- **Tailor materials:** “Customize my CV and cover letter for this job and show final previews.”
-- **Follow up:** “List unanswered applications and draft follow-up messages.”
-- **Review strategy:** “Review recent results and suggest improvements to my targeting or materials.”
-
-## A few things to know
-
-- Use genuine experience. The agent must not invent qualifications, skills, permits or achievements.
-- Keep original CVs; save tailored versions separately. Do not publish personal data to this repository.
-- Your AI platform may process the information you share. Check its data policy; local storage does not mean fully offline processing.
-- Messages and applications must remain within your explicit authorization. No success evidence means no submitted status.
-- This workflow improves organization and efficiency; it does not guarantee employment or replace your confirmation of personal facts.
-
-More: [Privacy](PRIVACY.md) · [Technical setup and troubleshooting (Chinese)](docs/技术配置指南.md)
-
-## License and acknowledgments
-
-Project-owned adaptations use the [MIT license](LICENSE). The project references and reuses resources from ApplyPilot, Personal Career OS, resume-builder and career-ops. Third-party modules, fonts and templates retain their licenses. See [third-party notices](THIRD_PARTY_NOTICES.md).
+- [Installation](INSTALL.md) · [Technical setup and troubleshooting (Chinese)](docs/技术配置指南.md)
+- [Privacy](PRIVACY.md): do not publish real CVs, contacts, application records or login data. Local storage does not imply fully offline model processing.
+- [MIT license](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md): resources from ApplyPilot, Personal Career OS, resume-builder and career-ops retain their respective licenses.

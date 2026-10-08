@@ -1,0 +1,21 @@
+{
+  "name": "useless-linkedin-skill",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:discovery": "node --test tests/discovery*.test.mjs",
+    "check": "node runtime/tools/check-architecture.mjs"
+  },
+  "dependencies": {
+    "impit": "0.14.5",
+    "interactjs": "1.10.28",
+    "playwright": "1.63.0",
+    "robots-parser": "3.0.1",
+    "stream-json": "3.7.0"
+  }
+}

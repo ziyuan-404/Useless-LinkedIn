@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","title":"Early knockout decision","type":"object",
+  "required":["assessmentType","contextHash","company","role","ko","decision","questions"],
+  "properties":{
+    "assessmentType":{"const":"gate"},"contextHash":{"type":"string","minLength":1},
+    "company":{"type":"string","minLength":1},"role":{"type":"string","minLength":1},
+    "ko":{"type":"object","required":["status","items"],"properties":{"status":{"enum":["FAIL","MARGINAL"]},"items":{"type":"array","minItems":14,"maxItems":14,"items":{"type":"object","required":["key","result","reason"],"properties":{"key":{"type":"string"},"result":{"enum":["PASS","FAIL","UNKNOWN","NA"]},"reason":{"type":"string","minLength":1},"jdQuote":{"type":"string"}}}}}},
+    "decision":{"type":"object","required":["route","gaps","nextAction","owner"],"properties":{"route":{"enum":["skip","needs-user"]},"gaps":{"type":"array","items":{"type":"string"}},"nextAction":{"type":"string","minLength":1},"owner":{"enum":["agent","user"]}}},
+    "questions":{"type":"array","maxItems":0}
+  }
+}

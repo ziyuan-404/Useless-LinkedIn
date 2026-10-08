@@ -1,16 +1,21 @@
 # Third-party notices
 
-Useless LinkedIn 组合并改编了以下开源项目的工作流与资源。各上游模块目录中的许可证、归属文件和资源许可证继续保留。
+Useless LinkedIn 组合并改编了以下开源项目的工作流与资源。保留的上游代码和文档附带相应许可证。
 
 | 项目 | 用途 | 固定版本 |
 |---|---|---|
 | [ApplyPilot](https://github.com/yvonnehe772/applypilot) | 投递运营、筛选、执行边界和卡点处理 | `1e84f9d6916afdbe41e74ec5247e5ea4929db925` |
 | [Personal Career OS](https://github.com/Pluto-Mo/personal-career-os) | 经历库、JD 工作流和材料导出 | `16a26e2c6339d4f7949b5cd9ffdb5775be22eb95` |
-| [resume-builder](https://github.com/StoneLL1/resume-builder) | 简历事实追溯、写作、模板和渲染 | `9aa5ca4a0a9115223b6d1361e3e71d38556777ae` |
-| [career-ops](https://github.com/career-ops-hq/career-ops) | 选定代码及A–H、Knock-out、岗位完整性、写作、研究和漏斗参考 | `7c6de77e46db1935b714e1d3978831051640ea20` |
+| [resume-builder](https://github.com/StoneLL1/resume-builder) | 简历事实追溯与写作方法参考 | `9aa5ca4a0a9115223b6d1361e3e71d38556777ae` |
+| [career-ops](https://github.com/career-ops-hq/career-ops) | A–G 分析、H 申请回答、Knock-out、岗位完整性、写作、研究和漏斗参考 | `7c6de77e46db1935b714e1d3978831051640ea20` |
+| [interact.js](https://github.com/taye/interact.js) | 本地材料编辑器的组件拖动与缩放，MIT 许可证 | `1.10.28` |
 
-career-ops is licensed under the MIT License, Copyright (c) 2026 Santiago Fernández de Valderrama. 本项目对相关工作流进行了中文化和重组，并复用下文列出的MIT代码模块；没有将career-ops作为第二个Skill安装，也没有运行其人物库迁移命令。
+career-ops is licensed under the MIT License, Copyright (c) 2026 Santiago Fernández de Valderrama. 本项目对相关工作流进行了中文化和重组；未调用的上游代码已移出运行目录；没有将 career-ops 作为第二个 Skill 安装，也没有运行其人物库迁移命令。interact.js 的 MIT 许可文本随 npm 依赖安装在 `node_modules/interactjs/LICENSE`。
 
-resume-builder 内含多套第三方模板、字体与 Typst 包；其具体许可证和归属以 `modules/resume-builder/assets/` 下随附文件为准。使用或再发布模板前应保留这些文件。
+未调用的 resume-builder 模板、字体、Typst 包及原网页编辑器已从本发行版移除。当前本地编辑器独立实现，使用 interact.js 操作现有 HTML；现行 HTML 模板来自本项目的 `workspace-template/`，简历写作方法参考保留于 `modules/resume-builder/references/`，原项目许可证保留于模块目录。
 
-The sanitized distribution also vendors selected MIT-licensed career-ops modules in `.career-os/vendor/career-ops` (WTTJ, liveness, URL normalization, fingerprint and tracker parsing). Their original LICENSE is retained. `.career-os/vendor/yaml` contains PyYAML 6.0.3 with its MIT license. No private upstream/local Git history is distributed.
+Unused upstream source trees have been removed from the runtime. Attribution for workflow ideas remains above. No private candidate data or local Git history is distributed.
+
+The public provider library, ATS routing and pure JD normalizers from career-ops commit `a156d4dfa18cbc3a10da6ebf2a3466ed57e681f8` are distributed under `runtime/vendor/career-ops/`, Copyright (c) 2026 Santiago Fernández de Valderrama, MIT License; the complete license is included there. `provenance.json` records upstream hashes and adaptations. HTTP uses the host transport. Standalone CLI side effects, candidate migrations and local-parser execution are excluded. Evaluators adapt the independent-evaluation design to the host workspace/schema.
+
+Discovery HTTP defaults to native Node fetch; explicit per-source impit uses [impit](https://github.com/apify/impit) 0.14.5, licensed under Apache-2.0, copyright Apify Technologies s.r.o. Robots directives use [robots-parser](https://github.com/samclarke/robots-parser) 3.0.1, licensed under MIT, copyright Sam Clarke. Official export streaming uses [stream-json](https://github.com/uhop/stream-json) 3.7.0 and its stream-chain dependency, licensed under BSD-3-Clause, copyright Eugene Lazutkin. Dependencies are pinned in package-lock.json; their license metadata and distributed notices accompany npm installation. No private browser sessions are bundled.

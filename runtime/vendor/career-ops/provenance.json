@@ -1,0 +1,490 @@
+{
+  "repository": "https://github.com/career-ops-hq/career-ops",
+  "commit": "a156d4dfa18cbc3a10da6ebf2a3466ed57e681f8",
+  "license": "MIT",
+  "files": [
+    {
+      "path": "providers/4dayweek.mjs",
+      "upstreamSha256": "686eab91aa14211e027afb92f922bd87b76415dbca0acaf6385497bf290fb9ad"
+    },
+    {
+      "path": "providers/a16z-speedrun-talent.mjs",
+      "upstreamSha256": "9c30a17ab55545a953acfb90a3c47307481d1611d161f5e1874d67186dd304a4"
+    },
+    {
+      "path": "providers/adp-workforcenow.mjs",
+      "upstreamSha256": "e215db7b713ad33b5b34a5e5b42de3c4a6d8b1ae6656347dad7a2f537d131b35"
+    },
+    {
+      "path": "providers/agentic-jobs.mjs",
+      "upstreamSha256": "c2425fa9d6b78c1c87e556513a288b3873135ff0418d45ac249b9b51282c2b5c"
+    },
+    {
+      "path": "providers/alibaba.mjs",
+      "upstreamSha256": "301dcd329778f89add2dc2c7466e43ed453ce20cf09080d34df399ef9dc46c8d"
+    },
+    {
+      "path": "providers/amazon.mjs",
+      "upstreamSha256": "d6154678926b188f6aec4a979e8b352d11ee4f2bea7a910c5135e0de96cc5145"
+    },
+    {
+      "path": "providers/applitrack.mjs",
+      "upstreamSha256": "2b79ead6dc084fd7f82dfaf6521bc74edf2e67c55f8c85cb8502e4e1ea901fa4"
+    },
+    {
+      "path": "providers/arbeitnow.mjs",
+      "upstreamSha256": "0dd25883f262db9d292708ca4466c42686963c5e3e87d839922e86aa63284ea9"
+    },
+    {
+      "path": "providers/arbeitsagentur.mjs",
+      "upstreamSha256": "c15961e9fc68559ba780e7ebc93a448fd646e024bd0aa5c346467c9e2cd71d3f"
+    },
+    {
+      "path": "providers/ashby.mjs",
+      "upstreamSha256": "7379506c7c708dffd3cf056816dd73ddb7d093b97d38a4e413a800f0a7b83b67"
+    },
+    {
+      "path": "providers/avature.mjs",
+      "upstreamSha256": "bb0d7710e81bbbe852266a4072f938540f906bd827059bb3b7b1efedd240b983"
+    },
+    {
+      "path": "providers/bamboohr.mjs",
+      "upstreamSha256": "56920a61a49b059bd371a207719985888cffe1e1a1e04fe4701fb476bef069f0"
+    },
+    {
+      "path": "providers/beesite.mjs",
+      "upstreamSha256": "0167f9726e4955cbf244c78f86ff28a414449b14180a859090c04b203fd96774"
+    },
+    {
+      "path": "providers/breezy.mjs",
+      "upstreamSha256": "e59684bcfc57557b06c47fa23eee144b4f95c6db113147997cd5a8ea0f56a51f"
+    },
+    {
+      "path": "providers/builtin.mjs",
+      "upstreamSha256": "3a28f28d2b80b9ebc5e0d750629b2c0b24d33ed2e5ab204c9baee4ef2e4d289e"
+    },
+    {
+      "path": "providers/careerviet.mjs",
+      "upstreamSha256": "816ab1fc826a994b23eae9a0c0ffbfbeb758e22f320f805b8dfdd7d39fa6954a"
+    },
+    {
+      "path": "providers/collage.mjs",
+      "upstreamSha256": "244248d6bd59ba494b10660a2f72a5f8d57d4a036422ee6f7284f6a92aafab58"
+    },
+    {
+      "path": "providers/comeet.mjs",
+      "upstreamSha256": "e38e11240b76d56ee8b232159f0f9f91145276f8d15a79a752409c8febd00d3c"
+    },
+    {
+      "path": "providers/consider.mjs",
+      "upstreamSha256": "7d0720e4c165006870d1c6eb03b87df9498fad94a409dbff647d85d85b82f194"
+    },
+    {
+      "path": "providers/cryptocurrencyjobs.mjs",
+      "upstreamSha256": "1013f68bbd926fc4561d008e39ea0f138bd9c506d4cc1634a65db1e146d1d2c1"
+    },
+    {
+      "path": "providers/csod.mjs",
+      "upstreamSha256": "843f668a02441523d1116ea3413b8984ae77a334218092d3fef40952b60045e6"
+    },
+    {
+      "path": "providers/dassault.mjs",
+      "upstreamSha256": "5c3ee393176ef59da903321a4c2311a228c4325f0ed4dbf50a4f4693b66766b1"
+    },
+    {
+      "path": "providers/deutschebahn.mjs",
+      "upstreamSha256": "18df77ce5a86bc87474615f4912c196f679ec92955cd792ac3b5c0a88432fa53"
+    },
+    {
+      "path": "providers/echojobs.mjs",
+      "upstreamSha256": "4dd0cc340d3aa413d090340c6758f76d5ef1dc4b5969caabc97e29aebdf72a68"
+    },
+    {
+      "path": "providers/eightfold.mjs",
+      "upstreamSha256": "9cfc0548e45a267b8bbb85144601c2f89345020aff073f956414cfb4f8f68824"
+    },
+    {
+      "path": "providers/eploy.mjs",
+      "upstreamSha256": "2752362bec2a932a5c16b9f4f428ca1c39f9098fba3680bf222ee7629255aa5a"
+    },
+    {
+      "path": "providers/feishu-jobs.mjs",
+      "upstreamSha256": "3ac59edab4e736f93aaca14c1f95205a298df3e6ab3778a43b57f46e3266194b"
+    },
+    {
+      "path": "providers/flowxtra.mjs",
+      "upstreamSha256": "0ad2f45c122758aec1bc17a86fadef53967b6461c331762e8b4fc5aa802456b8"
+    },
+    {
+      "path": "providers/garena.mjs",
+      "upstreamSha256": "bc6b079c748ccf076730236e1464ff552fd64bdc2ee80bfcb4865b26b374053d"
+    },
+    {
+      "path": "providers/gem.mjs",
+      "upstreamSha256": "6f078b31bb6604a03e509bdcbbe464e2b7e181f096911480e4df189292c345a3"
+    },
+    {
+      "path": "providers/generalist-world.mjs",
+      "upstreamSha256": "126e33e0a490e22b36f256ab30db5faec5873ee10f9cca28d7fc0c5f5a59830a"
+    },
+    {
+      "path": "providers/getonbrd.mjs",
+      "upstreamSha256": "fe1c57e0679a07e83255b36444a1323881f918afafb1bc8c019471ff2445aa26"
+    },
+    {
+      "path": "providers/getro.mjs",
+      "upstreamSha256": "56527e173cd6d9a272eda6949ec5c71854b1856181b5904f239bf4d17226cb07"
+    },
+    {
+      "path": "providers/glints.mjs",
+      "upstreamSha256": "07c23f66391707bbf25ecfdf054d1315ee1160b28af15b5d924a74b0cb0770a4"
+    },
+    {
+      "path": "providers/greenhouse.mjs",
+      "upstreamSha256": "f29a8dbbe44cfa014adae43f07cd322866018fed00c609df011591e85ced1c2c"
+    },
+    {
+      "path": "providers/gupy.mjs",
+      "upstreamSha256": "726c3ea2981118104ce815a606cd476dacf3bc99e534a4225f761f9a26514cf8"
+    },
+    {
+      "path": "providers/hackernews.mjs",
+      "upstreamSha256": "c22a4265ee0e70101e66d166969c91746eba6312238a90eb6303f2464e22fd5a"
+    },
+    {
+      "path": "providers/hecklerkoch.mjs",
+      "upstreamSha256": "e49b08a4867c2a4d8a51ca9eaf8a0eb8a01fc75f4bcc991ebc8556e147f2de99"
+    },
+    {
+      "path": "providers/higheredjobs.mjs",
+      "upstreamSha256": "eb37bd73fecf959152ab2a4092d2122051709d206b6564b46a8988856e7bcc6b"
+    },
+    {
+      "path": "providers/himalayas.mjs",
+      "upstreamSha256": "99c76453b0044bbeb2567552a94c7f0d8caef655ebf5d2f65c16533d640d351b"
+    },
+    {
+      "path": "providers/hiringroom.mjs",
+      "upstreamSha256": "1fddeb4f8f8096f554074092e37b169ad36088bdb3f82038004c6458ed836e40"
+    },
+    {
+      "path": "providers/ibm.mjs",
+      "upstreamSha256": "9836d8ee9568bed984109d7a6dda7d4e23f90321d9692bb34fd12f2f433f8304"
+    },
+    {
+      "path": "providers/icims.mjs",
+      "upstreamSha256": "d699c7b0efc9c9d2ba33cfe0eba8ae486fa91efb71291ad1b297a14e3cfa9d63"
+    },
+    {
+      "path": "providers/itviec.mjs",
+      "upstreamSha256": "8d21f1e0a7bf30ffd63c03c4f181115542d4cbac6446b50b0fd9e18222564349"
+    },
+    {
+      "path": "providers/jazzhr.mjs",
+      "upstreamSha256": "1a033988af8423c5c8ce9f1e5227913ea3beb48ade8c640f8f782a8ee66a0ed5"
+    },
+    {
+      "path": "providers/jibeapply.mjs",
+      "upstreamSha256": "df4477691f51d8300802964cc69353c1476452139848435706ff3af5b245f508"
+    },
+    {
+      "path": "providers/jobbankca.mjs",
+      "upstreamSha256": "f0873fcaa4e5a5ba8ad7a80b85dba088999d79ff4db58f9d463dfe4b2ac7f0ba"
+    },
+    {
+      "path": "providers/jobicy.mjs",
+      "upstreamSha256": "f920267b4c1f74f0aa292fdbf344d4a8ee6bbd163eb90cdccf1102101396f7ed"
+    },
+    {
+      "path": "providers/jobspresso.mjs",
+      "upstreamSha256": "02661aa1c7ddf0efb2273e2499bb52c9dc25743ca8d94e11b0ca078702ca1583"
+    },
+    {
+      "path": "providers/jobstreet.mjs",
+      "upstreamSha256": "3e6ab37dc6ac53c051894cda2816765c7ce9f4a6347f8cb99b1e9b4044ad2965"
+    },
+    {
+      "path": "providers/jobvite.mjs",
+      "upstreamSha256": "e595b45269ff9a2147417e70e5ae41feb3b19f416d2b36df2b28bae794f0d733"
+    },
+    {
+      "path": "providers/join.mjs",
+      "upstreamSha256": "1c9a35f09db613ef1c6a218e9ad48a22b2b7de54944d92f2f1bed9bb53ad13b6"
+    },
+    {
+      "path": "providers/joinup.mjs",
+      "upstreamSha256": "3c37b4f1fbb5affb9d0c1c4f29372b3816fb95e6d49c8d5e7759727178e15a3f"
+    },
+    {
+      "path": "providers/justjoin.mjs",
+      "upstreamSha256": "7b0af7c65b699d83f7cde2fa9f83837da1f3c45af01cbb95c10e709e326cffbe"
+    },
+    {
+      "path": "providers/landingjobs.mjs",
+      "upstreamSha256": "e300d1d2c861bfcb558c8387e5ec9349ec6b455211fb1f0a28d511995c25c966"
+    },
+    {
+      "path": "providers/larajobs.mjs",
+      "upstreamSha256": "d7da3d4fc2e83b16329008f64665f9e8fae90de1d4c793aca2fd6ba73373742e"
+    },
+    {
+      "path": "providers/lever.mjs",
+      "upstreamSha256": "91696f9a332619db041aa84513ff2afea199669d14a5b77ed8c492654736b783"
+    },
+    {
+      "path": "providers/manfred.mjs",
+      "upstreamSha256": "945955c114ebc06ac007c11a331f4c78c224484445a7d9baf5f559356fc0f912"
+    },
+    {
+      "path": "providers/meituan.mjs",
+      "upstreamSha256": "5ab21eb46ff5472ebea1bfa5fc82648ad69056e3b5af913ccc874c5a60c6eaa7"
+    },
+    {
+      "path": "providers/mokahr.mjs",
+      "upstreamSha256": "b4fd26800d2e4d233c7feda12b5aa6421ba6c537ded3191f8551929bbffc8bb7"
+    },
+    {
+      "path": "providers/mycareersfuture.mjs",
+      "upstreamSha256": "a0051446f36401f247f6d9d480d0e2cfec85db8397a6cb25f08bb6261a262777"
+    },
+    {
+      "path": "providers/neogov.mjs",
+      "upstreamSha256": "c407cd35d768d50ff7f14e1be627cafc2d514c00c9654dad68dbb7fec65dfe1d"
+    },
+    {
+      "path": "providers/nodesk.mjs",
+      "upstreamSha256": "36eb4e271f0f3229d24d40555adf4b607a4c5c5e123255c285604efe09bac8f0"
+    },
+    {
+      "path": "providers/nofluffjobs.mjs",
+      "upstreamSha256": "a6d45656ae31facb582101ec5560bdec9f8cb3a6f187a7f25d6dfc9edd7b5db5"
+    },
+    {
+      "path": "providers/occ.mjs",
+      "upstreamSha256": "b6f73739100c0f95cfeb6e0d73deec24826fc4752c6502d1e885fbaba3e967f5"
+    },
+    {
+      "path": "providers/oraclecloud.mjs",
+      "upstreamSha256": "7812fcdfff7f1cd48f9a26b8cfffc5950b5efa15cf7592c9b45430624aee7d3b"
+    },
+    {
+      "path": "providers/peoplesoft.mjs",
+      "upstreamSha256": "35f863c2634d2dc88dfcfb7e49924832d01c3302e369207191029157dee0bced"
+    },
+    {
+      "path": "providers/personio.mjs",
+      "upstreamSha256": "8e034edf73ad602d50fe59e41927e0ccb484f48635c9f53a3062602cae8410a6"
+    },
+    {
+      "path": "providers/phenom.mjs",
+      "upstreamSha256": "afbd1df5b19eeefe0112f18bbe511096f9ea7b94313f4c72e69ea64943ebb1b6"
+    },
+    {
+      "path": "providers/pinpoint.mjs",
+      "upstreamSha256": "b5e2d5f837f2dfe20a20d9b024152a76d9126eae4173f711408932b7e31507f0"
+    },
+    {
+      "path": "providers/prevueaps.mjs",
+      "upstreamSha256": "11eb6b75a0f8e03af31f41102b5c7b4485889de930a1735662e3f7ea9dc86266"
+    },
+    {
+      "path": "providers/pythonorg.mjs",
+      "upstreamSha256": "b5ecc3b560865a8a06f7122093d9de3ddf65b7b5806fa6a1adfc87d9f6fe291e"
+    },
+    {
+      "path": "providers/radancy.mjs",
+      "upstreamSha256": "1e3d17e70f6058b286a008a9b938cc683c838244ca8fb3615c1cba9a8642fc77"
+    },
+    {
+      "path": "providers/recruitee.mjs",
+      "upstreamSha256": "29e85e49eaccba9bf20f459b8d7b91041b6af9a70989ec6898337f4a88536b03"
+    },
+    {
+      "path": "providers/redrover.mjs",
+      "upstreamSha256": "1239c2ed4946d4eeb8e709e18899e240d82531f7ebaff6ecb884e8548f136906"
+    },
+    {
+      "path": "providers/remoteok.mjs",
+      "upstreamSha256": "c104b5896aaa3b2140675bab75f4e0d7547340e83bf6e2c39661d57b01ebb822"
+    },
+    {
+      "path": "providers/remotive.mjs",
+      "upstreamSha256": "508326a97863d391fb03d2e5328ebf5b4e7ba069210e12e82595a9b499fd6fc3"
+    },
+    {
+      "path": "providers/remotli.mjs",
+      "upstreamSha256": "a0fc73872642785e0e610a911b0db7048a5fa71d0800e6659b3788f150e18e13"
+    },
+    {
+      "path": "providers/rheinmetall.mjs",
+      "upstreamSha256": "b10c26cfcea56531eea3255d1e8ec70d3bea7999bf84edf491044d2a63f27287"
+    },
+    {
+      "path": "providers/rippling.mjs",
+      "upstreamSha256": "4a65d5af9556f0d8ec718952501eb2382aba07b086844ed2f853a4f24f5e3f26"
+    },
+    {
+      "path": "providers/schoolspring.mjs",
+      "upstreamSha256": "ad0ede20634795b08960b3003b6d58b0cc6800eb595222f038e89d94f08dd836"
+    },
+    {
+      "path": "providers/senjob.mjs",
+      "upstreamSha256": "527fef1874a508fdcaec86de77c1a31bd89aa9257d72b374ed09eeee43167714"
+    },
+    {
+      "path": "providers/smartrecruiters.mjs",
+      "upstreamSha256": "11ba2da0a8cfe61594d3c9803ae7a21ca54da20654784b0c7a4a6822b07c46bf"
+    },
+    {
+      "path": "providers/softgarden.mjs",
+      "upstreamSha256": "f1e6cd1e9fde58e05d9514a00f2b6ae4743cb2da8d102bbb3f64aa42579e448e"
+    },
+    {
+      "path": "providers/solidjobs.mjs",
+      "upstreamSha256": "bcd19db094a264b5fd3f2d80d242edc40835b52319cf6a34ba0cbfc4c4e95205"
+    },
+    {
+      "path": "providers/successfactors.mjs",
+      "upstreamSha256": "91b48035b8fe6e6a540af965722bdf56c9b5440eb1862e553c7681100a63dd1d"
+    },
+    {
+      "path": "providers/taleo.mjs",
+      "upstreamSha256": "1699237ed84310e9a09890bc9fec1d7cf02e69a9e3ccf365ec95efeddfeb1f10"
+    },
+    {
+      "path": "providers/teamtailor.mjs",
+      "upstreamSha256": "f1a304a133007ea04102d0a6260594918cad0c8cd05cb43f0ed739a9b150a03c"
+    },
+    {
+      "path": "providers/telegram-channel.mjs",
+      "upstreamSha256": "065dfb926ede71665aaf05dc88c1ca63b68dd7da4ae63264de001c03df2812f7"
+    },
+    {
+      "path": "providers/tencent.mjs",
+      "upstreamSha256": "3d49a33213e6879350ea49e801a474c4a854dd5b2d29d5438a3909bd3dc84fc5"
+    },
+    {
+      "path": "providers/thehub.mjs",
+      "upstreamSha256": "fbe23a076c8d6ba623df19c21ae88db989747ff754bd50b4ebb7b93cae9891ab"
+    },
+    {
+      "path": "providers/themuse.mjs",
+      "upstreamSha256": "0ae53dc7458eb975434142e235affd1474604bd9c943b62fb315da70e81dc3ef"
+    },
+    {
+      "path": "providers/tkms.mjs",
+      "upstreamSha256": "0b0eeeec3c532660a900ad942bd03d288d0263b91df02d054d9af37f88cd6054"
+    },
+    {
+      "path": "providers/torre.mjs",
+      "upstreamSha256": "ea04b1bd1e1ca8ee25a1068e041c0f8fc4da3c965f83f98f229e25230776a45e"
+    },
+    {
+      "path": "providers/ultipro.mjs",
+      "upstreamSha256": "e14a2fa4de67e25462af619e2664aa31a83763b265ac32e930c145ae9c9c48a8"
+    },
+    {
+      "path": "providers/vdab.mjs",
+      "upstreamSha256": "52e58916db9bc72af38204fff0d6cd075b692fd25f9a46bae28b5eefdb96274b"
+    },
+    {
+      "path": "providers/weworkremotely.mjs",
+      "upstreamSha256": "a7e92c939ca109e7134bd90beb3e0f69fc2ba530240e978eded9392c6d1377f7"
+    },
+    {
+      "path": "providers/workable.mjs",
+      "upstreamSha256": "d7cc32535ffb3fc1386ec4ee1e22e80704db356cbfa752d51e87f1b8caeea267"
+    },
+    {
+      "path": "providers/workday.mjs",
+      "upstreamSha256": "69a85ce762bd5867feb42762141cdc6a516006a0222928745e525b6b5b0f4761"
+    },
+    {
+      "path": "providers/workingnomads.mjs",
+      "upstreamSha256": "34cd70489b9b75ce07a723d31ffca84b3ca4986a1be4d8b15893d951bfba8fe5"
+    },
+    {
+      "path": "providers/wttj.mjs",
+      "upstreamSha256": "b8636d8733d76dcfa2c34cd3fcd3cb106bf34dc8c6f0c44f8ff5cf1149ead493"
+    },
+    {
+      "path": "providers/yourator.mjs",
+      "upstreamSha256": "282d622073c5ed898650eb6736ef6fe970e7ce988fc46ec0c62b7ca97cdb7f15"
+    },
+    {
+      "path": "providers/_config-utils.mjs",
+      "upstreamSha256": "f00472b51a5ae3c4f6e3dee0a150ed413300f5e4bba544a5c6e44b0f458bd8f1"
+    },
+    {
+      "path": "providers/_dns-cache.mjs",
+      "upstreamSha256": "0e8adde07095d76a4d82576a7ceee37ff1236d8bd32d2c4495e4692e193d8193"
+    },
+    {
+      "path": "providers/_html-entities.mjs",
+      "upstreamSha256": "acf4f43bf31118d4166444d0f3e5dd067d6a8999ce96906b30f679e376905726"
+    },
+    {
+      "path": "providers/_html-to-text.mjs",
+      "upstreamSha256": "a5be02aafd890d306a4cc29cc942e499e9d18c1a4187cef335d68e5e69df5770"
+    },
+    {
+      "path": "providers/_http.mjs",
+      "upstreamSha256": "d41647268400c743cc7cdfec9cb55b06bbbbccf0eab9bb5cd887c6304f15b46b"
+    },
+    {
+      "path": "providers/_ip-guard.mjs",
+      "upstreamSha256": "30c5b9739bb2fb619985cf02a75d9a71ce0aa7c79d725436b32b60378a6416ee"
+    },
+    {
+      "path": "providers/_profile-keywords.mjs",
+      "upstreamSha256": "6bbb994f3648e9152bf1364a3dab97c3b5f4d739a76c954df56b4440bc9c067c"
+    },
+    {
+      "path": "providers/_registry.mjs",
+      "upstreamSha256": "b623f788b783f5f9a5526f72dbff1df15106acb9a19fa1dae214a3e19d03de1f"
+    },
+    {
+      "path": "providers/_safe-url.mjs",
+      "upstreamSha256": "b09aee8a0a6f2c0a81769639d5f4a426850b1db13ddc8aa4625c85e30f72f050"
+    },
+    {
+      "path": "providers/_trust-validator.mjs",
+      "upstreamSha256": "c507683f84f44d7700fbfb6e981712b9ecfbee1c62d1ebc3900d61b62d54f308"
+    },
+    {
+      "path": "providers/_types.js",
+      "upstreamSha256": "b289546b512643f721ca11f1cccff6a0604c4760dd8948302f853b0b9cf90083"
+    },
+    {
+      "path": "liveness-api.mjs",
+      "upstreamSha256": "319498879c4c5e66f408cc01c81d2943bde75dd0109a0d0446e7f81b119a049c"
+    },
+    {
+      "path": "url-key.mjs",
+      "upstreamSha256": "ee6680fd1408a1cf8b7f9821632a8714873483477fb70181dcee56855791b525"
+    },
+    {
+      "path": "user-agent.mjs",
+      "upstreamSha256": "5cfe6248115d0db0cb11ba5e658642e49482700d687c19dec36c0616428a5649"
+    },
+    {
+      "path": "ats-vendor.mjs",
+      "upstreamSha256": "feb77fc28825643177f60f28613c6e328dda86489c6491eabb2663d7147a02ee"
+    },
+    {
+      "path": "lib/ascii-fold.mjs",
+      "upstreamSha256": "0fcae65fb264abf059cd6a3e4160ca8511183850851d4fb62a7c53a8bfd2cd67"
+    },
+    {
+      "path": "LICENSE",
+      "upstreamSha256": "51989d2589b2aa87ca6cbb253391bcb476a21cbafdc71eea4410548538510870"
+    }
+  ],
+  "adaptations": [
+    "Host-scoped transport for all provider HTTP helpers; no global DNS patch.",
+    "Profile-keyword YAML uses host parser; no upstream candidate profile.",
+    "Pure JD normalizers extracted; full JD is not truncated.",
+    "local-parser excluded: host scripts remain shared CLI entry points.",
+    "Release hygiene: removed trailing whitespace in providers/solidjobs.mjs without changing behavior."
+  ]
+}

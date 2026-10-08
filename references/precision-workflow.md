@@ -1,32 +1,34 @@
 # 精投材料工作流
 
-只在用户明确要求精投、定制或生成材料时执行。
+当岗位按已配置规则路由为精投，或用户明确要求定制材料时执行。
 
 ## 必读模块规则
 
 按顺序完整读取：
 
-1. `modules/personal-career-os/references/workflows/apply.md`
+1. `modules/personal-career-os/MODULE.md`
 2. `modules/personal-career-os/references/methodology/简历方法论.md`
 3. `modules/resume-builder/references/Resume-Writing-Guide-LLM.md`
-4. `modules/resume-builder/references/writing-stage.md`
+4. `modules/resume-builder/cv.md`
 5. `modules/application-writing/MODULE.md`
-6. 需要排版/渲染时，再读两个内容模块相应的 export/rendering/data-contract reference。
+6. 排版与渲染依 `runtime/tools/generate-application.mjs` 和工作区模板执行。
 
 使用 Personal Career OS 的档案与产物能力，叠加 resume-builder 的 claim-map、批量追问、模板无关内容稿、JD—证据映射和最终真实性审计。
 
 ## 生成顺序
 
 1. 保存完整 JD；按 Job Intelligence 完成失效、重复和 Knock-out 检查。未通过时停止，除非用户明确要求继续。
-2. 完成 A–H 评估，判断岗位、行业、公司性质、最终读者、硬门槛与命名要求。
+2. 完成 A–G 分析，判断岗位、行业、公司性质、最终读者、硬门槛与命名要求；需要准备申请时另做 H 申请回答草稿。
 3. 读取唯一事实库，建立 JD—证据映射：已覆盖、可挖、真实缺失。
 4. 在本岗位目录建立 `work/claim-map.md`。只将已确认事实写入模板无关内容稿。
 5. 先决定保留、压缩和舍弃的经历，再写 CV；禁止只做关键词替换。
 6. 按 Application Writing 生成动机信，从同一批确认事实生成 PDF。
 7. 逐页目视检查 CV 和动机信 PDF；同时核对文本、日期、数字、公司名、岗位名和文件名。
-8. 运行 Personal Career OS 的隐私检查。通过后在 dashboard 记录实际文件路径和 `材料已准备`。
+8. 检查输出文件是否含未授权披露的个人信息。通过后在 dashboard 记录实际文件路径和 `材料已准备`。
 
 ## CV 规则
+
+页面尺寸、区域比例、字体、照片、内容容量、铺满一页的调整顺序和视觉验收以 `modules/resume-builder/cv.md` 为准。以下只保留内容层面的总原则：
 
 - 默认一页；经历确实丰富且用户同意时可以两页。
 - 真实性优先于岗位匹配，岗位匹配优先于措辞和版面。
@@ -49,7 +51,7 @@
 
 ## 输出位置
 
-输出到 `WORKSPACE_ROOT/CV/YYYY-MM-DD-公司-岗位/`。优先遵守 JD 的文件命名要求；否则使用：
+输出到 `WORKSPACE_ROOT/个人资料/CV/YYYY-MM-DD__公司__岗位/`。优先遵守 JD 的文件命名要求；否则使用：
 
 - `姓名-CV-公司-岗位.pdf`
 - `姓名-Motivation-Letter-公司-岗位.pdf`

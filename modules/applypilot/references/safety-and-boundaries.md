@@ -63,7 +63,7 @@ The user remains responsible for:
 
 - Truthfulness of all application materials.
 - Final review of sensitive answers.
-- Compliance with job board and employer terms (user has pre-authorized acceptance of standard platform terms and privacy agreements).
+- Compliance with job board and employer terms within the current user's authorization.
 - Handling human verification.
 - Deciding whether Volume or Precision mode matches their job search.
 
