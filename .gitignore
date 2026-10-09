@@ -66,3 +66,4 @@ __pycache__/
 !/tests/research-repair.test.mjs
 
 !/tests/discovery-autonomous.test.mjs
+!/tests/discovery-companies.test.mjs

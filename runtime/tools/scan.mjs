@@ -26,7 +26,7 @@ const loadArray=async(file,label)=>{if(!file)return [];const data=JSON.parse(awa
 let c=await config(a.config);
 const blacklist=await loadBlacklist();
 const registered=await read(path.join(home,'discovered-sources.json'),[]),newSources=await loadArray(a.sources,'sources');
-const sourceMap=new Map([...registered,...await companySources(c),...c.portals,...newSources].map(p=>[p.name,p]));c.portals=[...sourceMap.values()];
+const sourceMap=new Map([...registered,...await companySources(c,{registered}),...c.portals,...newSources].map(p=>[p.name,p]));c.portals=[...sourceMap.values()];
 const learnedApis=await read(path.join(home,'learned-job-apis.json'),{});
 for(const source of c.portals){const learned=learnedApis[source.career_url];if(learned&&source.learn_observed_api!==false&&!source.api_url&&!source.provider)Object.assign(source,{api_url:learned.api_url,api:learned.api,listing_mode:'fallback'});}
 if(c.research_scope){c=researchConfig(c,c.research_scope,{targeted:!!c.research_targeted});for(const source of c.portals)sourceMap.set(source.name,source);}
