@@ -14,7 +14,7 @@ import {relevance} from './lib/discovery-plan.mjs';
 import {buildDiscoveryPlan,taskId} from './lib/discovery-plan.mjs';
 import {acquireFileLock} from './lib/file-lock.mjs';
 import {postingRequirements,requirementGroups} from './lib/job-requirements.mjs';
-const a=args();if(a.help){console.log('research [--run | --screen-only] [--config FILE] [--scope FILE] [--ids FILE] [--continue MANIFEST] [--resume] [--include-unmatched] [--limit 10] [--offset N] [--concurrency 4] [--max-requests 40] [--triage-requests 40] [--no-browser]\nresearch --plan --manifest MANIFEST\nresearch --tasks --manifest MANIFEST [--limit 5] [--query EXACT_QUERY]\nresearch --capture --id ID --file CAPTURE [--cached] --manifest MANIFEST\nresearch --link ROUTE_EVIDENCE --manifest MANIFEST\nresearch --record FILE --manifest MANIFEST\nTemplates bind issued queries; completed needs endCondition. Cached captures require unchanged registered hashes. Identity links never copy submission state. Read handoff/current full JD; wait 30-60 seconds, do not read runtime or preload later modules.');process.exit(0);}
+const a=args();if(a.help){console.log('research [--run | --screen-only] [--config FILE] [--scope FILE] [--ids FILE] [--continue MANIFEST] [--resume] [--include-unmatched] [--limit 10] [--offset N] [--concurrency 4] [--max-requests N] [--triage-requests N] [--no-browser] [--evaluate-local]\nresearch --plan --manifest MANIFEST\nresearch --tasks --manifest MANIFEST [--limit 5] [--query EXACT_QUERY]\nresearch --capture --id ID --file CAPTURE [--cached] --manifest MANIFEST\nresearch --link ROUTE_EVIDENCE --manifest MANIFEST\nresearch --record FILE --manifest MANIFEST\nTemplates bind issued queries; completed needs endCondition. Cached captures require unchanged registered hashes. Identity links never copy submission state. Read handoff/current full JD; wait 30-60 seconds, do not read runtime or preload later modules.');process.exit(0);}
 async function main(){
 const previousFile=a.continue||a.manifest,previous=previousFile?await read(path.resolve(root,previousFile)):null;
 if(previousFile&&!previous)throw Error('Research manifest not found');
@@ -59,7 +59,12 @@ researchPage([],[],{limit,offset});
 const flags=['--config',configFile,...(a['no-browser']||previous?.noBrowser?['--no-browser']:[])];const stages=[];
 function run(tool,options){const p=spawnSync(process.execPath,[path.join(toolsRoot,tool+'.mjs'),...options],{encoding:'utf8',maxBuffer:2e6});if(p.status!==0)throw Error(tool+': '+(p.stderr||p.stdout).slice(-1000));stages.push({tool,result:JSON.parse(p.stdout)});}
 // Existing network budgets, robots, retries, pagination and journals remain authoritative.
-if(a.run)run('scan',[...flags,'--summary','--zero-token','--concurrency',String(a.concurrency??4),'--max-requests',String(a['max-requests']??40),...(a.resume?['--resume']:[])]);
+if(a.run)run('scan',[...flags,'--summary','--zero-token','--concurrency',String(a.concurrency??effective.discovery?.concurrency??4),'--max-requests',String(a['max-requests']??effective.discovery?.max_requests_per_run??80),...(a.resume?['--resume']:[])]);
+const triageBudget=Number(a['triage-requests']??effective.discovery?.triage_max_requests??40);let preTriageRequests=0;
+if(!Number.isInteger(triageBudget)||triageBudget<0)throw Error('triage-requests must be a nonnegative integer');
+// Inspect unknown-title reviews before selecting the Agent batch, so JD-only
+// contract/role matches are reachable. Reserve part of the budget for that batch.
+if(a.run&&!a.ids){run('triage',[...flags,'--run','--reuse-unresolved','--summary','--max-requests',String(triageBudget?Math.max(1,Math.floor(triageBudget/2)):0),...(a['retry-agent']?['--retry-agent']:[])]);preTriageRequests=stages.at(-1).result.requests||0;}
 let store=await read(path.join(home,'leads.json'),{jobs:[]});
 const explicitIds=a.ids?await read(path.resolve(root,a.ids)):undefined;
 const selected=a.continue?previousQueue:researchQueue(store.jobs,scope,{ids:explicitIds,includeUnmatched:!!a['include-unmatched']});
@@ -72,8 +77,8 @@ await write(idsFile,selected.ids);await write(path.join(runDir,'deferred-ids.jso
 const queueFile=path.join(runDir,'queue.json');await write(queueFile,selected);
 const scopeFile=path.join(runDir,'scope.json');await write(scopeFile,scope);
 const triageConfig=configFile,triageIds=path.join(runDir,'triage-ids.json');await write(triageIds,selected.ids.slice(offset,offset+limit).filter(id=>!existing.has(id)));
-if(a.run||a['screen-only']||a.continue){
- run('triage',['--config',triageConfig,...(a['no-browser']||previous?.noBrowser?['--no-browser']:[]),'--run','--include-candidates','--reuse-unresolved','--summary','--max-requests',String(a['triage-requests']??40),'--ids',triageIds,...(a['retry-agent']?['--retry-agent']:[])]);
+if((a.run||a['screen-only']||a.continue)&&(!triageBudget||preTriageRequests<triageBudget)){
+ run('triage',['--config',triageConfig,...(a['no-browser']||previous?.noBrowser?['--no-browser']:[]),'--run','--include-candidates','--reuse-unresolved','--summary','--max-requests',String(triageBudget?triageBudget-preTriageRequests:0),'--ids',triageIds,...(a['retry-agent']?['--retry-agent']:[])]);
  store=await read(path.join(home,'leads.json'),{jobs:[]});
 }
 const unresolved=store.jobs.filter(actionable),page=researchPage(store.jobs,selected.ids,{limit,offset}),cards=[];
@@ -89,9 +94,23 @@ const queues=(await read(path.join(home,'search-queue.json'),[])).filter(t=>!t.r
 const tasksFile=path.join(runDir,'tasks.json');await write(tasksFile,queues);
 const sourceIssues=Object.values(queues.filter(t=>['blocked','needs-agent','retry-wait'].includes(t.status)).reduce((r,t)=>{const key=t.status+'|'+t.reason,item=r[key]??={status:t.status,reason:t.reason,count:0};item.count++;return r;},{}));
 const batchIds=path.join(runDir,'batch-ids.json');await write(batchIds,cards.map(c=>c.id));
+let localEvaluation=null;
+if(a['evaluate-local']){
+ const settings=await read(path.join(root,'个人资料/operations/evaluation.json'),{});
+ if(settings.backend!=='ollama'||!settings.model)throw Error('--evaluate-local requires an explicitly configured local Ollama model');
+ run('evaluate',['--doctor','--backend','ollama']);
+ if(stages.at(-1).result.ready){run('evaluate',['--run','--backend','ollama','--ids',batchIds,'--limit',String(limit),'--config',configFile]);localEvaluation={status:'draft',result:stages.at(-1).result,reviewRequired:true};}
+ else localEvaluation={status:'deferred',reason:'Configured local model is unavailable',reviewRequired:true};
+}
+const scanDigest=await read(path.join(home,'digest.json'),null),digestFile=path.join(runDir,'digest.json');
+if(scanDigest){
+ const byId=new Map(store.jobs.map(j=>[j.id,j]));
+ const digest={...scanDigest,newJobs:scanDigest.newJobs.map(row=>({...row,disposition:byId.get(row.id)?.discoveryDisposition,triage:byId.get(row.id)?.triage?.status||'pending',possiblyClosed:!!byId.get(row.id)?.possiblyClosed,history:history.find(h=>h.id===row.id)?.disposition||'not_checked_in_current_batch'})),screening:counts,history:historySummary,localEvaluation,batchIds,eligibility:'Not assessed; model output requires sourced review.'};
+ await write(digestFile,digest);if(a.run)await write(path.join(home,'digest.json'),digest);
+}
 const manifest=path.join(runDir,'manifest.json');await write(manifest,{version:3,createdAt:new Date().toISOString(),configFile,targeted:!!effective.research_targeted,limit,noBrowser:!!(a['no-browser']||previous?.noBrowser),historyFile,historySummary,historyCounts:history.reduce((r,h)=>(r[h.disposition]=(r[h.disposition]||0)+1,r),{}),tasksFile,sourceIssues,lanes:Object.fromEntries(Object.entries(selected.lanes||{}).map(([key,values])=>[key,values.length])),scope,queueFile,deferred:selected.deferredIds.length,idsFile,batchIds,stages,counts,scanner:{modelFree:true,used:!!a.run,concurrency:Number(a.concurrency??4)},coverage:queues.reduce((r,t)=>(r[t.status]=(r[t.status]||0)+1,r),{}),cards,remaining:page.remaining,nextOffset:page.nextOffset,executionPolicy:{reconcile:historySummary.needsReconciliation?'leads --ids "'+reconcileIds+'" --check-history --limit 5':null,discoveryNext:queues.some(q=>['pending','partial','retry-wait'].includes(q.status))?`research --run --resume --manifest "${manifest}" --scope "${scopeFile}" --config "${triageConfig}"`:null,tasks:`research --tasks --manifest "${manifest}" --limit 5`,record:`research --record FILE --manifest "${manifest}"`,first:'Continue the stable current batch before discovery or web fallback.',fallback:'Only named unresolved tasks/postings need Agent. Save observed full JD/decisions and task completion through record. Do not read runtime source during normal operation.',next:page.nextOffset===null?null:`research --continue "${manifest}"`,assess:`batch --stage assess --ids "${batchIds}"`,company:`company --plan --ids "${batchIds}"`},instructions:'Hints are retrieval excerpts, never eligibility evidence. Full evidence and all queues stay on disk. Read only current cards and necessary full JDs. History receipts are checked locally; hash consistency does not independently prove success. Conflict/unmatched leads remain deferred; unknown contracts remain reviewable. Continue this queue before another broad search. No chat context is automatically cleared.'});
-const saved=await read(manifest),handoff=path.join(runDir,'handoff.json');
-await write(handoff,JSON.stringify({manifest,cards,constraintGroups:requirementGroups(cards),waitMs:60000,read:['references/research-handoff.md'],remaining:page.remaining,deferred:selected.deferredIds.length,history:{consistent:historySummary.consistent,needsReconciliation:historySummary.needsReconciliation,next:saved.executionPolicy.reconcile},sourceIssues,executionPolicy:saved.executionPolicy,instructions:'Read only current fullJd files and necessary candidate facts. Use generated gate drafts and task record templates. Record every manual task/JD result; no runtime/schema reading, future-module preload, repeated full browser state or short polling. Files do not clear chat; independent stage sessions require explicit user creation.'}));
+const saved=await read(manifest),handoff=path.join(runDir,'handoff.json');saved.digestFile=scanDigest?digestFile:null;saved.localEvaluation=localEvaluation;await write(manifest,saved);
+await write(handoff,JSON.stringify({manifest,digest:scanDigest?{file:digestFile,newCount:scanDigest.newCount}:null,localEvaluation,cards,constraintGroups:requirementGroups(cards),waitMs:60000,read:['references/research-handoff.md'],remaining:page.remaining,deferred:selected.deferredIds.length,history:{consistent:historySummary.consistent,needsReconciliation:historySummary.needsReconciliation,next:saved.executionPolicy.reconcile},sourceIssues,executionPolicy:saved.executionPolicy,instructions:'Read only current fullJd files and necessary candidate facts. Use generated gate drafts and task record templates. Record every manual task/JD result; no runtime/schema reading, future-module preload, repeated full browser state or short polling. Files do not clear chat; independent stage sessions require explicit user creation.'}));
 console.log(JSON.stringify({manifest,handoff,counts,count:cards.length,deferred:selected.deferredIds.length,remaining:page.remaining,nextOffset:page.nextOffset,scanner:{modelFree:true,used:!!a.run},stages:stages.map(x=>x.result)}));
 }
 await main().catch(async error=>{

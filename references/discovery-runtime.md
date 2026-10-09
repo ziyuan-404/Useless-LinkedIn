@@ -1,6 +1,6 @@
 # 发现岗位
 
-用户指定岗位族/合同类型时先写本次 scope JSON，再调用 `research --run --scope FILE --zero-token --concurrency 4`。平台探测、公开 API、本地 HTTP/Playwright、断点重放和全文分拣由脚本执行。按 manifest.executionPolicy 继续当前批次或发现检查点，不另起重复广泛搜索；仅异常交 Agent。只读取有界 manifest 与相关完整 JD；未知覆盖和访问阻断不得丢弃。具体输入、公司缓存与邮件凭证见 [共享交接](../references/company-cache-and-receipts.md)，平台配置见 [career-ops-integration.md](../references/career-ops-integration.md)。
+用户指定岗位族/合同类型时先写本次 scope JSON，再调用 `research --run --scope FILE --zero-token --concurrency 4`。平台探测、公开 API、本地 HTTP/Playwright、断点重放和全文分拣由脚本执行。按 manifest.executionPolicy 继续当前批次或发现检查点，不另起重复广泛搜索；仅异常交 Agent。只读取有界 manifest 与相关完整 JD；未知覆盖和访问阻断不得丢弃。具体输入、公司缓存与邮件凭证见 [共享交接](../references/company-cache-and-receipts.md)，平台配置见 [career-ops-integration.md](../references/career-ops-integration.md)。自动搜索、官网清单、sitemap/订阅、邮件提醒、摘要和接口学习见 [自动发现](autonomous-discovery.md)。
 
 正常运行只需本节及 [搜索运行交接](../references/research-handoff.md)，下面是配置/故障诊断参考，按需读取。不要启动时先读材料、提交、源码和整份台账。research 已完成本批全文初筛与历史查重；下一批用 executionPolicy.next，发现续跑用 discoveryNext，同一任务配置/ID保持稳定。人工搜索默认短摘要，完整岗位正文落盘并读当前必要 JD；处理后统一 --record 回写，不能只写 results.md。缺官方凭据或访问门槛保持未完成，不重复逐查询确认同一原因。
 

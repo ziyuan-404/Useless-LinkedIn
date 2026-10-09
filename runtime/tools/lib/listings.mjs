@@ -1,6 +1,7 @@
 import {request,parse} from './core.mjs';
 import {inferCareerSource} from './discovery-sources.mjs';
 import {normalizeUrl} from './job-signals.mjs';
+import {observedJobApi} from './observed-job-api.mjs';
 export {postingIdentityMismatch} from './job-signals.mjs';
 export const actionTitle=value=>/^(?:voir (?:l['’]offre|le poste|plus)|view (?:job|details)|read more|learn more|apply(?: now)?|postuler|candidater|en savoir plus|details|détails|next|suivant(?:e)?)\s*[›»→.!]*$/i.test(String(value||'').trim());
 export function mergePostingLinks(rows){
@@ -48,9 +49,9 @@ export async function listing(url,{portal={},match,fetchPage=request,noBrowser=f
    }
    let nextUrls=[],blocked=false,careerSources=[];
    if(raw.status>=200&&raw.status<300){
-    const p=parse(raw.body),links=[...(raw.visibleLinks||p.links),...p.jobs.map(j=>({url:j.url||j['@id'],title:j.title,company:j.hiringOrganization?.name}))];
-    const structured=p.jobs.map(j=>({url:j.url||j['@id'],title:j.title,company:j.hiringOrganization?.name,location:j.jobLocation?.address?.addressLocality||'',requisitionId:String(j.identifier?.value||''),publishedAt:j.datePosted,isJob:true}));
-    careerSources=[...p.links,...(p.embeds||[])].flatMap(l=>{try{const entry=inferCareerSource(new URL(l.url,raw.finalUrl||url).href);return entry?[entry]:[];}catch{return [];}});
+    const p=parse(raw.body),links=[...(raw.visibleLinks||p.links)];
+    const structured=p.jobs.filter(j=>!j.validThrough||!(Date.parse(j.validThrough)<Date.now())).map(j=>({url:j.url||j['@id'],title:j.title,company:j.hiringOrganization?.name,description:typeof j.description==='string'?parse(j.description).text:'',contract:Array.isArray(j.employmentType)?j.employmentType.join(' '):j.employmentType||'',location:j.jobLocation?.address?.addressLocality||'',requisitionId:String(j.identifier?.value||''),publishedAt:j.datePosted,isJob:true}));
+    careerSources=[{url:raw.finalUrl||url},...p.links,...(p.embeds||[])].flatMap(l=>{try{const entry=inferCareerSource(new URL(l.url,raw.finalUrl||url).href);return entry?[entry]:[];}catch{return [];}});
     jobs=mergePostingLinks([...links,...structured.map(j=>({...j,structured:true}))].map(l=>posting(l,portal,raw.finalUrl||url)).filter(Boolean).filter(match||(()=>true)));
     blocked=/captcha|verify you are human|access denied|just a moment|enable javascript|sign in to|connexion pour/i.test(p.text)&&!jobs.length;
     nextUrls=p.links.filter(l=>/\bnext\b/.test(l.rel||'')||/^(?:next(?: page)?|suivant(?:e)?|page suivante|weiter|›|»|→)$/i.test((l.label||l.title||'').trim())).flatMap(l=>{try{const next=new URL(l.url,raw.finalUrl||url);return next.origin===new URL(raw.finalUrl||url).origin&&next.href!==url?[next.href]:[];}catch{return [];}});
@@ -58,7 +59,8 @@ export async function listing(url,{portal={},match,fetchPage=request,noBrowser=f
    attempts.push({layer,url,status:raw.status,usable:jobs.length,blocked});
    if(jobs.length>best.length)best=jobs;
    const dynamic=/load more|charger plus|afficher plus|infinite.?scroll|__NEXT_DATA__|<div[^>]+id=["'](?:root|app)["']/i.test(raw.body);
-   return {jobs:best,attempts,nextUrls:[...new Set(nextUrls)],careerSources,blocked,dynamic,rendered:raw.rendered,status:raw.status,headers:raw.headers,finalUrl:raw.finalUrl||url};
+   const observedApi=(raw.observedResponses||[]).map(r=>observedJobApi(r,raw.finalUrl||url)).find(Boolean);
+   return {jobs:best,attempts,nextUrls:[...new Set(nextUrls)],careerSources,blocked,dynamic,rendered:raw.rendered,status:raw.status,headers:raw.headers,finalUrl:raw.finalUrl||url,feeds:parse(raw.body).feeds,observedApi};
   }catch(e){e.attempts=attempts;throw e;}
  }
  return {jobs:best,attempts};

@@ -235,5 +235,5 @@ test('invalid identity evidence is rejected before journaling and cannot poison 
 test('broad web fallback stays standby until one of its source queries actually requires it',async()=>{
  let healthy=true;const app=await server((req,res)=>{if(!healthy&&req.url.includes('stage')){res.statusCode=403;res.end('Access gate');}else res.end(JSON.stringify({jobs:[]}));});
  const dir=await workspace({queries:['alternance développeur','stage data'],discovery:{refresh_hours:0,web_queries:['(alternance OR stage) (développeur OR data)']},portals:[{name:'Source',api_url:app.url+'/api?q={query}',api:{exhaustive:true},search_domain:'employer.example',web_search:'fallback'}]});
- try{assert.equal((await run(dir)).complete,true);healthy=false;const second=await run(dir);assert.ok(second.searchRequests.some(t=>t.kind==='web-search'&&t.status==='pending'));}finally{await app.close();await fs.rm(dir,{recursive:true,force:true});}
+ try{assert.equal((await run(dir)).complete,true);healthy=false;const second=await run(dir);assert.ok(second.searchRequests.some(t=>t.kind==='web-search'&&t.status==='needs-agent'&&t.reason==='automatic_search_backend_not_configured'));}finally{await app.close();await fs.rm(dir,{recursive:true,force:true});}
 });

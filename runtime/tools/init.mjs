@@ -13,7 +13,8 @@ const ignoreBlock=`# BEGIN Useless LinkedIn private workspace\n${dataDirectory}/
 const seeds=[
   ['workspace-template/个人资料/operations','个人资料/operations'],
   ['workspace-template/个人资料/template','个人资料/template'],
-  ['workspace-template/个人资料/portals.yml','个人资料/portals.yml']
+  ['workspace-template/个人资料/portals.yml','个人资料/portals.yml'],
+  ['workspace-template/个人资料/companies.yml','个人资料/companies.yml']
 ];
 const created=[];
 async function copyMissing(source,destination){

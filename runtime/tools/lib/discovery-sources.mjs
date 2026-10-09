@@ -46,7 +46,7 @@ export async function readApiPage(source,task,{fetchPage,credentials}){
   if(pagination.size_param)u.searchParams.set(pagination.size_param,String(api.page_size||100));url=u.href;
  }
  const token=source.api_token_env?process.env[source.api_token_env]:null;
- if(source.api_token_env&&!token)throw Error('API credential missing');
+ if(source.api_token_env&&!token)throw Object.assign(Error('API credential missing'),{credentialsMissing:true});
  if(token&&new URL(url).origin!==new URL(task.url).origin)throw Error('Authenticated pagination changed API origin');
  const raw=await fetchPage(url,{headers:token?{Authorization:`Bearer ${token}`}:{}});
  httpFailure(raw);
@@ -55,6 +55,7 @@ export async function readApiPage(source,task,{fetchPage,credentials}){
  const fields=api.fields||{};
  const jobs=rows.flatMap(row=>{
   if(!row||typeof row!=='object'||Array.isArray(row))return [{url:'',title:'',isJob:true}];
+  if(row['@type']==='JobPosting'&&Date.parse(row.validThrough||'')<Date.now())return [];
   if(source.provider==='greenhouse')return row.internal_job_id===null?[]:[{url:row.absolute_url,title:row.title,company:source.company||'',location:row.location?.name||'',requisitionId:text(row.requisition_id||row.id),description:row.content||'',...(row.id&&source.board_token?{verifiedIdentity:`greenhouse:${source.board_token}:${row.id}`,identityEvidence:{url,capturedAt:new Date().toISOString(),evidence:'Public Job Board API row absolute_url and posting id'},employerOriginal:employerUrl(row.absolute_url)}:{}),isJob:true}];
   if(source.provider==='lever')return [{url:row.hostedUrl,title:row.text,company:source.company||'',location:row.categories?.location||'',contract:row.categories?.commitment||'',requisitionId:text(row.id),description:row.descriptionPlain||'',isJob:true}];
   if(source.provider==='ashby')return row.isListed===false?[]:[{url:row.jobUrl,title:row.title,company:source.company||'',location:row.location||'',contract:row.employmentType||'',requisitionId:text(row.id),description:row.descriptionPlain||row.descriptionHtml||'',publishedAt:row.publishedAt,isJob:true}];

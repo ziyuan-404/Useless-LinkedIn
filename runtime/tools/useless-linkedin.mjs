@@ -2,7 +2,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {toolsRoot} from './runtime.mjs';
 
-const commands=['install','init','doctor','migrate','scan','triage','research','company','receipt','leads','materials','providers','fetch-jd','evaluate','pipeline','batch','apply','tracker','state','authorization','resume','dashboard','editor'];
+const commands=['install','init','doctor','migrate','scan','alerts','triage','research','company','receipt','leads','materials','providers','fetch-jd','evaluate','pipeline','batch','apply','tracker','state','authorization','resume','dashboard','editor'];
 const command=process.argv[2];
 if (command==='--help' || command==='-h' || !command) {
   console.log(`useless-linkedin.mjs <${commands.join('|')}> [options]`);

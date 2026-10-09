@@ -91,6 +91,7 @@
             "enum": [
               "API",
               "HTTP",
+              "WebVerification",
               "AgentBrowser",
               "Import"
             ]

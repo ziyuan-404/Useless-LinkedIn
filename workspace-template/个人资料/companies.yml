@@ -1,0 +1,10 @@
+version: 1
+# User maintained company registry; one board task per company, no query matrix.
+# - name: Employer name
+#   career_url: https://employer.example/careers
+#   provider: greenhouse  # optional; detected from the URL when possible
+#   board_token: employer
+#   sitemap_urls: [https://employer.example/sitemap.xml]
+#   job_pattern: /jobs/\d+
+#   renderer: auto
+companies: []

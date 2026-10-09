@@ -63,7 +63,7 @@ export function validateDiscoveryConfig(config){
   }
  }
  for(const [key,value] of Object.entries(config.discovery||{})){
-  if(key==='web_backend'&&!['agent','anysearch'].includes(value))throw Error('discovery.web_backend must be agent or anysearch');
+  if(key==='web_backend'&&!['auto','agent','anysearch','searxng','brave'].includes(value))throw Error('Unsupported discovery.web_backend');
   if(['max_requests_per_run','max_pages_per_task','refresh_hours','web_refresh_hours','min_interval_ms','retry_base_seconds','retry_max_seconds'].includes(key)&&(!Number.isFinite(value)||value<0))throw Error(`discovery.${key} must be a nonnegative number`);
   if(key==='web_queries'&&(!Array.isArray(value)||value.some(x=>typeof x!=='string')))throw Error('discovery.web_queries must be a string array');
  }
@@ -96,7 +96,7 @@ export function buildDiscoveryPlan(config){
   if(source.listing_mode!=='disabled')for(const template of templates)for(const query of template.includes('{query}')?queries:[''])for(const location of template.includes('{location}')?locations:[''])push({kind:'listing',portal:source.name,query,location,fallbackOnly:source.listing_mode==='fallback',url:renderSearchUrl(template,{query,location,page:source.pagination?.start??1,offset:source.pagination?.start??0})});
   if(source.web_search!==false)for(const query of unique(source.web_queries??config.discovery?.web_queries??queries))for(const location of locations){
    const domain=source.search_domain||(templates[0]?new URL(renderSearchUrl(templates[0])).hostname:'');
-   if(domain)push({kind:source.discovery_kind||'web-search',portal:source.name,fallbackOnly:source.web_search==='fallback',query:[`site:${domain}`,query,location].filter(Boolean).join(' '),location});
+   if(domain)push({kind:source.discovery_kind||'web-search',portal:source.name,fallbackOnly:source.web_search==='fallback',query:[`site:${domain}`,query,location].filter(Boolean).join(' '),location,searchDomain:domain});
   }
  }
  sourceSignature=undefined;legacySourceSignature=undefined;
@@ -116,7 +116,7 @@ export function mergeTasks(plan,previous=[],{resume=false,refreshHours=24,now=Da
   const fresh=now-Date.parse(prior.finishedAt||prior.updatedAt||'')<cadence*3600000;
   const boundedRefresh=prior.status==='needs-agent'&&/^provider_(?:search_window_unverified|partial_warnings)$/.test(prior.reason||'')&&!fresh;
   if(!boundedRefresh&&(resume||!prior.completed||fresh))return {...prior,...task,status:prior.status||'pending',completed:!!prior.completed,cursor:prior.cursor};
-  return {...task,cycle:(prior.cycle||1)+1,baselinePages:prior.currentPages||{},baselineKeys:prior.currentKeys||[],lastFullScanAt:prior.lastFullScanAt,refreshing:true};
+  return {...task,cycle:(prior.cycle||1)+1,baselinePages:prior.currentPages||{},baselineKeys:prior.currentKeys||[],careerDocuments:prior.careerDocuments,lastFullScanAt:prior.lastFullScanAt,refreshing:true};
  });
  // Keep history, but never run obsolete URLs/filters after configuration changes.
  const ids=new Set(merged.map(x=>x.id));

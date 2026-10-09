@@ -17,6 +17,13 @@ include_keywords: [alternance, alternant, apprentissage, apprenti, apprentice, a
 role_keywords: [engineer, ingénieur, ingénieure, ingénieurs, software, web, développeuse, développeuses, développeurs, developer, developers, programmer, programmeur, programmeuse, développeur, developpeur, developer, développement, developpement, informatique, logiciel, python, java, javascript, typescript, react, node, node.js, vue, angular, data, analyst, BI, SQL, automatisation, automation, RPA, intelligence artificielle, machine learning, no code, low code, embarqué, robotique, support IT]
 exclude_keywords: [senior, principal, director, head of]
 discovery:
+  # auto selects configured SEARXNG_URL, then BRAVE_SEARCH_API_KEY; otherwise reports missing backend.
+  # Supported: auto, searxng, brave, anysearch, agent. No model calls for discovery.
+  web_backend: auto
+  companies_file: 个人资料/companies.yml
+  # alerts_file: 个人资料/applications/automation/alert-links.json
+  # searxng: {api_url: 'http://127.0.0.1:8080/search', allow_loopback: true}
+  # brave: {api_token_env: BRAVE_SEARCH_API_KEY, page_size: 20}
   concurrency: 4
   web_search: true
   company_careers: true

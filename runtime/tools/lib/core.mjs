@@ -42,18 +42,21 @@ export async function assertPublicUrl(url){
  return href;
 }
 export async function request(url,opts={}){
- const {httpClient='native',credentialBody=false,credentialHeaders=false,responseMode='text',redirect='follow',timeoutMs=18000,maxResponseBytes=8*1024*1024,...init}=opts;
+ const {httpClient='native',credentialBody=false,credentialHeaders=false,responseMode='text',redirect='follow',timeoutMs=18000,maxResponseBytes=8*1024*1024,trustedLocalOrigin,...init}=opts;
+ if(trustedLocalOrigin&&!['127.0.0.1','localhost','[::1]'].includes(new URL(trustedLocalOrigin).hostname))throw Error('Local search endpoint must use a loopback host');
  if(!Number.isFinite(maxResponseBytes)||maxResponseBytes<=0)throw Error('maxResponseBytes must be positive');
  if(!['native','impit'].includes(httpClient))throw Error('Unknown HTTP client');
  const client=httpClient==='impit'?new (dependency('impit').Impit)({browser:'chrome',timeout:18000}):null;
  let current=url,options={...init,headers:{...init.headers}};
  for(let redirects=0;redirects<=5;redirects++){
-  current=await assertPublicUrl(current);
+  if(!trustedLocalOrigin||new URL(current).origin!==trustedLocalOrigin)current=await assertPublicUrl(current);
+  else if(new URL(current).username||new URL(current).password)throw Error('Local search endpoint cannot contain credentials');
   const r=await (client?client.fetch.bind(client):fetch)(current,{...options,redirect:'manual',signal:AbortSignal.timeout(timeoutMs),headers:{'user-agent':'UselessLinkedIn/1.0 (public job discovery)',...options.headers}});
   if(redirect==='error'&&r.status>=300&&r.status<400)throw Error('Redirect refused by caller');
   if(redirect!=='manual'&&[301,302,303,307,308].includes(r.status)){
    const location=r.headers.get('location');if(!location)throw Error('Redirect without location');
    const next=new URL(location,current).href;
+   if(trustedLocalOrigin)throw Error('Local search redirect refused');
    if(new URL(next).origin!==new URL(current).origin&&(credentialBody&&options.body||credentialHeaders))throw Error('Authenticated request changed origin');
    if(new URL(next).origin!==new URL(current).origin)for(const key of Object.keys(options.headers))if(/authorization|cookie|api[-_]key/i.test(key))delete options.headers[key];
    if(r.status===303||(r.status===301||r.status===302)&&options.method==='POST'){options.method='GET';delete options.body;}

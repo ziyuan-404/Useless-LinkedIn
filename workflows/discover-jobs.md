@@ -2,7 +2,7 @@
 
 正常执行只读本页及 [搜索交接](../references/research-handoff.md)。底层配置、来源适配器与异常诊断按需查 [运行参考](../references/discovery-runtime.md)，不预读材料和提交模块。
 
-1. 首次搜索：用 research --run --scope FILE --zero-token --concurrency 4 --limit 10。已有本轮 manifest 时先 research --plan --manifest FILE；沿用交接命令和同一 scope，不重新广搜。执行中每次等待30–60秒。
+1. 首次搜索：用 research --run --scope FILE --zero-token --concurrency 4 --limit 10。默认继承配置的请求预算，先有限检查 review 正文，再选当前批次；配置的自动搜索、官网与邮件渠道由脚本核验，缺后端或访问阻断保留未决。已有本轮 manifest 时先 research --plan --manifest FILE；沿用交接命令和同一 scope，不重新广搜。执行中每次等待30–60秒。
 2. 只读返回的 handoff.json、当前岗位完整 JD 和必要人物事实。完整台账、原始来源、覆盖和后续卡片保存在文件。历史和已证明的跨平台同岗由脚本检查；标题相似只能提示核实。
 3. 已验证抓取直接用卡片的 recordCapture 命令；缺失正文优先 fetch-jd，仍受阻才用用户指定浏览器观察完整正文、具体条款和真实申请链接。人工捕获按共享格式保存，再 research --capture --id ID --file FILE --manifest MANIFEST；不重组已抓取的正文，不保存截图或整页 HTML。
 4. 观察到原岗位的申请链接/跳转时保存 posting-route 证据，再 research --link FILE --manifest MANIFEST。同岗关联不复制投递状态和凭证；官网已关闭的同岗延后，不误判为新岗位。

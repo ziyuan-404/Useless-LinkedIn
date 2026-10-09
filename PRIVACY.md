@@ -1,5 +1,9 @@
 # Privacy / 隐私边界
 
+Configured model-free web search sends job search terms to SearXNG, Brave or AnySearch even in zero-token mode. Search snippets are verified against public posting pages before collection. Optional IMAP alert intake uses an explicitly configured folder, TLS and read-only fetches; credentials come from environment variables. Posting URLs, message hashes and mailbox cursors remain in the private workspace. Generated mail/browser/test artifacts are excluded from this repository.
+
+配置的无模型搜索即使在 zero-token 模式也会将岗位查询发送到 SearXNG、Brave 或 AnySearch；搜索摘要必须经过真实岗位页面核验才入库。选配的 IMAP 提醒收取使用明确配置的文件夹、TLS 与只读请求，凭据来自环境。岗位链接、消息散列与邮箱游标留在私人工作区；邮件、浏览器及测试运行产物不公开。
+
 Independent evaluate --run sends the complete JD and necessary sourced candidate facts to the explicitly configured model endpoint. Contact details are omitted where recognized; this is not an anonymization guarantee. Local Ollama defaults to loopback and never falls back to a cloud service automatically. Cloud credentials are read from environment variables and are not written to reports. Evaluation files and caches belong in the private workspace.
 
 独立评估仅在显式 evaluate --run 时向配置的模型端点发送完整 JD 与必要人物事实；可识别联系方式被省略，但不保证完全匿名。本地 Ollama 默认回环地址，不自动切换云端。密钥仅从环境变量读取，报告不保存密钥；评估与缓存属于私人工作区。

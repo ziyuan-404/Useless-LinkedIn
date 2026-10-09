@@ -64,3 +64,5 @@ __pycache__/
 !/tests/quota-flow.test.mjs
 !/tests/research-efficiency.test.mjs
 !/tests/research-repair.test.mjs
+
+!/tests/discovery-autonomous.test.mjs
