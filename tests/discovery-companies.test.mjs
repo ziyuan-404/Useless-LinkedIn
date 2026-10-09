@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {pathToFileURL} from 'node:url';
+import {spawn} from 'node:child_process';
 const skill=path.resolve(process.env.USELESS_LINKEDIN_TEST_SKILL||path.join(import.meta.dirname,'..'));
 const dir=await fs.mkdtemp(path.join(process.env.USELESS_LINKEDIN_TEST_TMP||os.tmpdir(),'ul-company-registry-'));
 process.env.USELESS_LINKEDIN_WORKSPACE=dir;
@@ -63,6 +64,16 @@ test('disabled employers cannot be reactivated by an enabled child board',async(
 test('same-host boards infer distinct identities without inheriting the group token',async()=>{
  await save([{name:'Synthetic Employer',career_url:'https://employer.example/careers',provider:'greenhouse',board_token:'old-token',boards:[{career_url:'https://job-boards.greenhouse.io/acme'},{career_url:'https://job-boards.greenhouse.io/acmelabs'}]}]);
  const sources=await companySources(config);assert.deepEqual(sources.map(s=>s.board_token),['acme','acmelabs']);assert.equal(new Set(sources.map(s=>s.name)).size,2);assert.equal(buildDiscoveryPlan({...config,portals:sources}).filter(t=>!t.fallbackOnly).length,2);
+});
+
+test('large scan plans flush complete JSON through a paused stdout pipe',async()=>{
+ await save([]);const queries=Array.from({length:1500},(_,i)=>'alternance software '+i);
+ await fs.writeFile(path.join(dir,'large-plan.json'),JSON.stringify({...config,queries,query_matrix:{},locations:['France'],portals:[{name:'Synthetic Board',search_domain:'employer.example'}]}));
+ const child=spawn(process.execPath,[path.join(skill,'runtime/tools/scan.mjs'),'--config','large-plan.json','--plan'],{cwd:dir,env:{...process.env,USELESS_LINKEDIN_WORKSPACE:dir}});
+ let stdout='',stderr='';child.stdout.on('data',chunk=>stdout+=chunk);child.stdout.pause();child.stderr.on('data',chunk=>stderr+=chunk);
+ const resume=setTimeout(()=>child.stdout.resume(),1500);
+ const status=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('close',resolve);});clearTimeout(resume);
+ assert.equal(status,0,stderr);assert.ok(stdout.length>256*1024);const plan=JSON.parse(stdout);assert.equal(plan.taskCount,queries.length);assert.equal(plan.tasks.length,queries.length);assert.ok(plan.tasks.some(t=>t.query.includes('1499')));
 });
 
 test.after(()=>fs.rm(dir,{recursive:true,force:true}));

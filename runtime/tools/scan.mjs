@@ -44,7 +44,15 @@ const alertsFile=a.alerts||c.discovery?.alerts_file,alerts=alertsFile?await load
 const alertPlan=alerts.map(row=>{publicUrl(row.url);const task={kind:'web-search',portal:'Mail Alerts',query:row.url,url:row.url,emailAlert:true,priority:5,refreshHours:168};return {...task,id:taskId(task),status:'pending',completed:false,cursor:{pendingResults:[row],endEvidence:true,reason:'alert_links_checked'}};});
 const tasks=mergeTasks([...buildDiscoveryPlan(c),...alertPlan],previous,{resume:!!a.resume,refreshHours:c.discovery?.refresh_hours??24});
 const selected=task=>!task.retired&&task.status!=='standby'&&(!a.portal||task.portal===a.portal);
-if(a.plan){const plan={version:2,sources:c.portals.length,taskCount:tasks.filter(selected).length,limits:{requests:Number.isFinite(maxRequests)?maxRequests:null,pagesPerTask:Number.isFinite(maxPages)?maxPages:null},tasks:tasks.filter(selected)};if(a.summary){const file=path.join(home,'scan-plan.json');await write(file,plan);console.log(JSON.stringify({file,sources:plan.sources,taskCount:plan.taskCount,limits:plan.limits}));}else console.log(JSON.stringify(plan,null,2));process.exit(0);}
+if(a.plan){
+ const plan={version:2,sources:c.portals.length,taskCount:tasks.filter(selected).length,limits:{requests:Number.isFinite(maxRequests)?maxRequests:null,pagesPerTask:Number.isFinite(maxPages)?maxPages:null},tasks:tasks.filter(selected)};
+ let output=plan;
+ if(a.summary){const file=path.join(home,'scan-plan.json');await write(file,plan);output={file,sources:plan.sources,taskCount:plan.taskCount,limits:plan.limits};}
+ // A large plan can exceed a pipe's buffer. Explicit exit must wait until the
+ // complete JSON has been handed to stdout, including under a slow reader.
+ await new Promise((resolve,reject)=>process.stdout.write(JSON.stringify(output,null,a.summary?undefined:2)+'\n',error=>error?reject(error):resolve()));
+ process.exit(0);
+}
 const capturesRaw=a['listing-capture']?JSON.parse(await fs.readFile(a['listing-capture'],'utf8')):[];
 const captures=Array.isArray(capturesRaw)?capturesRaw:[capturesRaw];
 for(const x of captures){
